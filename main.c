@@ -41,8 +41,30 @@
 #define GPIOC_BRR  (IOPC_BASE + 0x14)
 #define GPIOC_LCKR (IOPC_BASE + 0x14)
 
+#define TIM2_BASE 0x40000000
+
+#define TIM2_CR1   (TIM2_BASE + 0x00)
+#define TIM2_CR2   (TIM2_BASE + 0x04)
+#define TIM2_SMCR  (TIM2_BASE + 0x08)
+#define TIM2_DIER  (TIM2_BASE + 0x0c)
+#define TIM2_SR    (TIM2_BASE + 0x10)
+#define TIM2_EGR   (TIM2_BASE + 0x14)
+#define TIM2_CCMR1 (TIM2_BASE + 0x18)
+#define TIM2_CCMR2 (TIM2_BASE + 0x1c)
+#define TIM2_CCER  (TIM2_BASE + 0x20)
+#define TIM2_TCNT  (TIM2_BASE + 0x24)
+#define TIM2_TPSC  (TIM2_BASE + 0x28)
+#define TIM2_ARR   (TIM2_BASE + 0x2c)
+#define TIM2_CCR1  (TIM2_BASE + 0x34)
+#define TIM2_CCR2  (TIM2_BASE + 0x38)
+#define TIM2_CCR3  (TIM2_BASE + 0x3c)
+#define TIM2_CCR4  (TIM2_BASE + 0x40)
+#define TIM2_DCR   (TIM2_BASE + 0x48)
+#define TIM2_DMAR  (TIM2_BASE + 0x4c)
+
 #define THUMB __attribute__((target("thumb")))
-static THUMB void rcc_cr_enable_hse(void)
+
+static void rcc_cr_enable_hse(void)
 {
   uint32_t v = reg_read(RCC_CR);
   if (v & (1 << RCC_CR_HSERDY_POS))
@@ -54,7 +76,7 @@ static THUMB void rcc_cr_enable_hse(void)
   while(reg_read(RCC_CR) & (1 << RCC_CR_HSERDY_POS) == 0);
 }
 
-static THUMB void rcc_cfgr_select_hse(void)
+static void rcc_cfgr_select_hse(void)
 {
   uint32_t v;
   v = reg_read(RCC_CFGR);
@@ -64,7 +86,7 @@ static THUMB void rcc_cfgr_select_hse(void)
   while ((reg_read(RCC_CFGR) & RCC_CFGR_SWS_MASK) != RCC_CFGR_SWS_HSE);
 }
 
-static THUMB void rcc_apb1rsr_reset_tim2(void)
+static void rcc_apb1rsr_reset_tim2(void)
 {
   uint32_t v;
   v = reg_read(RCC_APB1RSTR);
@@ -72,7 +94,7 @@ static THUMB void rcc_apb1rsr_reset_tim2(void)
   reg_write(RCC_APB1RSTR, v);
 }
 
-static THUMB void rcc_apb1enr_enable_tim2(void)
+static void rcc_apb1enr_enable_tim2(void)
 {
   uint32_t v;
   v = reg_read(RCC_APB1ENR);
@@ -80,7 +102,7 @@ static THUMB void rcc_apb1enr_enable_tim2(void)
   reg_write(RCC_APB1ENR, v);
 }
 
-static THUMB void rcc_apb2rsr_reset_iopc(void)
+static void rcc_apb2rsr_reset_iopc(void)
 {
   uint32_t v;
   v = reg_read(RCC_APB2RSTR);
@@ -88,7 +110,7 @@ static THUMB void rcc_apb2rsr_reset_iopc(void)
   reg_write(RCC_APB2RSTR, v);
 }
 
-static THUMB void rcc_apb2enr_enable_iopc(void)
+static void rcc_apb2enr_enable_iopc(void)
 {
   uint32_t v;
   v = reg_read(RCC_APB2ENR);
@@ -96,7 +118,7 @@ static THUMB void rcc_apb2enr_enable_iopc(void)
   reg_write(RCC_APB2ENR, v);
 }
 
-static THUMB void gpioc_set_pin13(void)
+static void gpioc_set_pin13(void)
 {
   uint32_t v;
   v = reg_read(GPIOC_CRH);
@@ -105,19 +127,61 @@ static THUMB void gpioc_set_pin13(void)
   v &= ~(3<<22);
   v |= (1<<22);
   reg_write(GPIOC_CRH, v);
-  while(1);
 }
 
-THUMB void main(void)
+static int tim2_setup(void)
+{
+  uint16_t v;
+
+  reg_write(TIM2_ARR, 0xffff);
+
+  v = reg_read(TIM2_CR1);
+
+  // Prescaler / 4
+  v &= ~0xfcff;
+  v |= 2 << 8;
+
+  // Auto-reload
+  v |= 1 << 7;
+
+  // Not center-aligned
+  v &= 0xff9f;
+
+  // Up count
+  v &= 0xffef;
+
+  // No one-pulse
+  v &= 0xfff7;
+
+  // Update only from overflow
+  v |= 4;
+
+  // UEV not sent
+  v &= 0xfffd;
+
+  // Enable counter
+  v |= 1;
+  reg_write(TIM2_CR1, v);
+
+  return 0;
+}
+
+void tim2_handler(void)
+{
+}
+
+void main(void)
 {
 #if 0
   rcc_cr_enable_hse();
   rcc_cfgr_select_hse();
-  rcc_apb1rsr_reset_tim2();
-  rcc_apb1enr_enable_tim2();
+  rcc_apb2rsr_reset_iopc();
 #endif
 
- // rcc_apb2rsr_reset_iopc();
+  // rcc_apb1rsr_reset_tim2();
+  rcc_apb1enr_enable_tim2();
+
   rcc_apb2enr_enable_iopc();
   gpioc_set_pin13();
+  tim2_setup();
 }

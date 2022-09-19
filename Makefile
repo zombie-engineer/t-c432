@@ -9,7 +9,7 @@ start.o: start.S
 	arm-none-eabi-as start.S -o start.o
 
 main.o: main.c
-	arm-none-eabi-gcc -c main.c -o main.o
+	arm-none-eabi-gcc -c main.c -o main.o -mthumb
 
 exception_table.o: exception_table.c
 	arm-none-eabi-gcc -c exception_table.c -o exception_table.o
@@ -17,4 +17,5 @@ exception_table.o: exception_table.c
 d:
 	arm-none-eabi-gdb -x gdb.gdb firmware.elf
 
-
+hd: firmware.bin
+	hexdump -v -e '1/4 "%08_ax %08X \n"' $? | less
