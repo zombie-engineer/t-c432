@@ -3,6 +3,7 @@ MEMORY {
   FLASH (rx): ORIGIN = 0x08000000, LENGTH = 64K
 }
 SECTIONS {
-  .exception_table : { exception_table.o(.exception_table) } > FLASH
+  .isr_vector : { isr_vector.o(.isr_vector) } > FLASH
   .text : { start.o(.text) main.o(.text) } > FLASH
+  .bss : { main.o(.bss) } > RAM
 }

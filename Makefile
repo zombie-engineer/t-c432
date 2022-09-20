@@ -2,17 +2,17 @@
 firmware.bin: firmware.elf
 	arm-none-eabi-objcopy firmware.elf --output-target binary firmware.bin
 
-firmware.elf: main.o start.o exception_table.o link.ld
-	arm-none-eabi-ld main.o start.o exception_table.o -o firmware.elf -T link.ld
+firmware.elf: main.o start.o isr_vector.o link.ld
+	arm-none-eabi-ld main.o start.o isr_vector.o -o firmware.elf -T link.ld
 
 start.o: start.S
 	arm-none-eabi-as start.S -o start.o
 
 main.o: main.c
-	arm-none-eabi-gcc -c main.c -o main.o -mthumb
+	arm-none-eabi-gcc -c -g main.c -o main.o -mthumb
 
-exception_table.o: exception_table.c
-	arm-none-eabi-gcc -c exception_table.c -o exception_table.o
+isr_vector.o: isr_vector.c
+	arm-none-eabi-gcc -c isr_vector.c -o isr_vector.o
 
 d:
 	arm-none-eabi-gdb -x gdb.gdb firmware.elf
