@@ -330,9 +330,11 @@ static int tim2_setup(
   return 0;
 }
 
+static volatile int last_adc = 0;
+
 void adc_isr(void)
 {
-  int d = reg_read(ADC1_DR);
+  last_adc = reg_read(ADC1_DR);
   reg_write(ADC1_SR, 0);
   reg_write(ADC1_CR2, ADC_CR2_EON);
 }
@@ -340,6 +342,7 @@ void adc_isr(void)
 void tim2_isr(void)
 {
   static int toggle_flag = 0;
+  reg_write(TIM2_ARR, last_adc + 600);
   reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_TIM2);
   reg_write(TIM2_SR, 0);
   reg_write(TIM2_CR1, reg_read(TIM2_CR1) | 1);
