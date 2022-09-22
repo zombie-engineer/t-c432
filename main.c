@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+
 #define RCC_BASE 0x40021000
 #define RCC_CR       (RCC_BASE + 0x00)
 #define RCC_CFGR     (RCC_BASE + 0x04)
@@ -32,7 +33,17 @@
 #define RCC_APB1RSTR_TIM2RST 1
 #define RCC_APB1ENR_TIM2EN 1
 #define RCC_APB1RSTR_IOPCRST (1<<4)
-#define RCC_APB1ENR_IOPCEN (1<<4)
+#define RCC_APB1ENR_USART2EN (1<<17)
+#define RCC_APB2ENR_IOPAEN (1<<2)
+#define RCC_APB2ENR_ADC1AEN (1<<9)
+#define RCC_APB2ENR_IOPBEN (1<<3)
+#define RCC_APB2ENR_IOPCEN (1<<4)
+
+#define USART_BASE 0x40004400
+#define USART_SR  (USART_BASE + 0x00)
+#define USART_DR  (USART_BASE + 0x04)
+#define USART_BRR (USART_BASE + 0x08)
+#define USART_CR1 (USART_BASE + 0x0c)
 
 #define IOPC_BASE 0x40011000
 #define GPIOC_CRL  (IOPC_BASE + 0x00)
@@ -42,6 +53,19 @@
 #define GPIOC_BSRR (IOPC_BASE + 0x10)
 #define GPIOC_BRR  (IOPC_BASE + 0x14)
 #define GPIOC_LCKR (IOPC_BASE + 0x14)
+
+#define IOPA_BASE 0x40010800
+#define GPIOA_CRL  (IOPA_BASE + 0x00)
+#define GPIOA_CRH  (IOPA_BASE + 0x04)
+#define GPIOA_IDR  (IOPA_BASE + 0x08)
+#define GPIOA_ODR  (IOPA_BASE + 0x0c)
+#define GPIOA_BSRR (IOPA_BASE + 0x10)
+#define GPIOA_BRR  (IOPA_BASE + 0x14)
+#define GPIOA_LCKR (IOPA_BASE + 0x14)
+
+#define AFIO_BASE 0x40010000
+#define AFIO_EVCR (AFIO_BASE + 0x00)
+#define AFIO_MAPR (AFIO_BASE + 0x04)
 
 #define TIM2_BASE 0x40000000
 
@@ -88,7 +112,32 @@
 #define NVIC_IPR0 (NVIC_BASE + 0x300)
 #define NVIC_STIR (NVIC_BASE + 0xe00)
 
+
+#define ADC1_BASE 0x40012400
+#define ADC1_SR    (ADC1_BASE + 0x00)
+#define ADC1_CR1   (ADC1_BASE + 0x04)
+#define ADC1_CR2   (ADC1_BASE + 0x08)
+#define ADC1_SMPR1 (ADC1_BASE + 0x0c)
+#define ADC1_SMPR2 (ADC1_BASE + 0x10)
+#define ADC1_JOFR0 (ADC1_BASE + 0x14)
+#define ADC1_JOFR1 (ADC1_BASE + 0x18)
+#define ADC1_JOFR2 (ADC1_BASE + 0x1c)
+#define ADC1_JOFR3 (ADC1_BASE + 0x20)
+#define ADC1_HTR   (ADC1_BASE + 0x24)
+#define ADC1_LTR   (ADC1_BASE + 0x28)
+#define ADC1_JSQR  (ADC1_BASE + 0x2c)
+#define ADC1_JDR0  (ADC1_BASE + 0x3c)
+#define ADC1_JDR1  (ADC1_BASE + 0x40)
+#define ADC1_JDR2  (ADC1_BASE + 0x44)
+#define ADC1_JDR3  (ADC1_BASE + 0x48)
+#define ADC1_DR    (ADC1_BASE + 0x4c)
+
+#define ADC_CR2_EON (1<<0)
+#define ADC_CR1_EOCIE (1<<5)
+
 #define THUMB __attribute__((target("thumb")))
+
+#define F_CLK 8000000
 
 static void rcc_cr_enable_hse(void)
 {
@@ -140,7 +189,15 @@ static void rcc_apb2enr_enable_iopc(void)
 {
   uint32_t v;
   v = reg_read(RCC_APB2ENR);
-  v |= RCC_APB1ENR_IOPCEN;
+  v |= RCC_APB2ENR_IOPCEN;
+  reg_write(RCC_APB2ENR, v);
+}
+
+static void rcc_apb2enr_enable_iopa(void)
+{
+  uint32_t v;
+  v = reg_read(RCC_APB2ENR);
+  v |= RCC_APB2ENR_IOPAEN;
   reg_write(RCC_APB2ENR, v);
 }
 
@@ -164,13 +221,13 @@ static void gpioc_bit_clear(int pin_nr)
   reg_write(GPIOC_BSRR, 1 << (pin_nr + 16));
 }
 
-static void gpioc_set_cr(int pin_nr, int mode, int cnf)
+static void gpiox_set_cr(uint32_t basereg, int pin_nr, int mode, int cnf)
 {
   uint32_t v;
   int b;
   uint32_t addr;
 
-  addr = GPIOC_CRL;
+  addr = basereg;
   addr += (pin_nr / 8) * 4;
   b = (pin_nr % 8) * 4;
 
@@ -178,6 +235,16 @@ static void gpioc_set_cr(int pin_nr, int mode, int cnf)
   clear_and_set_bitfield_32(&v, b, 2, mode);
   clear_and_set_bitfield_32(&v, b + 2, 2, cnf);
   reg_write(addr, v);
+}
+
+static void gpioc_set_cr(int pin_nr, int mode, int cnf)
+{
+  gpiox_set_cr(GPIOC_CRL, pin_nr, mode, cnf);
+}
+
+static void gpioa_set_cr(int pin_nr, int mode, int cnf)
+{
+  gpiox_set_cr(GPIOA_CRL, pin_nr, mode, cnf);
 }
 
 static void gpioc_set_pin13(void)
@@ -203,6 +270,16 @@ typedef enum {
 #define TIMx_CKD  (3<<8)
 
 #define NVIC_INTERRUPT_NUMBER_TIM2 28
+#define NVIC_INTERRUPT_NUMBER_ADC1 18
+
+#if 0
+uint16_t tim_calc_psc(float timeout, uint32_t f_clk, uint16_t auto_reload_value)
+{
+  return ;
+}
+#endif
+
+#define CALC_PSC(timeout, f_clk, auto_reload_value) (uint16_t)((float)f_clk * timeout / auto_reload_value - 1.0f)
 static int tim2_setup(
   bool one_pulse,
   uint16_t prescaler,
@@ -253,6 +330,13 @@ static int tim2_setup(
   return 0;
 }
 
+void adc_isr(void)
+{
+  int d = reg_read(ADC1_DR);
+  reg_write(ADC1_SR, 0);
+  reg_write(ADC1_CR2, ADC_CR2_EON);
+}
+
 void tim2_isr(void)
 {
   static int toggle_flag = 0;
@@ -269,11 +353,59 @@ void tim2_isr(void)
   }
 }
 
-void main(void)
+void adc_setup(void)
+{
+  reg_write(RCC_APB2ENR, reg_read(RCC_APB2ENR) | RCC_APB2ENR_IOPAEN);
+  reg_write(RCC_APB2ENR, reg_read(RCC_APB2ENR) | RCC_APB2ENR_ADC1AEN);
+  gpioa_set_cr(1, 0, 0);
+
+  reg_write(ADC1_CR2, ADC_CR2_EON);
+  reg_write(ADC1_CR1, reg_read(ADC1_CR1) | ADC_CR1_EOCIE);
+  reg_write(ADC1_SR, 0);
+  reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_ADC1);
+  reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_ADC1);
+  for (volatile int i = 0; i < 400; ++i)
+  {
+  }
+  reg_write(ADC1_CR2, ADC_CR2_EON);
+}
+
+void uart2_setup(void)
+{
+  uint32_t v;
+  v = reg_read(RCC_APB2ENR);
+  v |= RCC_APB2ENR_IOPAEN;
+  reg_write(RCC_APB2ENR, v);
+
+  v = reg_read(RCC_APB1ENR);
+  v |= RCC_APB1ENR_USART2EN;
+  reg_write(RCC_APB1ENR, v);
+
+  gpioa_set_cr(2, 3, 2);
+  gpioa_set_cr(3, 0, 2);
+  reg_write(GPIOA_ODR, reg_read(GPIOA_ODR) | (1<<3));
+  v = reg_read(AFIO_MAPR);
+  reg_write(USART_CR1, 0);
+  reg_write(USART_CR1, 1<<13);
+  reg_write(USART_BRR, 5 | (4 << 4));
+  reg_write(USART_CR1, (1<<13) | 0xc);
+  while(1) {
+    reg_write(USART_DR, (uint32_t) 0 | 'c');
+  }
+}
+
+void timer_setup(void)
 {
   rcc_apb1enr_enable_tim2();
   rcc_apb2enr_enable_iopc();
   gpioc_set_pin13();
-  tim2_setup(true, 2, 0xffff, true, true);
+  tim2_setup(true, CALC_PSC(2.0f, F_CLK, 0xffff), 0xffff, true, true);
+}
+
+void main(void)
+{
+  timer_setup();
+//  uart2_setup();
+  adc_setup();
   while(1);
 }
