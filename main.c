@@ -1,34 +1,86 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include "reg_access.h"
 
 
 #define RCC_BASE 0x40021000
-#define RCC_CR       (RCC_BASE + 0x00)
-#define RCC_CFGR     (RCC_BASE + 0x04)
+#define RCC_CR      (volatile uint32_t *)(RCC_BASE + 0x00)
+#define RCC_CFGR    (volatile uint32_t *)(RCC_BASE + 0x04)
 #define RCC_APB2RSTR (RCC_BASE + 0x0c)
 #define RCC_APB1RSTR (RCC_BASE + 0x10)
 #define RCC_AHBENR   (RCC_BASE + 0x14)
 #define RCC_APB2ENR  (RCC_BASE + 0x18)
 #define RCC_APB1ENR  (RCC_BASE + 0x1c)
 
-#define reg_write(__reg, __value) \
-  *(volatile uint32_t *)(__reg) = (__value)
+#define RCC_CFGR_SW_POS 0
+#define RCC_CFGR_SW_WIDTH 2
 
-#define reg_read(__reg) \
-  (*(volatile uint32_t *)(__reg))
-
+#define RCC_CFGR_SW_MASK 0b11
 #define RCC_CFGR_SW_HSI  0b00
 #define RCC_CFGR_SW_HSE  0b01
 #define RCC_CFGR_SW_PLL  0b10
-#define RCC_CFGR_SW_MASK 0b11
+
+#define RCC_CFGR_SWS_POS 2
+#define RCC_CFGR_SWS_WIDTH 2
 
 #define RCC_CFGR_SWS_HSI  0b0000
 #define RCC_CFGR_SWS_HSE  0b0100
 #define RCC_CFGR_SWS_PLL  0b1000
 #define RCC_CFGR_SWS_MASK 0b1100
 
+#define RCC_CFGR_HPRE_POS 4
+#define RCC_CFGR_HPRE_WIDTH 3
+#define RCC_CFGR_PPRE1_POS 8
+#define RCC_CFGR_PPRE1_WIDTH 3
+#define RCC_CFGR_PPRE2_POS 11
+#define RCC_CFGR_PPRE2_WIDTH 3
+#define RCC_CFGR_ADCPRE_POS 14
+#define RCC_CFGR_ADCPRE_WIDTH 2
+#define RCC_CFGR_PLLSRC_POS 16
+
+#define RCC_CFGR_PLLSRC_WIDTH 1
+#define RCC_CFGR_PLLSRC_HSI_DIV_2 0
+#define RCC_CFGR_PLLSRC_HSE 1
+
+#define RCC_CFGR_PLLXTRPE_POS 17
+#define RCC_CFGR_PLLMUL_POS 18
+#define RCC_CFGR_PLLMUL_WIDTH 4
+#define RCC_CFGR_PLLMUL_X2 0
+#define RCC_CFGR_PLLMUL_X3 1
+#define RCC_CFGR_PLLMUL_X4 2
+#define RCC_CFGR_PLLMUL_X5 3
+#define RCC_CFGR_PLLMUL_X6 4
+#define RCC_CFGR_PLLMUL_X7 5
+#define RCC_CFGR_PLLMUL_X8 6
+#define RCC_CFGR_PLLMUL_X9 7
+#define RCC_CFGR_PLLMUL_X10 8
+#define RCC_CFGR_PLLMUL_X11 9
+#define RCC_CFGR_PLLMUL_X12 10
+#define RCC_CFGR_PLLMUL_X13 11
+#define RCC_CFGR_PLLMUL_X14 12
+#define RCC_CFGR_PLLMUL_X15 13
+#define RCC_CFGR_PLLMUL_X16 14
+#define RCC_CFGR_PLLMUL_X16A 16
+
+#define RCC_CFGR_USBPRE_POS 22
+#define RCC_CFGR_USBPRE_WIDTH 1
+#define RCC_CFGR_USBPRE_NO_DIV 0
+#define RCC_CFGR_MCO_POS 24
+#define RCC_CFGR_MCO_WIDTH 3
+
+
+#define RCC_CR_HSION_POS 0
+#define RCC_CR_HSION_WIDTH 1
+#define RCC_CR_HSIRDY_POS 1
+#define RCC_CR_HSIRDY_WIDTH 1
 #define RCC_CR_HSEON_POS 16
+#define RCC_CR_HSEON_WIDTH 1
 #define RCC_CR_HSERDY_POS 17
+#define RCC_CR_HSERDY_WIDTH 1
+#define RCC_CR_PLLON_POS 24
+#define RCC_CR_PLLON_WIDTH 1
+#define RCC_CR_PLLRDY_POS 25
+#define RCC_CR_PLLRDY_WIDTH 1
 
 #define RCC_APB1RSTR_TIM2RST 1
 #define RCC_APB1ENR_TIM2EN 1
@@ -141,14 +193,11 @@
 
 static void rcc_cr_enable_hse(void)
 {
-  uint32_t v = reg_read(RCC_CR);
-  if (v & (1 << RCC_CR_HSERDY_POS))
-  {
+  if (reg32_bit_is_set(RCC_CR, RCC_CR_HSERDY_POS))
     return;
-  }
-  v |= (1 << RCC_CR_HSEON_POS); 
-  reg_write(RCC_CR, v);
-  while(reg_read(RCC_CR) & (1 << RCC_CR_HSERDY_POS) == 0);
+
+  reg32_set_bit(RCC_CR, RCC_CR_HSEON_POS);
+  while(!reg32_bit_is_set(RCC_CR, RCC_CR_HSERDY_POS));
 }
 
 static void rcc_cfgr_select_hse(void)
@@ -201,16 +250,6 @@ static void rcc_apb2enr_enable_iopa(void)
   reg_write(RCC_APB2ENR, v);
 }
 
-
-static void clear_and_set_bitfield_32(uint32_t *v, int bitpos, int bitwidth, int value)
-{
-  uint32_t tmp_v = *v;
-  uint32_t bitmask = ((uint32_t)((1 << bitwidth) - 1)) << bitpos;
-  tmp_v &= ~bitmask;
-  tmp_v |= (value << bitpos) & bitmask;
-  *v = tmp_v;
-}
-
 static void gpioc_bit_set(int pin_nr)
 {
   reg_write(GPIOC_BSRR, 1<<pin_nr);
@@ -232,8 +271,8 @@ static void gpiox_set_cr(uint32_t basereg, int pin_nr, int mode, int cnf)
   b = (pin_nr % 8) * 4;
 
   v = reg_read(addr);
-  clear_and_set_bitfield_32(&v, b, 2, mode);
-  clear_and_set_bitfield_32(&v, b + 2, 2, cnf);
+  u32_modify_bits(&v, b, 2, mode);
+  u32_modify_bits(&v, b + 2, 2, cnf);
   reg_write(addr, v);
 }
 
@@ -402,11 +441,48 @@ void timer_setup(void)
   rcc_apb1enr_enable_tim2();
   rcc_apb2enr_enable_iopc();
   gpioc_set_pin13();
-  tim2_setup(true, CALC_PSC(2.0f, F_CLK, 0xffff), 0xffff, true, true);
+  tim2_setup(true, CALC_PSC(5.0f, F_CLK, 0xffff), 0xffff, true, true);
+}
+
+#define FLASH_BASE 0x40022000
+#define FLASH_ACR (volatile uint32_t *)(FLASH_BASE + 0x00)
+void usb_setup(void)
+{
+  /* Enable HSE */
+ reg32_set_bit(RCC_CR, RCC_CR_HSEON_POS);
+ while(!reg32_bit_is_set(RCC_CR, RCC_CR_HSERDY_POS));
+
+ /*
+  * Prefetch buffer needs to be on when complex PLL clock math takes place
+  * if prefetch buffer is not enabled, setting high speed clock (>24Mhz) will
+  * result in errors during reading instructions from flash memory.
+  */
+ reg_write(FLASH_ACR, 0x12);
+
+  /*
+   * Configure PLL to HSE (8Hz) * 9 = 72MHz 
+   * USB is configured to /1.5 = 48MHz
+   */
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLSRC_POS, RCC_CFGR_PLLSRC_WIDTH, RCC_CFGR_PLLSRC_HSE);
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLMUL_POS, RCC_CFGR_PLLMUL_WIDTH, RCC_CFGR_PLLMUL_X9);
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_USBPRE_POS, RCC_CFGR_USBPRE_WIDTH, RCC_CFGR_USBPRE_NO_DIV);
+
+  /* Turn on PLL, after that both PLL + HSE will be running.*/
+  reg32_set_bit(RCC_CR, RCC_CR_PLLON_POS);
+  while(!reg32_bit_is_set(RCC_CR, RCC_CR_PLLRDY_POS));
+
+  /* Select PLL as clock source */
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_SW_POS, RCC_CFGR_SW_WIDTH, RCC_CFGR_SW_PLL);
+  while(!reg32_bits_eq(RCC_CFGR, RCC_CFGR_SWS_POS, RCC_CFGR_SWS_WIDTH, RCC_CFGR_SW_PLL));
+
+  reg32_clear_bit(RCC_CR, RCC_CR_HSION_POS);
+  while(reg32_bit_is_set(RCC_CR, RCC_CR_HSIRDY_POS));
 }
 
 void main(void)
 {
+  usb_setup();
+
   timer_setup();
 //  uart2_setup();
   adc_setup();

@@ -1,0 +1,56 @@
+#pragma once
+#include <stdbool.h>
+
+#define reg_write(__reg, __value) \
+  *(volatile uint32_t *)(__reg) = (__value)
+
+#define reg_read(__reg) \
+  (*(volatile uint32_t *)(__reg))
+
+static inline void u32_modify_bits(uint32_t *v, int bitpos, int bitwidth, int value)
+{
+  uint32_t tmp_v = *v;
+  uint32_t bitmask = ((uint32_t)((1 << bitwidth) - 1)) << bitpos;
+  tmp_v &= ~bitmask;
+  tmp_v |= (value << bitpos) & bitmask;
+  *v = tmp_v;
+}
+
+static inline void reg32_modify_bits(volatile uint32_t *v, int bitpos, int bitwidth, int value)
+{
+  uint32_t tmp_v = reg_read(v);
+  uint32_t bitmask = ((uint32_t)((1 << bitwidth) - 1)) << bitpos;
+  tmp_v &= ~bitmask;
+  tmp_v |= (value << bitpos) & bitmask;
+  reg_write(v, tmp_v);
+}
+
+static inline void reg32_set_bit(volatile uint32_t *v, int bitpos)
+{
+  reg_write(v, reg_read(v) | (1<<bitpos));
+}
+
+static inline void reg32_clear_bit(volatile uint32_t *v, int bitpos)
+{
+  reg_write(v, reg_read(v) & ~(1<<bitpos));
+}
+
+static inline bool reg32_bit_is_set(volatile uint32_t *addr, int bitpos)
+{
+  uint32_t v = *(uint32_t *)addr;
+  return v & (1 << bitpos);
+}
+
+static inline bool reg32_bits_eq(volatile uint32_t *addr, int bitpos, int bitwidth, int value)
+{
+  uint32_t v;
+  uint32_t mask;
+
+  v = reg_read(addr);
+  v >>= bitpos;
+  mask = (1 << bitpos) -1;
+
+  return (v & mask) == value;
+}
+
+
