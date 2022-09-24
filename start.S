@@ -8,7 +8,7 @@ lsl r1, r1, #8
 add r0, r1
 mov sp, r0
 
-b main
+bl main
 ldr r0, =0x40021018
 ldr r1, [r0]
 mov r2, #1
@@ -81,7 +81,7 @@ usart_complete:
 
 
 
-b main
+bl main
 1:
 b 1b
 
