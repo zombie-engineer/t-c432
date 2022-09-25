@@ -6,16 +6,15 @@
 #define RCC_BASE 0x40021000
 #define RCC_CR      (volatile uint32_t *)(RCC_BASE + 0x00)
 #define RCC_CFGR    (volatile uint32_t *)(RCC_BASE + 0x04)
-#define RCC_APB2RSTR (RCC_BASE + 0x0c)
-#define RCC_APB1RSTR (RCC_BASE + 0x10)
-#define RCC_AHBENR   (RCC_BASE + 0x14)
-#define RCC_APB2ENR  (RCC_BASE + 0x18)
-#define RCC_APB1ENR  (RCC_BASE + 0x1c)
+#define RCC_APB2RSTR (volatile uint32_t *)(RCC_BASE + 0x0c)
+#define RCC_APB1RSTR (volatile uint32_t *)(RCC_BASE + 0x10)
+#define RCC_AHBENR   (volatile uint32_t *)(RCC_BASE + 0x14)
+#define RCC_APB2ENR  (volatile uint32_t *)(RCC_BASE + 0x18)
+#define RCC_APB1ENR  (volatile uint32_t *)(RCC_BASE + 0x1c)
 
 #define RCC_CFGR_SW_POS 0
 #define RCC_CFGR_SW_WIDTH 2
 
-#define RCC_CFGR_SW_MASK 0b11
 #define RCC_CFGR_SW_HSI  0b00
 #define RCC_CFGR_SW_HSE  0b01
 #define RCC_CFGR_SW_PLL  0b10
@@ -65,6 +64,7 @@
 #define RCC_CFGR_USBPRE_POS 22
 #define RCC_CFGR_USBPRE_WIDTH 1
 #define RCC_CFGR_USBPRE_NO_DIV 0
+#define RCC_CFGR_USBPRE_DIV 1
 #define RCC_CFGR_MCO_POS 24
 #define RCC_CFGR_MCO_WIDTH 3
 
@@ -82,173 +82,116 @@
 #define RCC_CR_PLLRDY_POS 25
 #define RCC_CR_PLLRDY_WIDTH 1
 
-#define RCC_APB1RSTR_TIM2RST 1
-#define RCC_APB1ENR_TIM2EN 1
-#define RCC_APB1RSTR_IOPCRST (1<<4)
-#define RCC_APB1ENR_USART2EN (1<<17)
-#define RCC_APB2ENR_IOPAEN (1<<2)
-#define RCC_APB2ENR_ADC1AEN (1<<9)
-#define RCC_APB2ENR_IOPBEN (1<<3)
-#define RCC_APB2ENR_IOPCEN (1<<4)
+#define RCC_APB1RSTR_TIM2RST 0
+#define RCC_APB1ENR_TIM2EN 0
+#define RCC_APB1RSTR_IOPCRST 4
+#define RCC_APB1ENR_USART2EN 17
+#define RCC_APB1ENR_USBEN 23
+
+#define RCC_APB2ENR_IOPAEN 2
+#define RCC_APB2ENR_IOPBEN 3
+#define RCC_APB2ENR_IOPCEN 4
+#define RCC_APB2ENR_ADC1AEN 9
 
 #define USART_BASE 0x40004400
-#define USART_SR  (USART_BASE + 0x00)
-#define USART_DR  (USART_BASE + 0x04)
-#define USART_BRR (USART_BASE + 0x08)
-#define USART_CR1 (USART_BASE + 0x0c)
+#define USART_SR  (volatile uint32_t *)(USART_BASE + 0x00)
+#define USART_DR  (volatile uint32_t *)(USART_BASE + 0x04)
+#define USART_BRR (volatile uint32_t *)(USART_BASE + 0x08)
+#define USART_CR1 (volatile uint32_t *)(USART_BASE + 0x0c)
 
 #define IOPC_BASE 0x40011000
-#define GPIOC_CRL  (IOPC_BASE + 0x00)
-#define GPIOC_CRH  (IOPC_BASE + 0x04)
-#define GPIOC_IDR  (IOPC_BASE + 0x08)
-#define GPIOC_ODR  (IOPC_BASE + 0x0c)
-#define GPIOC_BSRR (IOPC_BASE + 0x10)
-#define GPIOC_BRR  (IOPC_BASE + 0x14)
-#define GPIOC_LCKR (IOPC_BASE + 0x14)
+#define GPIOC_CRL  (volatile uint32_t *)(IOPC_BASE + 0x00)
+#define GPIOC_CRH  (volatile uint32_t *)(IOPC_BASE + 0x04)
+#define GPIOC_IDR  (volatile uint32_t *)(IOPC_BASE + 0x08)
+#define GPIOC_ODR  (volatile uint32_t *)(IOPC_BASE + 0x0c)
+#define GPIOC_BSRR (volatile uint32_t *)(IOPC_BASE + 0x10)
+#define GPIOC_BRR  (volatile uint32_t *)(IOPC_BASE + 0x14)
+#define GPIOC_LCKR (volatile uint32_t *)(IOPC_BASE + 0x14)
 
 #define IOPA_BASE 0x40010800
-#define GPIOA_CRL  (IOPA_BASE + 0x00)
-#define GPIOA_CRH  (IOPA_BASE + 0x04)
-#define GPIOA_IDR  (IOPA_BASE + 0x08)
-#define GPIOA_ODR  (IOPA_BASE + 0x0c)
-#define GPIOA_BSRR (IOPA_BASE + 0x10)
-#define GPIOA_BRR  (IOPA_BASE + 0x14)
-#define GPIOA_LCKR (IOPA_BASE + 0x14)
+#define GPIOA_CRL  (volatile uint32_t *)(IOPA_BASE + 0x00)
+#define GPIOA_CRH  (volatile uint32_t *)(IOPA_BASE + 0x04)
+#define GPIOA_IDR  (volatile uint32_t *)(IOPA_BASE + 0x08)
+#define GPIOA_ODR  (volatile uint32_t *)(IOPA_BASE + 0x0c)
+#define GPIOA_BSRR (volatile uint32_t *)(IOPA_BASE + 0x10)
+#define GPIOA_BRR  (volatile uint32_t *)(IOPA_BASE + 0x14)
+#define GPIOA_LCKR (volatile uint32_t *)(IOPA_BASE + 0x14)
 
 #define AFIO_BASE 0x40010000
-#define AFIO_EVCR (AFIO_BASE + 0x00)
-#define AFIO_MAPR (AFIO_BASE + 0x04)
+#define AFIO_EVCR (volatile uint32_t *)(AFIO_BASE + 0x00)
+#define AFIO_MAPR (volatile uint32_t *)(AFIO_BASE + 0x04)
 
 #define TIM2_BASE 0x40000000
 
-#define TIM2_CR1   (TIM2_BASE + 0x00)
-#define TIM2_CR2   (TIM2_BASE + 0x04)
-#define TIM2_SMCR  (TIM2_BASE + 0x08)
-#define TIM2_DIER  (TIM2_BASE + 0x0c)
-#define TIM2_SR    (TIM2_BASE + 0x10)
-#define TIM2_EGR   (TIM2_BASE + 0x14)
-#define TIM2_CCMR1 (TIM2_BASE + 0x18)
-#define TIM2_CCMR2 (TIM2_BASE + 0x1c)
-#define TIM2_CCER  (TIM2_BASE + 0x20)
-#define TIM2_TCNT  (TIM2_BASE + 0x24)
-#define TIM2_PSC   (TIM2_BASE + 0x28)
-#define TIM2_ARR   (TIM2_BASE + 0x2c)
-#define TIM2_CCR1  (TIM2_BASE + 0x34)
-#define TIM2_CCR2  (TIM2_BASE + 0x38)
-#define TIM2_CCR3  (TIM2_BASE + 0x3c)
-#define TIM2_CCR4  (TIM2_BASE + 0x40)
-#define TIM2_DCR   (TIM2_BASE + 0x48)
-#define TIM2_DMAR  (TIM2_BASE + 0x4c)
+#define TIM2_CR1   (volatile uint32_t *)(TIM2_BASE + 0x00)
+#define TIM2_CR2   (volatile uint32_t *)(TIM2_BASE + 0x04)
+#define TIM2_SMCR  (volatile uint32_t *)(TIM2_BASE + 0x08)
+#define TIM2_DIER  (volatile uint32_t *)(TIM2_BASE + 0x0c)
+#define TIM2_SR    (volatile uint32_t *)(TIM2_BASE + 0x10)
+#define TIM2_EGR   (volatile uint32_t *)(TIM2_BASE + 0x14)
+#define TIM2_CCMR1 (volatile uint32_t *)(TIM2_BASE + 0x18)
+#define TIM2_CCMR2 (volatile uint32_t *)(TIM2_BASE + 0x1c)
+#define TIM2_CCER  (volatile uint32_t *)(TIM2_BASE + 0x20)
+#define TIM2_TCNT  (volatile uint32_t *)(TIM2_BASE + 0x24)
+#define TIM2_PSC   (volatile uint32_t *)(TIM2_BASE + 0x28)
+#define TIM2_ARR   (volatile uint32_t *)(TIM2_BASE + 0x2c)
+#define TIM2_CCR1  (volatile uint32_t *)(TIM2_BASE + 0x34)
+#define TIM2_CCR2  (volatile uint32_t *)(TIM2_BASE + 0x38)
+#define TIM2_CCR3  (volatile uint32_t *)(TIM2_BASE + 0x3c)
+#define TIM2_CCR4  (volatile uint32_t *)(TIM2_BASE + 0x40)
+#define TIM2_DCR   (volatile uint32_t *)(TIM2_BASE + 0x48)
+#define TIM2_DMAR  (volatile uint32_t *)(TIM2_BASE + 0x4c)
 
 #define NVIC_BASE 0xe000e100
-#define NVIC_ISER0 (NVIC_BASE + 0x00)
-#define NVIC_ISER1 (NVIC_BASE + 0x04)
-#define NVIC_ISER2 (NVIC_BASE + 0x08)
+#define NVIC_ISER0 (volatile uint32_t *)(NVIC_BASE + 0x00)
+#define NVIC_ISER1 (volatile uint32_t *)(NVIC_BASE + 0x04)
+#define NVIC_ISER2 (volatile uint32_t *)(NVIC_BASE + 0x08)
 
-#define NVIC_ICER0 (NVIC_BASE + 0x80)
-#define NVIC_ICER1 (NVIC_BASE + 0x84)
-#define NVIC_ICER2 (NVIC_BASE + 0x88)
+#define NVIC_ICER0 (volatile uint32_t *)(NVIC_BASE + 0x80)
+#define NVIC_ICER1 (volatile uint32_t *)(NVIC_BASE + 0x84)
+#define NVIC_ICER2 (volatile uint32_t *)(NVIC_BASE + 0x88)
 
-#define NVIC_ISPR0 (NVIC_BASE + 0x100)
-#define NVIC_ISPR1 (NVIC_BASE + 0x104)
-#define NVIC_ISPR2 (NVIC_BASE + 0x108)
+#define NVIC_ISPR0 (volatile uint32_t *)(NVIC_BASE + 0x100)
+#define NVIC_ISPR1 (volatile uint32_t *)(NVIC_BASE + 0x104)
+#define NVIC_ISPR2 (volatile uint32_t *)(NVIC_BASE + 0x108)
 
-#define NVIC_ICPR0 (NVIC_BASE + 0x180)
-#define NVIC_ICPR1 (NVIC_BASE + 0x184)
-#define NVIC_ICPR2 (NVIC_BASE + 0x188)
+#define NVIC_ICPR0 (volatile uint32_t *)(NVIC_BASE + 0x180)
+#define NVIC_ICPR1 (volatile uint32_t *)(NVIC_BASE + 0x184)
+#define NVIC_ICPR2 (volatile uint32_t *)(NVIC_BASE + 0x188)
 
-#define NVIC_IABR0 (NVIC_BASE + 0x200)
-#define NVIC_IABR1 (NVIC_BASE + 0x204)
-#define NVIC_IABR2 (NVIC_BASE + 0x208)
+#define NVIC_IABR0 (volatile uint32_t *)(NVIC_BASE + 0x200)
+#define NVIC_IABR1 (volatile uint32_t *)(NVIC_BASE + 0x204)
+#define NVIC_IABR2 (volatile uint32_t *)(NVIC_BASE + 0x208)
 
-#define NVIC_IPR0 (NVIC_BASE + 0x300)
-#define NVIC_STIR (NVIC_BASE + 0xe00)
+#define NVIC_IPR0 (volatile uint32_t *)(NVIC_BASE + 0x300)
+#define NVIC_STIR (volatile uint32_t *)(NVIC_BASE + 0xe00)
 
 
 #define ADC1_BASE 0x40012400
-#define ADC1_SR    (ADC1_BASE + 0x00)
-#define ADC1_CR1   (ADC1_BASE + 0x04)
-#define ADC1_CR2   (ADC1_BASE + 0x08)
-#define ADC1_SMPR1 (ADC1_BASE + 0x0c)
-#define ADC1_SMPR2 (ADC1_BASE + 0x10)
-#define ADC1_JOFR0 (ADC1_BASE + 0x14)
-#define ADC1_JOFR1 (ADC1_BASE + 0x18)
-#define ADC1_JOFR2 (ADC1_BASE + 0x1c)
-#define ADC1_JOFR3 (ADC1_BASE + 0x20)
-#define ADC1_HTR   (ADC1_BASE + 0x24)
-#define ADC1_LTR   (ADC1_BASE + 0x28)
-#define ADC1_JSQR  (ADC1_BASE + 0x2c)
-#define ADC1_JDR0  (ADC1_BASE + 0x3c)
-#define ADC1_JDR1  (ADC1_BASE + 0x40)
-#define ADC1_JDR2  (ADC1_BASE + 0x44)
-#define ADC1_JDR3  (ADC1_BASE + 0x48)
-#define ADC1_DR    (ADC1_BASE + 0x4c)
+#define ADC1_SR    (volatile uint32_t *)(ADC1_BASE + 0x00)
+#define ADC1_CR1   (volatile uint32_t *)(ADC1_BASE + 0x04)
+#define ADC1_CR2   (volatile uint32_t *)(ADC1_BASE + 0x08)
+#define ADC1_SMPR1 (volatile uint32_t *)(ADC1_BASE + 0x0c)
+#define ADC1_SMPR2 (volatile uint32_t *)(ADC1_BASE + 0x10)
+#define ADC1_JOFR0 (volatile uint32_t *)(ADC1_BASE + 0x14)
+#define ADC1_JOFR1 (volatile uint32_t *)(ADC1_BASE + 0x18)
+#define ADC1_JOFR2 (volatile uint32_t *)(ADC1_BASE + 0x1c)
+#define ADC1_JOFR3 (volatile uint32_t *)(ADC1_BASE + 0x20)
+#define ADC1_HTR   (volatile uint32_t *)(ADC1_BASE + 0x24)
+#define ADC1_LTR   (volatile uint32_t *)(ADC1_BASE + 0x28)
+#define ADC1_JSQR  (volatile uint32_t *)(ADC1_BASE + 0x2c)
+#define ADC1_JDR0  (volatile uint32_t *)(ADC1_BASE + 0x3c)
+#define ADC1_JDR1  (volatile uint32_t *)(ADC1_BASE + 0x40)
+#define ADC1_JDR2  (volatile uint32_t *)(ADC1_BASE + 0x44)
+#define ADC1_JDR3  (volatile uint32_t *)(ADC1_BASE + 0x48)
+#define ADC1_DR    (volatile uint32_t *)(ADC1_BASE + 0x4c)
 
-#define ADC_CR2_EON (1<<0)
-#define ADC_CR1_EOCIE (1<<5)
+#define ADC_CR2_EON 0
+#define ADC_CR1_EOCIE 5
 
 #define THUMB __attribute__((target("thumb")))
 
 #define F_CLK 8000000
-
-static void rcc_cr_enable_hse(void)
-{
-  if (reg32_bit_is_set(RCC_CR, RCC_CR_HSERDY_POS))
-    return;
-
-  reg32_set_bit(RCC_CR, RCC_CR_HSEON_POS);
-  while(!reg32_bit_is_set(RCC_CR, RCC_CR_HSERDY_POS));
-}
-
-static void rcc_cfgr_select_hse(void)
-{
-  uint32_t v;
-  v = reg_read(RCC_CFGR);
-  v &= ~RCC_CFGR_SW_MASK;
-  v |= RCC_CFGR_SW_HSE;
-  reg_write(RCC_CFGR, v);
-  while ((reg_read(RCC_CFGR) & RCC_CFGR_SWS_MASK) != RCC_CFGR_SWS_HSE);
-}
-
-static void rcc_apb1rsr_reset_tim2(void)
-{
-  uint32_t v;
-  v = reg_read(RCC_APB1RSTR);
-  v |= RCC_APB1RSTR_TIM2RST;
-  reg_write(RCC_APB1RSTR, v);
-}
-
-static void rcc_apb1enr_enable_tim2(void)
-{
-  uint32_t v;
-  v = reg_read(RCC_APB1ENR);
-  v |= RCC_APB1ENR_TIM2EN;
-  reg_write(RCC_APB1ENR, v);
-}
-
-static void rcc_apb2rsr_reset_iopc(void)
-{
-  uint32_t v;
-  v = reg_read(RCC_APB2RSTR);
-  v |= RCC_APB1RSTR_IOPCRST;
-  reg_write(RCC_APB2RSTR, v);
-}
-
-static void rcc_apb2enr_enable_iopc(void)
-{
-  uint32_t v;
-  v = reg_read(RCC_APB2ENR);
-  v |= RCC_APB2ENR_IOPCEN;
-  reg_write(RCC_APB2ENR, v);
-}
-
-static void rcc_apb2enr_enable_iopa(void)
-{
-  uint32_t v;
-  v = reg_read(RCC_APB2ENR);
-  v |= RCC_APB2ENR_IOPAEN;
-  reg_write(RCC_APB2ENR, v);
-}
 
 static void gpioc_bit_set(int pin_nr)
 {
@@ -375,7 +318,7 @@ void adc_isr(void)
 {
   last_adc = reg_read(ADC1_DR);
   reg_write(ADC1_SR, 0);
-  reg_write(ADC1_CR2, ADC_CR2_EON);
+  reg_write(ADC1_CR2, 1 << ADC_CR2_EON);
 }
 
 void tim2_isr(void)
@@ -384,7 +327,7 @@ void tim2_isr(void)
   reg_write(TIM2_ARR, last_adc + 600);
   reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_TIM2);
   reg_write(TIM2_SR, 0);
-  reg_write(TIM2_CR1, reg_read(TIM2_CR1) | 1);
+  reg32_set_bit(TIM2_CR1, 0);
 
   if (toggle_flag) {
     gpioc_bit_set(13);
@@ -397,30 +340,30 @@ void tim2_isr(void)
 
 void adc_setup(void)
 {
-  reg_write(RCC_APB2ENR, reg_read(RCC_APB2ENR) | RCC_APB2ENR_IOPAEN);
-  reg_write(RCC_APB2ENR, reg_read(RCC_APB2ENR) | RCC_APB2ENR_ADC1AEN);
+  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPAEN);
+  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_ADC1AEN);
   gpioa_set_cr(1, 0, 0);
 
-  reg_write(ADC1_CR2, ADC_CR2_EON);
-  reg_write(ADC1_CR1, reg_read(ADC1_CR1) | ADC_CR1_EOCIE);
+  reg_write(ADC1_CR2, 1 << ADC_CR2_EON);
+  reg32_set_bit(ADC1_CR1, ADC_CR1_EOCIE);
   reg_write(ADC1_SR, 0);
   reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_ADC1);
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_ADC1);
   for (volatile int i = 0; i < 400; ++i)
   {
   }
-  reg_write(ADC1_CR2, ADC_CR2_EON);
+  reg_write(ADC1_CR2, 1 << ADC_CR2_EON);
 }
 
 void uart2_setup(void)
 {
   uint32_t v;
   v = reg_read(RCC_APB2ENR);
-  v |= RCC_APB2ENR_IOPAEN;
+  v |= 1 << RCC_APB2ENR_IOPAEN;
   reg_write(RCC_APB2ENR, v);
 
   v = reg_read(RCC_APB1ENR);
-  v |= RCC_APB1ENR_USART2EN;
+  v |= 1 << RCC_APB1ENR_USART2EN;
   reg_write(RCC_APB1ENR, v);
 
   gpioa_set_cr(2, 3, 2);
@@ -438,8 +381,8 @@ void uart2_setup(void)
 
 void timer_setup(void)
 {
-  rcc_apb1enr_enable_tim2();
-  rcc_apb2enr_enable_iopc();
+  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_TIM2EN);
+  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPCEN);
   gpioc_set_pin13();
   tim2_setup(true, CALC_PSC(5.0f, F_CLK, 0xffff), 0xffff, true, true);
 }
