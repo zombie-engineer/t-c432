@@ -15,7 +15,7 @@ isr_vector.o: isr_vector.c
 	arm-none-eabi-gcc -c isr_vector.c -o isr_vector.o
 
 d:
-	arm-none-eabi-gdb -x gdb.gdb firmware.elf
+	arm-none-eabi-gdb -q -x gdb.gdb firmware.elf
 
 hd: firmware.bin
 	hexdump -v -e '1/4 "%08_ax %08X \n"' $? | less
