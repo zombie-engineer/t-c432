@@ -7,6 +7,9 @@ extern void usage_fault_isr(void);
 extern void tim2_isr(void);
 extern void generic_isr(void);
 extern void adc_isr(void);
+extern void usb_hp_isr(void);
+extern void usb_lp_isr(void);
+extern void usb_wakeup_isr(void);
 
 __attribute__((section(".isr_vector")))
 
@@ -34,7 +37,10 @@ int isr_vector[] = {
   ISR(14, generic_isr, 1),
   ISR(15, generic_isr, 1),
   ISR(16 + 18, adc_isr, 1),
+  ISR(16 + 19, usb_hp_isr, 1),
+  ISR(16 + 20, usb_lp_isr, 1),
   ISR(16 + 28, tim2_isr, 1),
+  ISR(16 + 42, usb_wakeup_isr, 1),
 };
 
 void hardfault_isr(void) { }

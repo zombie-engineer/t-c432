@@ -143,26 +143,48 @@
 #define TIM2_DMAR  (volatile uint32_t *)(TIM2_BASE + 0x4c)
 
 #define NVIC_BASE 0xe000e100
+/*
+ * Interrupt set-enable registers.
+ * On read shows which interrupts are enabled.
+ * On writing 1 enables interrupt.
+ */
 #define NVIC_ISER0 (volatile uint32_t *)(NVIC_BASE + 0x00)
 #define NVIC_ISER1 (volatile uint32_t *)(NVIC_BASE + 0x04)
 #define NVIC_ISER2 (volatile uint32_t *)(NVIC_BASE + 0x08)
 
+/*
+ * Interrupt clear-enable registers.
+ * On read shows which interrupts are enabled.
+ * On writing 1 disables interrupt.
+ */
 #define NVIC_ICER0 (volatile uint32_t *)(NVIC_BASE + 0x80)
 #define NVIC_ICER1 (volatile uint32_t *)(NVIC_BASE + 0x84)
 #define NVIC_ICER2 (volatile uint32_t *)(NVIC_BASE + 0x88)
 
+/*
+ * Interrupt set-pending registers.
+ * On read shows which interrupts are pending.
+ * On writing 1 set pending status.
+ */
 #define NVIC_ISPR0 (volatile uint32_t *)(NVIC_BASE + 0x100)
 #define NVIC_ISPR1 (volatile uint32_t *)(NVIC_BASE + 0x104)
 #define NVIC_ISPR2 (volatile uint32_t *)(NVIC_BASE + 0x108)
 
+/*
+ * Interrupt clear-pending registers.
+ * On read shows which interrupts are pending.
+ * On writing 1 clears pending status.
+ */
 #define NVIC_ICPR0 (volatile uint32_t *)(NVIC_BASE + 0x180)
 #define NVIC_ICPR1 (volatile uint32_t *)(NVIC_BASE + 0x184)
 #define NVIC_ICPR2 (volatile uint32_t *)(NVIC_BASE + 0x188)
 
+/* Interrupt active bits registers */
 #define NVIC_IABR0 (volatile uint32_t *)(NVIC_BASE + 0x200)
 #define NVIC_IABR1 (volatile uint32_t *)(NVIC_BASE + 0x204)
 #define NVIC_IABR2 (volatile uint32_t *)(NVIC_BASE + 0x208)
 
+/* Interrupt priority registers */
 #define NVIC_IPR0 (volatile uint32_t *)(NVIC_BASE + 0x300)
 #define NVIC_STIR (volatile uint32_t *)(NVIC_BASE + 0xe00)
 
@@ -188,6 +210,77 @@
 
 #define ADC_CR2_EON 0
 #define ADC_CR1_EOCIE 5
+
+#define USB_BASE 0x40005c00
+#define USB_EP0R (volatile uint32_t *)(USB_BASE + 0x0000)
+#define USB_EPXR_EA 0
+#define USB_EPXR_EA_WIDTH 4
+#define USB_EPXR_STAT_TX 4
+#define USB_EPXR_STAT_TX_WIDTH 2
+#define USB_EPXR_DTOG_TX 6
+#define USB_EPXR_DTOG_TX_WIDTH 1
+#define USB_EPXR_CTR_TX 7
+#define USB_EPXR_CTR_TX_WIDTH 1
+#define USB_EPXR_EP_KIND 8
+#define USB_EPXR_EP_KIND_WIDTH 1
+#define USB_EPXR_EP_TYPE 9
+#define USB_EPXR_EP_TYPE_WIDTH 2
+#define USB_EPXR_SETUP 11
+#define USB_EPXR_SETUP_WIDTH 1
+#define USB_EPXR_STAT_RX 12
+#define USB_EPXR_STAT_RX_WIDTH 1
+#define USB_EPXR_DTOG_RX 14
+#define USB_EPXR_DTOG_RX_WIDTH 1
+#define USB_EPXR_CTR_RX 15
+#define USB_EPXR_CTR_RX_WIDTH 1
+
+#define USB_EP1R (volatile uint32_t *)(USB_BASE + 0x0004)
+#define USB_EP2R (volatile uint32_t *)(USB_BASE + 0x0008)
+#define USB_EP3R (volatile uint32_t *)(USB_BASE + 0x000c)
+#define USB_EP4R (volatile uint32_t *)(USB_BASE + 0x0010)
+#define USB_EP5R (volatile uint32_t *)(USB_BASE + 0x0014)
+#define USB_EP6R (volatile uint32_t *)(USB_BASE + 0x0018)
+#define USB_EP7R (volatile uint32_t *)(USB_BASE + 0x001c)
+
+#define USB_CNTR (volatile uint32_t *)(USB_BASE + 0x0040)
+#define USB_ISTR (volatile uint32_t *)(USB_BASE + 0x0044)
+#define USB_FNR (volatile uint32_t *)(USB_BASE + 0x0048)
+#define USB_FNR_FN 0
+#define USB_FNR_FN_WIDTH 11
+#define USB_FNR_LSOF 11
+#define USB_FNR_LSOF_WIDTH 2
+#define USB_FNR_LCK 13
+#define USB_FNR_LSOF_WIDTH 1
+#define USB_FNR_RXDM 14
+#define USB_FNR_RXDM_WIDTH 1
+#define USB_FNR_RXDP 15
+#define USB_FNR_RXDP_WIDTH 1
+#define USB_DADDR (volatile uint32_t *)(USB_BASE + 0x004c)
+#define USB_BTABLE (volatile uint32_t *)(USB_BASE + 0x0050)
+
+#define USB_CNTR_FRES 0
+#define USB_CNTR_PDWN 1
+#define USB_CNTR_LPMODE 2
+#define USB_CNTR_FSUSP 3
+#define USB_CNTR_RESUME 4
+#define USB_CNTR_ESOFM 8
+#define USB_CNTR_SOFM 9
+#define USB_CNTR_RESETM 10
+#define USB_CNTR_SUSPM 11
+#define USB_CNTR_WKUPM 12
+#define USB_CNTR_ERRM 13
+#define USB_CNTR_PMAOVRNM 14
+#define USB_CNTR_CTRM 15
+
+#define USB_ISTR_DIR 4
+#define USB_ISTR_ESOF 8
+#define USB_ISTR_SOF 9
+#define USB_ISTR_RESET 10
+#define USB_ISTR_SUSP 11
+#define USB_ISTR_WKUP 12
+#define USB_ISTR_ERR 13
+#define USB_ISTR_PMAOVRN 14
+#define USB_ISTR_CTR 15
 
 #define THUMB __attribute__((target("thumb")))
 
@@ -251,8 +344,11 @@ typedef enum {
 #define TIMx_ARPE (1<<7)
 #define TIMx_CKD  (3<<8)
 
-#define NVIC_INTERRUPT_NUMBER_TIM2 28
 #define NVIC_INTERRUPT_NUMBER_ADC1 18
+#define NVIC_INTERRUPT_NUMBER_USB_HP_CAN_TX 19
+#define NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0 20
+#define NVIC_INTERRUPT_NUMBER_TIM2 28
+#define NVIC_INTERRUPT_NUMBER_USB_WAKEUP 42
 
 #if 0
 uint16_t tim_calc_psc(float timeout, uint32_t f_clk, uint16_t auto_reload_value)
@@ -358,17 +454,12 @@ void adc_setup(void)
 void uart2_setup(void)
 {
   uint32_t v;
-  v = reg_read(RCC_APB2ENR);
-  v |= 1 << RCC_APB2ENR_IOPAEN;
-  reg_write(RCC_APB2ENR, v);
-
-  v = reg_read(RCC_APB1ENR);
-  v |= 1 << RCC_APB1ENR_USART2EN;
-  reg_write(RCC_APB1ENR, v);
+  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPAEN);
+  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_USART2EN);
 
   gpioa_set_cr(2, 3, 2);
   gpioa_set_cr(3, 0, 2);
-  reg_write(GPIOA_ODR, reg_read(GPIOA_ODR) | (1<<3));
+  reg32_set_bit(GPIOA_ODR, 3);
   v = reg_read(AFIO_MAPR);
   reg_write(USART_CR1, 0);
   reg_write(USART_CR1, 1<<13);
@@ -389,7 +480,8 @@ void timer_setup(void)
 
 #define FLASH_BASE 0x40022000
 #define FLASH_ACR (volatile uint32_t *)(FLASH_BASE + 0x00)
-void usb_setup(void)
+
+void rcc_set_72mhz_usb(void)
 {
   /* Enable HSE */
  reg32_set_bit(RCC_CR, RCC_CR_HSEON_POS);
@@ -420,6 +512,30 @@ void usb_setup(void)
 
   reg32_clear_bit(RCC_CR, RCC_CR_HSION_POS);
   while(reg32_bit_is_set(RCC_CR, RCC_CR_HSIRDY_POS));
+}
+
+void usb_hp_isr(void)
+{
+}
+
+void usb_lp_isr(void)
+{
+}
+
+void usb_wakeup_isr(void)
+{
+}
+
+void usb_setup(void)
+{
+  rcc_set_72mhz_usb();
+  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_USBEN);
+  reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_HP_CAN_TX);
+  reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0);
+  reg_write(NVIC_ISER1, 1 << NVIC_INTERRUPT_NUMBER_USB_WAKEUP - 32);
+  uint32_t v = reg_read(USB_CNTR);
+  reg32_clear_bit(USB_CNTR, USB_CNTR_FRES);
+  if (v);
 }
 
 void main(void)
