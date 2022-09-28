@@ -87,3 +87,14 @@ bl main
 b 1b
 
 
+.globl idle
+idle:
+1:
+ldr r0, =wait_complete
+ldr r0, [r0]
+cmp r0, #1
+beq 2f
+wfi
+b 1b
+2:
+bx lr

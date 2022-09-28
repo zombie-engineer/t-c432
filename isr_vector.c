@@ -1,5 +1,6 @@
 extern void reset_isr(void);
 extern void nmi_isr(void);
+extern void systick_isr(void);
 extern void hardfault_isr(void);
 extern void mem_manage_isr(void);
 extern void bus_fault_isr(void);
@@ -35,7 +36,7 @@ int isr_vector[] = {
   ISR(12, generic_isr, 1),
   ISR(13, generic_isr, 1),
   ISR(14, generic_isr, 1),
-  ISR(15, generic_isr, 1),
+  ISR(15, systick_isr, 1),
   ISR(16 + 18, adc_isr, 1),
   ISR(16 + 19, usb_hp_isr, 1),
   ISR(16 + 20, usb_lp_isr, 1),

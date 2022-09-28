@@ -2,6 +2,20 @@
 #include <stdbool.h>
 #include "reg_access.h"
 
+#define SYSTICK_BASE 0xe000e010
+#define STK_CTRL (volatile uint32_t *)(SYSTICK_BASE + 0x00)
+#define STK_CTRL_ENABLE 0
+#define STK_CTRL_ENABLE_WIDTH 1
+#define STK_CTRL_TICKINT 1
+#define STK_CTRL_TICKINT_WIDTH 1
+#define STK_CTRL_CLKSOURCE 2
+#define STK_CTRL_CLKSOURCE_WIDTH 1
+#define STK_CTRL_COUNTFLAG 16
+#define STK_CTRL_COUNTFLAG_WIDTH 1
+
+#define STK_LOAD (volatile uint32_t *)(SYSTICK_BASE + 0x04)
+#define STK_VAL  (volatile uint32_t *)(SYSTICK_BASE + 0x08)
+#define STK_CALIB (volatile uint32_t *)(SYSTICK_BASE + 0x0c)
 
 #define RCC_BASE 0x40021000
 #define RCC_CR      (volatile uint32_t *)(RCC_BASE + 0x00)
@@ -526,16 +540,37 @@ void usb_wakeup_isr(void)
 {
 }
 
+uint32_t wait_complete;
+
+void systick_isr(void)
+{
+  wait_complete = 1;
+}
+
+extern void idle(void);
+
+static void systick_wait_ms(uint32_t ms)
+{
+  reg_write(STK_LOAD, (uint32_t)((float)0x44aa20 / 1000.0f) * ms);
+
+  wait_complete = 0;
+  reg_write(STK_CTRL,
+    (1<<STK_CTRL_ENABLE) |
+    (1<<STK_CTRL_TICKINT));
+
+  idle();
+}
+
 void usb_setup(void)
 {
   rcc_set_72mhz_usb();
+  systick_wait_ms(20);
   reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_USBEN);
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_HP_CAN_TX);
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0);
   reg_write(NVIC_ISER1, 1 << NVIC_INTERRUPT_NUMBER_USB_WAKEUP - 32);
   uint32_t v = reg_read(USB_CNTR);
   reg32_clear_bit(USB_CNTR, USB_CNTR_FRES);
-  if (v);
 }
 
 extern uint32_t __bss_start;
