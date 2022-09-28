@@ -16,6 +16,31 @@ static inline void u32_modify_bits(uint32_t *v, int bitpos, int bitwidth, int va
   *v = tmp_v;
 }
 
+static inline uint32_t u32_bitmask(int bitpos)
+{
+  return (1 << bitpos) - 1;
+}
+
+static inline bool u32_bit_is_set(uint32_t v, int bitpos)
+{
+  return v & (1 << bitpos);
+}
+
+static uint32_t u32_extract_bits(uint32_t v, int bitpos, int bitwidth)
+{
+  return (v >> bitpos) & u32_bitmask(bitwidth);
+}
+
+static inline void u32_set_bit(volatile uint32_t *v, int bitpos)
+{
+  *v |= (1<<bitpos);
+}
+
+static inline void u32_clear_bit(volatile uint32_t *v, int bitpos)
+{
+  *v &= ~(1<<bitpos);
+}
+
 static inline void reg32_modify_bits(volatile uint32_t *v, int bitpos, int bitwidth, int value)
 {
   uint32_t tmp_v = reg_read(v);
