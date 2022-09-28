@@ -5,5 +5,12 @@ MEMORY {
 SECTIONS {
   .isr_vector : { isr_vector.o(.isr_vector) } > FLASH
   .text : { start.o(.text) main.o(.text) } > FLASH
-  .bss : { main.o(.bss) } > RAM
+  .bss :
+  {
+    . = ALIGN(4);
+    __bss_start = .;
+    main.o(.bss)
+    . = ALIGN(4);
+    __bss_end = .;
+  } > RAM
 }

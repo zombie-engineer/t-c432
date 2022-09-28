@@ -538,9 +538,20 @@ void usb_setup(void)
   if (v);
 }
 
+extern uint32_t __bss_start;
+extern uint32_t __bss_end;
+
+void zero_bss(void)
+{
+  for (uint32_t *p = &__bss_start; p < &__bss_end; p++) {
+    *p = 0;
+  }
+}
+
 void main(void)
 {
   usb_setup();
+  zero_bss();
 
   timer_setup();
 //  uart2_setup();
