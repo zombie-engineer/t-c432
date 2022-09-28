@@ -16,3 +16,8 @@ define nvic
   printf "nvic pending: "
   x/3wx 0xe000e200
 end
+
+define usregs
+  printf "usb registers: "
+  x/3wx 0x40005c40
+end
