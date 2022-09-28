@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "reg_access.h"
+#include "usb.h"
 
 #define SYSTICK_BASE 0xe000e010
 #define STK_CTRL (volatile uint32_t *)(SYSTICK_BASE + 0x00)
@@ -42,15 +43,27 @@
 #define RCC_CFGR_SWS_MASK 0b1100
 
 #define RCC_CFGR_HPRE_POS 4
-#define RCC_CFGR_HPRE_WIDTH 3
+#define RCC_CFGR_HPRE_WIDTH 4
+#define RCC_CFGR_HPRE_BY_1  0b0000
+#define RCC_CFGR_HPRE_BY_2  0b1000
+#define RCC_CFGR_HPRE_BY_4  0b1001
+#define RCC_CFGR_HPRE_BY_8  0b1010
+#define RCC_CFGR_HPRE_BY_16 0b1011
+#define RCC_CFGR_HPRE_BY_64 0b1100
+#define RCC_CFGR_HPRE_BY_128 0b1101
+#define RCC_CFGR_HPRE_BY_256 0b1110
+#define RCC_CFGR_HPRE_BY_512 0b1111
+
 #define RCC_CFGR_PPRE1_POS 8
 #define RCC_CFGR_PPRE1_WIDTH 3
+
 #define RCC_CFGR_PPRE2_POS 11
 #define RCC_CFGR_PPRE2_WIDTH 3
+
 #define RCC_CFGR_ADCPRE_POS 14
 #define RCC_CFGR_ADCPRE_WIDTH 2
-#define RCC_CFGR_PLLSRC_POS 16
 
+#define RCC_CFGR_PLLSRC_POS 16
 #define RCC_CFGR_PLLSRC_WIDTH 1
 #define RCC_CFGR_PLLSRC_HSI_DIV_2 0
 #define RCC_CFGR_PLLSRC_HSE 1
@@ -77,8 +90,9 @@
 
 #define RCC_CFGR_USBPRE_POS 22
 #define RCC_CFGR_USBPRE_WIDTH 1
-#define RCC_CFGR_USBPRE_NO_DIV 0
-#define RCC_CFGR_USBPRE_DIV 1
+#define RCC_CFGR_USBPRE_DIV_1_5 0
+#define RCC_CFGR_USBPRE_NO_DIV 1
+
 #define RCC_CFGR_MCO_POS 24
 #define RCC_CFGR_MCO_WIDTH 3
 
@@ -102,6 +116,7 @@
 #define RCC_APB1ENR_USART2EN 17
 #define RCC_APB1ENR_USBEN 23
 
+#define RCC_APB2ENR_AFIOEN 0
 #define RCC_APB2ENR_IOPAEN 2
 #define RCC_APB2ENR_IOPBEN 3
 #define RCC_APB2ENR_IOPCEN 4
@@ -231,6 +246,11 @@
 #define USB_EPXR_EA_WIDTH 4
 #define USB_EPXR_STAT_TX 4
 #define USB_EPXR_STAT_TX_WIDTH 2
+#define USB_EPXR_STAT_TX_DISABLED 0b00
+#define USB_EPXR_STAT_TX_STALL    0b01
+#define USB_EPXR_STAT_TX_NAK      0b10
+#define USB_EPXR_STAT_TX_VALID    0b11
+
 #define USB_EPXR_DTOG_TX 6
 #define USB_EPXR_DTOG_TX_WIDTH 1
 #define USB_EPXR_CTR_TX 7
@@ -239,10 +259,20 @@
 #define USB_EPXR_EP_KIND_WIDTH 1
 #define USB_EPXR_EP_TYPE 9
 #define USB_EPXR_EP_TYPE_WIDTH 2
+#define USB_EPXR_EP_TYPE_BULK 0b00
+#define USB_EPXR_EP_TYPE_CONTROL 0b01
+#define USB_EPXR_EP_TYPE_ISO 0b10
+#define USB_EPXR_EP_TYPE_INTERRUPT 0b11
+
 #define USB_EPXR_SETUP 11
 #define USB_EPXR_SETUP_WIDTH 1
 #define USB_EPXR_STAT_RX 12
-#define USB_EPXR_STAT_RX_WIDTH 1
+#define USB_EPXR_STAT_RX_WIDTH 2
+#define USB_EPXR_STAT_RX_DISABLED 0b00
+#define USB_EPXR_STAT_RX_STALL    0b01
+#define USB_EPXR_STAT_RX_NAK      0b10
+#define USB_EPXR_STAT_RX_VALID    0b11
+
 #define USB_EPXR_DTOG_RX 14
 #define USB_EPXR_DTOG_RX_WIDTH 1
 #define USB_EPXR_CTR_RX 15
@@ -264,12 +294,16 @@
 #define USB_FNR_LSOF 11
 #define USB_FNR_LSOF_WIDTH 2
 #define USB_FNR_LCK 13
-#define USB_FNR_LSOF_WIDTH 1
+#define USB_FNR_LCK_WIDTH 1
 #define USB_FNR_RXDM 14
 #define USB_FNR_RXDM_WIDTH 1
 #define USB_FNR_RXDP 15
 #define USB_FNR_RXDP_WIDTH 1
 #define USB_DADDR (volatile uint32_t *)(USB_BASE + 0x004c)
+#define USB_DADDR_ADDR 0
+#define USB_DADDR_ADDR_WIDTH 7
+#define USB_DADDR_EF 7
+
 #define USB_BTABLE (volatile uint32_t *)(USB_BASE + 0x0050)
 
 #define USB_CNTR_FRES 0
@@ -286,7 +320,10 @@
 #define USB_CNTR_PMAOVRNM 14
 #define USB_CNTR_CTRM 15
 
+#define USB_ISTR_EP_ID 0
+#define USB_ISTR_EP_ID_WIDTH 4
 #define USB_ISTR_DIR 4
+#define USB_ISTR_DIR_WIDTH 1
 #define USB_ISTR_ESOF 8
 #define USB_ISTR_SOF 9
 #define USB_ISTR_RESET 10
@@ -296,9 +333,40 @@
 #define USB_ISTR_PMAOVRN 14
 #define USB_ISTR_CTR 15
 
+#define USB_RAM (volatile uint32_t *)0x40006000
+#define PMA_TO_SRAM_ADDR(__pma_addr) (USB_RAM + (__pma_addr) / 2)
+#define SRAM_TO_PMA_ADDR(__sram_addr) ((uint32_t)(__sram_addr) - (uint32_t)(USB_RAM) / 2)
+
 #define THUMB __attribute__((target("thumb")))
 
-#define F_CLK 8000000
+#define F_CLK 36000000
+
+struct ep_buf_desc {
+  uint16_t tx_addr;
+  uint16_t tx_count;
+  uint16_t rx_addr;
+  uint16_t rx_count;
+};
+
+static void memcpy_pma_to_sram(void *dst, uint32_t pma_offset, int num_bytes)
+{
+  const volatile uint32_t *from = PMA_TO_SRAM_ADDR(pma_offset);
+  /* We are reading 4 bytes, extract only lower 2-byte part of it */
+  int i;
+  for (i = 0; i < num_bytes / 2; i++) {
+    ((uint16_t *)dst)[i] = from[i] & 0xffff;
+  }
+}
+
+static void memcpy_sram_to_pma(uint32_t pma_dest, const void *src, int num_bytes)
+{
+  int i;
+  volatile uint32_t *to = PMA_TO_SRAM_ADDR(pma_dest);
+  const uint16_t *from = (const uint16_t *)src;
+  for (i = 0; i < num_bytes / 2; i++) {
+    to[i] = (uint32_t)from[i];
+  }
+}
 
 static void gpioc_bit_set(int pin_nr)
 {
@@ -310,14 +378,14 @@ static void gpioc_bit_clear(int pin_nr)
   reg_write(GPIOC_BSRR, 1 << (pin_nr + 16));
 }
 
-static void gpiox_set_cr(uint32_t basereg, int pin_nr, int mode, int cnf)
+static void gpiox_set_cr(volatile uint32_t *basereg, int pin_nr, int mode, int cnf)
 {
   uint32_t v;
   int b;
-  uint32_t addr;
+  volatile uint32_t *addr;
 
   addr = basereg;
-  addr += (pin_nr / 8) * 4;
+  addr += (pin_nr / 8) * (4/4);
   b = (pin_nr % 8) * 4;
 
   v = reg_read(addr);
@@ -434,7 +502,7 @@ void adc_isr(void)
 void tim2_isr(void)
 {
   static int toggle_flag = 0;
-  reg_write(TIM2_ARR, last_adc + 600);
+  // reg_write(TIM2_ARR, last_adc + 600);
   reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_TIM2);
   reg_write(TIM2_SR, 0);
   reg32_set_bit(TIM2_CR1, 0);
@@ -486,14 +554,32 @@ void uart2_setup(void)
 
 void timer_setup(void)
 {
+  /* SYSCLK = 72MHz */
   reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_TIM2EN);
   reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPCEN);
   gpioc_set_pin13();
-  tim2_setup(true, CALC_PSC(5.0f, F_CLK, 0xffff), 0xffff, true, true);
+  tim2_setup(true, CALC_PSC(0.5, F_CLK, 0xffff), 0xffff, true, true);
 }
 
 #define FLASH_BASE 0x40022000
 #define FLASH_ACR (volatile uint32_t *)(FLASH_BASE + 0x00)
+/* Latency selector based on SYSCLK speed */
+#define FLASH_ACR_LATENCY 0
+#define FLASH_ACR_LATENCY_WIDTH 2
+#define FLASH_ACR_LATENCY_0_24_MHZ 0
+#define FLASH_ACR_LATENCY_24_48_MHZ 1
+#define FLASH_ACR_LATENCY_48_72_MHZ 2
+
+/* Half cycle enabled */
+#define FLASH_ACR_HLFCYA 3
+#define FLASH_ACR_HLFCYA_WIDTH 1
+/* Prefetch buffer enable */
+#define FLASH_ACR_PRFTBE 4
+#define FLASH_ACR_PRFTBE_WIDTH 1
+
+/* Prefetch buffer status */
+#define FLASH_ACR_PRFTBS 5
+#define FLASH_ACR_PRFTBS_WIDTH 1
 
 void rcc_set_72mhz_usb(void)
 {
@@ -506,7 +592,8 @@ void rcc_set_72mhz_usb(void)
   * if prefetch buffer is not enabled, setting high speed clock (>24Mhz) will
   * result in errors during reading instructions from flash memory.
   */
- reg_write(FLASH_ACR, 0x12);
+ reg_write(FLASH_ACR,
+  (FLASH_ACR_LATENCY_48_72_MHZ << FLASH_ACR_LATENCY) | (1 << FLASH_ACR_PRFTBE));
 
   /*
    * Configure PLL to HSE (8Hz) * 9 = 72MHz 
@@ -514,7 +601,8 @@ void rcc_set_72mhz_usb(void)
    */
   reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLSRC_POS, RCC_CFGR_PLLSRC_WIDTH, RCC_CFGR_PLLSRC_HSE);
   reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLMUL_POS, RCC_CFGR_PLLMUL_WIDTH, RCC_CFGR_PLLMUL_X9);
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_USBPRE_POS, RCC_CFGR_USBPRE_WIDTH, RCC_CFGR_USBPRE_NO_DIV);
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_HPRE_POS, RCC_CFGR_HPRE_WIDTH, RCC_CFGR_HPRE_BY_2);
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_USBPRE_POS, RCC_CFGR_USBPRE_WIDTH, RCC_CFGR_USBPRE_DIV_1_5);
 
   /* Turn on PLL, after that both PLL + HSE will be running.*/
   reg32_set_bit(RCC_CR, RCC_CR_PLLON_POS);
@@ -530,13 +618,249 @@ void rcc_set_72mhz_usb(void)
 
 void usb_hp_isr(void)
 {
+  while(1);
+}
+
+struct usb_interrupt_stats {
+  int num_sofs;
+  int num_esofs;
+  int num_errs;
+  int num_susp;
+  int num_resets;
+  int num_transactions;
+};
+
+static struct usb_interrupt_stats usbstats = { 0 };
+
+static void usb_sof_handler(void)
+{
+  usbstats.num_sofs++;
+}
+
+static void usb_esof_handler(void)
+{
+  usbstats.num_esofs++;
+}
+
+static void usb_reset_clear_ram(void)
+{
+  volatile uint32_t *p = USB_RAM;
+  for (int i = 0; i < 256; ++i)
+  {
+    *p++ = 0;
+  }
+}
+
+static void pma_init_bdt(void)
+{
+  uint16_t next;
+  struct ep_buf_desc ebdt[8];
+  next = sizeof(ebdt);
+
+  for (int i = 0; i < 8; ++i) {
+    ebdt[i].tx_addr = next;
+    ebdt[i].tx_count = 0;
+    next += 64;
+    ebdt[i].rx_addr = next;
+    ebdt[i].rx_count = (1<<15) | 1 << 10;
+    next += 64;
+  }
+  memcpy_sram_to_pma(reg_read(USB_BTABLE), ebdt, sizeof(ebdt));
+}
+
+static void usb_ep_init(void)
+{
+  uint32_t v = 0;
+  v |= USB_EPXR_EP_TYPE_CONTROL << USB_EPXR_EP_TYPE;
+  v |= USB_EPXR_EP_TYPE_CONTROL << USB_EPXR_EP_KIND;
+  v |= USB_EPXR_STAT_TX_STALL << USB_EPXR_STAT_TX;
+  v |= USB_EPXR_STAT_RX_VALID << USB_EPXR_STAT_RX;
+  reg_write(USB_EP0R, v);
+}
+
+static void usb_reset_handler(void)
+{
+  uint32_t v;
+  usbstats.num_resets++;
+
+  usb_reset_clear_ram();
+  pma_init_bdt();
+  reg_write(USB_BTABLE, 0);
+  usb_ep_init();
+  v = 0;
+  u32_set_bit(&v, USB_DADDR_EF);
+  reg_write(USB_DADDR, v);
+}
+
+static void usb_susp_handler(void)
+{
+  usbstats.num_susp++;
+}
+
+static void bp(void)
+{
+}
+
+static void usb_err_handler(void)
+{
+  usbstats.num_errs++;
+}
+
+struct usb_descriptor_device device_desc = { 0 };
+
+#define min(__a, __b) ((__a) < (__b) ? (__a) : (__b))
+
+static volatile uint32_t *pma_get_io_addr(int ep_no, int field_offset)
+{
+  volatile char *addr = (volatile char *)USB_RAM;
+  addr += reg_read(USB_BTABLE);
+  addr += ep_no * 8 * 2;
+  addr += field_offset * 2;
+  return (volatile uint32_t *)addr;
+}
+
+static uint16_t usb_pma_get_tx_addr(int ep_no)
+{
+  return reg_read(pma_get_io_addr(ep_no, 0)) & 0xffff;
+}
+
+static uint16_t usb_pma_get_rx_addr(int ep_no)
+{
+  return reg_read(pma_get_io_addr(ep_no, 4)) & 0xffff;
+}
+
+static uint16_t usb_pma_get_rx_count(int ep_no)
+{
+  return reg_read(pma_get_io_addr(ep_no, 6)) & u32_bitmask(10);
+}
+
+static void usb_prep_tx(int ep_no, const void *src, int numbytes)
+{
+  bp();
+  memcpy_sram_to_pma(usb_pma_get_tx_addr(ep_no), src, numbytes);
+  reg_write(pma_get_io_addr(ep_no, 2), numbytes);
+  reg32_modify_bits(USB_EP0R, USB_EPXR_STAT_TX,
+    USB_EPXR_STAT_TX_WIDTH, USB_EPXR_STAT_TX_VALID);
+
+#if 0
+  volatile uint32_t *p = USB_RAM;
+  for (int i = 2; i < 256; ++i)
+  {
+    *p++ = 0x55;
+  }
+#endif
+}
+
+static void usb_handle_get_device_descriptor(int ep_no, int numbytes)
+{
+  usb_prep_tx(ep_no, &device_desc, min(sizeof(device_desc), numbytes));
+}
+
+
+static void usb_handle_get_descriptor(int ep_no, const struct usb_request *r)
+{
+  int type = (r->wValue >> 8) & 0xff;
+  int index = r->wValue & 0xff;
+  if (type == USB_DESCRIPTOR_TYPE_DEVICE) {
+    usb_handle_get_device_descriptor(ep_no, r->wLength);
+  }
+}
+
+static void usb_handle_device_to_host_request(int ep_no, const struct usb_request *r)
+{
+  if (r->bRequest == USB_SETUP_REQUEST_GET_DESCRIPTOR) {
+    usb_handle_get_descriptor(ep_no, r);
+  }
+}
+
+static void usb_ctr_handler(int ep_no, int dir)
+{
+  uint32_t ep_info = reg_read(USB_EP0R);
+  if (u32_bit_is_set(ep_info, USB_EPXR_CTR_RX)) {
+    if (u32_bit_is_set(ep_info, USB_EPXR_SETUP)) {
+      struct usb_request r;
+      memcpy_pma_to_sram(&r, usb_pma_get_rx_addr(ep_no), usb_pma_get_rx_count(ep_no));
+      if (r.bmRequestType == USB_REQUEST_DEVICE_TO_HOST_STANDARD) {
+        usb_handle_device_to_host_request(ep_no, &r);
+      }
+    }
+  }
+  // uint32_t ep_info = reg_read(0x40006000 + 0x40 * 2);
+  usbstats.num_transactions++;
 }
 
 void usb_lp_isr(void)
 {
+  uint32_t v;
+  v = reg_read(USB_ISTR);
+  if (u32_bit_is_set(v, USB_ISTR_ERR)) {
+    reg32_clear_bit(USB_ISTR, USB_ISTR_ERR);
+    usb_err_handler();
+    return;
+  }
+  if (u32_bit_is_set(v, USB_ISTR_RESET)) {
+    reg32_clear_bit(USB_ISTR, USB_ISTR_RESET);
+    usb_reset_handler();
+    return;
+  }
+  if (u32_bit_is_set(v, USB_ISTR_SOF)) {
+    reg32_clear_bit(USB_ISTR, USB_ISTR_SOF);
+    usb_sof_handler();
+    return;
+  }
+  if (u32_bit_is_set(v, USB_ISTR_ESOF)) {
+    reg32_clear_bit(USB_ISTR, USB_ISTR_ESOF);
+    usb_esof_handler();
+    return;
+  }
+  if (u32_bit_is_set(v, USB_ISTR_SUSP)) {
+    reg32_clear_bit(USB_ISTR, USB_ISTR_SUSP);
+    usb_susp_handler();
+    return;
+  }
+  if (u32_bit_is_set(v, USB_ISTR_CTR)) {
+    reg32_clear_bit(USB_ISTR, USB_ISTR_CTR);
+    usb_ctr_handler(
+      u32_extract_bits(v, USB_ISTR_EP_ID, USB_ISTR_EP_ID_WIDTH),
+      u32_extract_bits(v, USB_ISTR_DIR, USB_ISTR_DIR_WIDTH));
+  }
+  else
+  {
+    bp();
+    while(1);
+  }
+  reg_write(USB_ISTR, 0);
 }
 
 void usb_wakeup_isr(void)
+{
+  // while(1);
+}
+
+static void usb_init_device_descriptor(void)
+{
+  device_desc.bLength = sizeof(device_desc);
+  device_desc.bDescriptorType = USB_DESCRIPTOR_TYPE_DEVICE;
+  device_desc.bcdUSB = 0x0200;
+  device_desc.bDeviceClass = 0;
+  device_desc.bDeviceSubClass = 0;
+  device_desc.bDeviceProtocol = 2;
+  device_desc.bMaxPacketSize0 = 8;
+  device_desc.idVendor = 0xefef;
+  device_desc.idProduct = 0xdcdc;
+  device_desc.bcdDevice = 0x102;
+  device_desc.iManufacturer = 0;
+  device_desc.iProduct = 0;
+  device_desc.iSerialNumber = 0;
+  device_desc.bNumConfigurations = 1;
+}
+
+static void usb_init_descriptors(void)
+{
+  usb_init_device_descriptor();
+}
+
+void sleep_ms(uint32_t)
 {
 }
 
@@ -561,15 +885,23 @@ static void systick_wait_ms(uint32_t ms)
   idle();
 }
 
-void usb_setup(void)
+void usb_init(void)
 {
+  usb_init_descriptors();
   rcc_set_72mhz_usb();
   systick_wait_ms(20);
   reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_USBEN);
+  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPAEN);
+  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_AFIOEN);
+  gpioa_set_cr(11, 3, 2);
+  gpioa_set_cr(12, 3, 2);
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_HP_CAN_TX);
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0);
   reg_write(NVIC_ISER1, 1 << NVIC_INTERRUPT_NUMBER_USB_WAKEUP - 32);
   uint32_t v = reg_read(USB_CNTR);
+  reg32_set_bit(USB_CNTR, USB_CNTR_RESETM);
+  reg32_clear_bit(USB_CNTR, USB_CNTR_PDWN);
+  sleep_ms(1);
   reg32_clear_bit(USB_CNTR, USB_CNTR_FRES);
 }
 
@@ -582,14 +914,13 @@ void zero_bss(void)
     *p = 0;
   }
 }
-
 void main(void)
 {
-  usb_setup();
   zero_bss();
+  usb_init();
 
   timer_setup();
 //  uart2_setup();
-  adc_setup();
+  // adc_setup();
   while(1);
 }
