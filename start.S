@@ -1,3 +1,4 @@
+.arch armv7-m
 .thumb
 .globl reset_isr
 reset_isr:
