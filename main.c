@@ -3,6 +3,7 @@
 #include "reg_access.h"
 #include "usb.h"
 #include "rcc.h"
+#include "i2c.h"
 #include "gpio.h"
 
 #define SYSTICK_BASE 0xe000e010
@@ -660,7 +661,6 @@ static void systick_wait_ms(uint32_t ms)
 void usb_init(void)
 {
   usb_init_descriptors();
-  rcc_set_72mhz_usb();
   systick_wait_ms(20);
   rcc_enable_usb();
   rcc_enable_gpio_a();
@@ -688,9 +688,24 @@ void zero_bss(void)
     *p = 0;
   }
 }
+
+static void i2c_init(void)
+{
+  rcc_enable_i2c1();
+  rcc_enable_gpio_b();
+  /* B6 - SDA Alternate function open drain */
+  gpiob_set_cr(6, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_OPEN_DRAIN);
+  /* B7 - SCL Alternate function open drain */
+  gpiob_set_cr(7, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_OPEN_DRAIN);
+  gpio_remap_i2c1(GPIO_REMAP_I2C1_PB6_PB7);
+  i2c_clock_setup();
+}
+
 void main(void)
 {
   zero_bss();
+  rcc_set_72mhz_usb();
+  i2c_init();
   usb_init();
 
   timer_setup();

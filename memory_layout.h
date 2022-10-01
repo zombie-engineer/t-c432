@@ -1,5 +1,7 @@
 #pragma once
 
+#define I2C1_BASE  0x40005400
+#define I2C2_BASE  0x40005800
 #define AFIO_BASE  0x40010000
 #define IOPA_BASE  0x40010800
 #define IOPB_BASE  0x40010c00
