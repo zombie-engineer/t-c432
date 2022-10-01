@@ -5,6 +5,7 @@
 #include "rcc.h"
 #include "i2c.h"
 #include "gpio.h"
+#include "ssd1306.h"
 
 #define SYSTICK_BASE 0xe000e010
 #define STK_CTRL (volatile uint32_t *)(SYSTICK_BASE + 0x00)
@@ -706,6 +707,7 @@ void main(void)
   zero_bss();
   rcc_set_72mhz_usb();
   i2c_init();
+  ssd1306_init();
   usb_init();
 
   timer_setup();

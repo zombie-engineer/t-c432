@@ -2,8 +2,8 @@
 firmware.bin: firmware.elf
 	arm-none-eabi-objcopy firmware.elf --output-target binary firmware.bin
 
-firmware.elf: main.o start.o isr_vector.o rcc.o i2c.o flash.o gpio.o link.ld
-	arm-none-eabi-ld main.o start.o isr_vector.o rcc.o flash.o gpio.o i2c.o -o firmware.elf -T link.ld
+firmware.elf: main.o start.o isr_vector.o rcc.o i2c.o flash.o gpio.o ssd1306.o link.ld
+	arm-none-eabi-ld main.o start.o isr_vector.o rcc.o flash.o gpio.o i2c.o ssd1306.o -o firmware.elf -T link.ld
 
 start.o: start.S
 	arm-none-eabi-as start.S -o start.o
@@ -13,6 +13,9 @@ main.o: main.c
 
 gpio.o: gpio.c
 	arm-none-eabi-gcc -c -g gpio.c -o gpio.o -mthumb
+
+ssd1306.o: ssd1306.c
+	arm-none-eabi-gcc -c -g ssd1306.c -o ssd1306.o -mthumb
 
 i2c.o: i2c.c
 	arm-none-eabi-gcc -c -g i2c.c -o i2c.o -mthumb
