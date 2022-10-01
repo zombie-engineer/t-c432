@@ -99,9 +99,12 @@
 #define RCC_CR_PLLRDY_WIDTH 1
 
 #define RCC_APB1RSTR_TIM2RST 0
-#define RCC_APB1ENR_TIM2EN 0
 #define RCC_APB1RSTR_IOPCRST 4
+
+#define RCC_APB1ENR_TIM2EN 0
 #define RCC_APB1ENR_USART2EN 17
+#define RCC_APB1ENR_I2C1EN 21
+#define RCC_APB1ENR_I2C2EN 22
 #define RCC_APB1ENR_USBEN 23
 
 #define RCC_APB2ENR_AFIOEN 0
@@ -125,7 +128,13 @@ void rcc_set_72mhz_usb(void)
 
   /*
    * Configure PLL to HSE (8Hz) * 9 = 72MHz 
-   * USB is configured to /1.5 = 48MHz
+   * PLLCLK = HSE x 9 = 8MHz * 9 = 72MHz
+   * SYSCLK = PLLCLK = 72MHz
+   * HCLK   = SYSCLK / HPRE = 72MHz / 1 = 72MHz
+   * PCLK1  = HCLK / PPRE1 = 72MHz / 2 = 36MHz
+   * PCLK2  = HCLK / PPRE2 = 72MHz / 1 = 72MHz
+   * ADCCLK = PCLK2 / ADCPRE = 72MHz / 1 = 72MHz
+   * USB    = PLLCLK / USBPRE = 72MHZ / 1.5 = 48HMz
    */
   reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLSRC_POS, RCC_CFGR_PLLSRC_WIDTH, RCC_CFGR_PLLSRC_HSE);
   reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLMUL_POS, RCC_CFGR_PLLMUL_WIDTH, RCC_CFGR_PLLMUL_X9);
@@ -146,38 +155,52 @@ void rcc_set_72mhz_usb(void)
 //  while(reg32_bit_is_set(RCC_CR, RCC_CR_HSIRDY_POS));
 }
 
-void rcc_enable_usb()
+void rcc_enable_usb(void)
 {
   reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_USBEN);
 }
 
-void rcc_enable_gpio_a()
+void rcc_enable_gpio_a(void)
 {
   reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPAEN);
 }
 
-void rcc_enable_gpio_c()
+void rcc_enable_gpio_b(void)
+{
+  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPBEN);
+}
+
+void rcc_enable_gpio_c(void)
 {
   reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPCEN);
 }
 
-void rcc_enable_afio()
+void rcc_enable_afio(void)
 {
   reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_AFIOEN);
 }
 
-void rcc_enable_adc1()
+void rcc_enable_adc1(void)
 {
   reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_ADC1AEN);
 }
 
-void rcc_enable_usart2()
+void rcc_enable_usart2(void)
 {
   reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_USART2EN);
 }
 
-void rcc_enable_tim2()
+void rcc_enable_tim2(void)
 {
   reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_TIM2EN);
 }
 
+void rcc_enable_i2c1(void)
+{
+  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_I2C1EN);
+}
+
+void rcc_enable_i2c2(void)
+{
+  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_I2C2EN);
+}
