@@ -352,7 +352,7 @@ void adc_setup(void)
 {
   rcc_enable_gpio_a();
   rcc_enable_adc1();
-  gpioa_set_cr(1, 0, 0);
+  gpioa_set_cr(1, GPIO_MODE_INPUT, GPIO_CNF_IN_ANALOG);
 
   reg_write(ADC1_CR2, 1 << ADC_CR2_EON);
   reg32_set_bit(ADC1_CR1, ADC_CR1_EOCIE);
@@ -371,8 +371,8 @@ void uart2_setup(void)
   rcc_enable_gpio_a();
   rcc_enable_usart2();
 
-  gpioa_set_cr(2, 3, 2);
-  gpioa_set_cr(3, 0, 2);
+  gpioa_set_cr(2, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
+  gpioa_set_cr(3, GPIO_MODE_INPUT     , GPIO_CNF_IN_PULLUP_PULLDOWN);
   gpioa_set_odr(3);
   v = reg_read(AFIO_MAPR);
   reg_write(USART_CR1, 0);
@@ -671,8 +671,10 @@ void usb_init(void)
   rcc_enable_usb();
   rcc_enable_gpio_a();
   rcc_enable_afio();
-  gpioa_set_cr(11, 3, 2);
-  gpioa_set_cr(12, 3, 2);
+  // TODO As soon as the USB is enabled, these pins are automatically connected to
+  // the USB internal transceiver.
+  gpioa_set_cr(11, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
+  gpioa_set_cr(12, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_HP_CAN_TX);
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0);
   reg_write(NVIC_ISER1, 1 << NVIC_INTERRUPT_NUMBER_USB_WAKEUP - 32);

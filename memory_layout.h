@@ -1,6 +1,11 @@
 #pragma once
 
 #define IOPA_BASE  0x40010800
+#define IOPB_BASE  0x40010c00
 #define IOPC_BASE  0x40011000
+#define IOPD_BASE  0x40011400
+#define IOPE_BASE  0x40011800
+#define IOPF_BASE  0x40011c00
+#define IOPG_BASE  0x40012000
 #define RCC_BASE   0x40021000
 #define FLASH_BASE 0x40022000

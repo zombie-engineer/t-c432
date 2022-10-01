@@ -2,14 +2,6 @@
 #include "memory_layout.h"
 #include "reg_access.h"
 
-#define GPIOC_CRL  (volatile uint32_t *)(IOPC_BASE + 0x00)
-#define GPIOC_CRH  (volatile uint32_t *)(IOPC_BASE + 0x04)
-#define GPIOC_IDR  (volatile uint32_t *)(IOPC_BASE + 0x08)
-#define GPIOC_ODR  (volatile uint32_t *)(IOPC_BASE + 0x0c)
-#define GPIOC_BSRR (volatile uint32_t *)(IOPC_BASE + 0x10)
-#define GPIOC_BRR  (volatile uint32_t *)(IOPC_BASE + 0x14)
-#define GPIOC_LCKR (volatile uint32_t *)(IOPC_BASE + 0x14)
-
 #define GPIOA_CRL  (volatile uint32_t *)(IOPA_BASE + 0x00)
 #define GPIOA_CRH  (volatile uint32_t *)(IOPA_BASE + 0x04)
 #define GPIOA_IDR  (volatile uint32_t *)(IOPA_BASE + 0x08)
@@ -17,6 +9,22 @@
 #define GPIOA_BSRR (volatile uint32_t *)(IOPA_BASE + 0x10)
 #define GPIOA_BRR  (volatile uint32_t *)(IOPA_BASE + 0x14)
 #define GPIOA_LCKR (volatile uint32_t *)(IOPA_BASE + 0x14)
+
+#define GPIOB_CRL  (volatile uint32_t *)(IOPB_BASE + 0x00)
+#define GPIOB_CRH  (volatile uint32_t *)(IOPB_BASE + 0x04)
+#define GPIOB_IDR  (volatile uint32_t *)(IOPB_BASE + 0x08)
+#define GPIOB_ODR  (volatile uint32_t *)(IOPB_BASE + 0x0c)
+#define GPIOB_BSRR (volatile uint32_t *)(IOPB_BASE + 0x10)
+#define GPIOB_BRR  (volatile uint32_t *)(IOPB_BASE + 0x14)
+#define GPIOB_LCKR (volatile uint32_t *)(IOPB_BASE + 0x14)
+
+#define GPIOC_CRL  (volatile uint32_t *)(IOPC_BASE + 0x00)
+#define GPIOC_CRH  (volatile uint32_t *)(IOPC_BASE + 0x04)
+#define GPIOC_IDR  (volatile uint32_t *)(IOPC_BASE + 0x08)
+#define GPIOC_ODR  (volatile uint32_t *)(IOPC_BASE + 0x0c)
+#define GPIOC_BSRR (volatile uint32_t *)(IOPC_BASE + 0x10)
+#define GPIOC_BRR  (volatile uint32_t *)(IOPC_BASE + 0x14)
+#define GPIOC_LCKR (volatile uint32_t *)(IOPC_BASE + 0x14)
 
 void gpioc_bit_set(int pin_nr)
 {
@@ -54,6 +62,11 @@ void gpioa_set_cr(int pin_nr, int mode, int cnf)
   gpiox_set_cr(GPIOA_CRL, pin_nr, mode, cnf);
 }
 
+void gpiob_set_cr(int pin_nr, int mode, int cnf)
+{
+  gpiox_set_cr(GPIOB_CRL, pin_nr, mode, cnf);
+}
+
 void gpioc_set_pin13(void)
 {
   gpioc_set_cr(13, 1, 1);
@@ -65,3 +78,4 @@ void gpioa_set_odr(int bit)
 {
   reg32_set_bit(GPIOA_ODR, bit);
 }
+
