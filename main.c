@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include "reg_access.h"
 #include "usb.h"
+#include "rcc.h"
 
 #define SYSTICK_BASE 0xe000e010
 #define STK_CTRL (volatile uint32_t *)(SYSTICK_BASE + 0x00)
@@ -18,109 +19,6 @@
 #define STK_VAL  (volatile uint32_t *)(SYSTICK_BASE + 0x08)
 #define STK_CALIB (volatile uint32_t *)(SYSTICK_BASE + 0x0c)
 
-#define RCC_BASE 0x40021000
-#define RCC_CR      (volatile uint32_t *)(RCC_BASE + 0x00)
-#define RCC_CFGR    (volatile uint32_t *)(RCC_BASE + 0x04)
-#define RCC_APB2RSTR (volatile uint32_t *)(RCC_BASE + 0x0c)
-#define RCC_APB1RSTR (volatile uint32_t *)(RCC_BASE + 0x10)
-#define RCC_AHBENR   (volatile uint32_t *)(RCC_BASE + 0x14)
-#define RCC_APB2ENR  (volatile uint32_t *)(RCC_BASE + 0x18)
-#define RCC_APB1ENR  (volatile uint32_t *)(RCC_BASE + 0x1c)
-
-#define RCC_CFGR_SW_POS 0
-#define RCC_CFGR_SW_WIDTH 2
-
-#define RCC_CFGR_SW_HSI  0b00
-#define RCC_CFGR_SW_HSE  0b01
-#define RCC_CFGR_SW_PLL  0b10
-
-#define RCC_CFGR_SWS_POS 2
-#define RCC_CFGR_SWS_WIDTH 2
-
-#define RCC_CFGR_SWS_HSI  0b0000
-#define RCC_CFGR_SWS_HSE  0b0100
-#define RCC_CFGR_SWS_PLL  0b1000
-#define RCC_CFGR_SWS_MASK 0b1100
-
-#define RCC_CFGR_HPRE_POS 4
-#define RCC_CFGR_HPRE_WIDTH 4
-#define RCC_CFGR_HPRE_BY_1  0b0000
-#define RCC_CFGR_HPRE_BY_2  0b1000
-#define RCC_CFGR_HPRE_BY_4  0b1001
-#define RCC_CFGR_HPRE_BY_8  0b1010
-#define RCC_CFGR_HPRE_BY_16 0b1011
-#define RCC_CFGR_HPRE_BY_64 0b1100
-#define RCC_CFGR_HPRE_BY_128 0b1101
-#define RCC_CFGR_HPRE_BY_256 0b1110
-#define RCC_CFGR_HPRE_BY_512 0b1111
-
-#define RCC_CFGR_PPRE1_POS 8
-#define RCC_CFGR_PPRE1_WIDTH 3
-
-#define RCC_CFGR_PPRE2_POS 11
-#define RCC_CFGR_PPRE2_WIDTH 3
-
-#define RCC_CFGR_ADCPRE_POS 14
-#define RCC_CFGR_ADCPRE_WIDTH 2
-
-#define RCC_CFGR_PLLSRC_POS 16
-#define RCC_CFGR_PLLSRC_WIDTH 1
-#define RCC_CFGR_PLLSRC_HSI_DIV_2 0
-#define RCC_CFGR_PLLSRC_HSE 1
-
-#define RCC_CFGR_PLLXTRPE_POS 17
-#define RCC_CFGR_PLLMUL_POS 18
-#define RCC_CFGR_PLLMUL_WIDTH 4
-#define RCC_CFGR_PLLMUL_X2 0
-#define RCC_CFGR_PLLMUL_X3 1
-#define RCC_CFGR_PLLMUL_X4 2
-#define RCC_CFGR_PLLMUL_X5 3
-#define RCC_CFGR_PLLMUL_X6 4
-#define RCC_CFGR_PLLMUL_X7 5
-#define RCC_CFGR_PLLMUL_X8 6
-#define RCC_CFGR_PLLMUL_X9 7
-#define RCC_CFGR_PLLMUL_X10 8
-#define RCC_CFGR_PLLMUL_X11 9
-#define RCC_CFGR_PLLMUL_X12 10
-#define RCC_CFGR_PLLMUL_X13 11
-#define RCC_CFGR_PLLMUL_X14 12
-#define RCC_CFGR_PLLMUL_X15 13
-#define RCC_CFGR_PLLMUL_X16 14
-#define RCC_CFGR_PLLMUL_X16A 16
-
-#define RCC_CFGR_USBPRE_POS 22
-#define RCC_CFGR_USBPRE_WIDTH 1
-#define RCC_CFGR_USBPRE_DIV_1_5 0
-#define RCC_CFGR_USBPRE_NO_DIV 1
-
-#define RCC_CFGR_MCO_POS 24
-#define RCC_CFGR_MCO_WIDTH 3
-
-
-#define RCC_CR_HSION_POS 0
-#define RCC_CR_HSION_WIDTH 1
-#define RCC_CR_HSIRDY_POS 1
-#define RCC_CR_HSIRDY_WIDTH 1
-#define RCC_CR_HSEON_POS 16
-#define RCC_CR_HSEON_WIDTH 1
-#define RCC_CR_HSERDY_POS 17
-#define RCC_CR_HSERDY_WIDTH 1
-#define RCC_CR_PLLON_POS 24
-#define RCC_CR_PLLON_WIDTH 1
-#define RCC_CR_PLLRDY_POS 25
-#define RCC_CR_PLLRDY_WIDTH 1
-
-#define RCC_APB1RSTR_TIM2RST 0
-#define RCC_APB1ENR_TIM2EN 0
-#define RCC_APB1RSTR_IOPCRST 4
-#define RCC_APB1ENR_USART2EN 17
-#define RCC_APB1ENR_USBEN 23
-
-#define RCC_APB2ENR_AFIOEN 0
-#define RCC_APB2ENR_IOPAEN 2
-#define RCC_APB2ENR_IOPBEN 3
-#define RCC_APB2ENR_IOPCEN 4
-#define RCC_APB2ENR_ADC1AEN 9
 
 #define USART_BASE 0x40004400
 #define USART_SR  (volatile uint32_t *)(USART_BASE + 0x00)
@@ -411,12 +309,6 @@ static void gpioc_set_pin13(void)
   gpioc_bit_clear(13);
 }
 
-typedef enum {
-  RCC_SRC_HSI,
-  RCC_SRC_HSE,
-  RCC_SRC_PLL,
-} rcc_src_enum;
-
 #define TIMx_CEN  (1<<0)
 #define TIMx_UDIS (1<<1)
 #define TIMx_URS  (1<<2)
@@ -518,8 +410,8 @@ void tim2_isr(void)
 
 void adc_setup(void)
 {
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPAEN);
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_ADC1AEN);
+  rcc_enable_gpio_a();
+  rcc_enable_adc1();
   gpioa_set_cr(1, 0, 0);
 
   reg_write(ADC1_CR2, 1 << ADC_CR2_EON);
@@ -536,8 +428,8 @@ void adc_setup(void)
 void uart2_setup(void)
 {
   uint32_t v;
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPAEN);
-  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_USART2EN);
+  rcc_enable_gpio_a();
+  rcc_enable_usart2();
 
   gpioa_set_cr(2, 3, 2);
   gpioa_set_cr(3, 0, 2);
@@ -555,66 +447,12 @@ void uart2_setup(void)
 void timer_setup(void)
 {
   /* SYSCLK = 72MHz */
-  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_TIM2EN);
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPCEN);
+  rcc_enable_tim2();
+  rcc_enable_gpio_c();
   gpioc_set_pin13();
   tim2_setup(true, CALC_PSC(0.5, F_CLK, 0xffff), 0xffff, true, true);
 }
 
-#define FLASH_BASE 0x40022000
-#define FLASH_ACR (volatile uint32_t *)(FLASH_BASE + 0x00)
-/* Latency selector based on SYSCLK speed */
-#define FLASH_ACR_LATENCY 0
-#define FLASH_ACR_LATENCY_WIDTH 2
-#define FLASH_ACR_LATENCY_0_24_MHZ 0
-#define FLASH_ACR_LATENCY_24_48_MHZ 1
-#define FLASH_ACR_LATENCY_48_72_MHZ 2
-
-/* Half cycle enabled */
-#define FLASH_ACR_HLFCYA 3
-#define FLASH_ACR_HLFCYA_WIDTH 1
-/* Prefetch buffer enable */
-#define FLASH_ACR_PRFTBE 4
-#define FLASH_ACR_PRFTBE_WIDTH 1
-
-/* Prefetch buffer status */
-#define FLASH_ACR_PRFTBS 5
-#define FLASH_ACR_PRFTBS_WIDTH 1
-
-void rcc_set_72mhz_usb(void)
-{
-  /* Enable HSE */
- reg32_set_bit(RCC_CR, RCC_CR_HSEON_POS);
- while(!reg32_bit_is_set(RCC_CR, RCC_CR_HSERDY_POS));
-
- /*
-  * Prefetch buffer needs to be on when complex PLL clock math takes place
-  * if prefetch buffer is not enabled, setting high speed clock (>24Mhz) will
-  * result in errors during reading instructions from flash memory.
-  */
- reg_write(FLASH_ACR,
-  (FLASH_ACR_LATENCY_48_72_MHZ << FLASH_ACR_LATENCY) | (1 << FLASH_ACR_PRFTBE));
-
-  /*
-   * Configure PLL to HSE (8Hz) * 9 = 72MHz 
-   * USB is configured to /1.5 = 48MHz
-   */
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLSRC_POS, RCC_CFGR_PLLSRC_WIDTH, RCC_CFGR_PLLSRC_HSE);
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLMUL_POS, RCC_CFGR_PLLMUL_WIDTH, RCC_CFGR_PLLMUL_X9);
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_HPRE_POS, RCC_CFGR_HPRE_WIDTH, RCC_CFGR_HPRE_BY_2);
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_USBPRE_POS, RCC_CFGR_USBPRE_WIDTH, RCC_CFGR_USBPRE_DIV_1_5);
-
-  /* Turn on PLL, after that both PLL + HSE will be running.*/
-  reg32_set_bit(RCC_CR, RCC_CR_PLLON_POS);
-  while(!reg32_bit_is_set(RCC_CR, RCC_CR_PLLRDY_POS));
-
-  /* Select PLL as clock source */
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_SW_POS, RCC_CFGR_SW_WIDTH, RCC_CFGR_SW_PLL);
-  while(!reg32_bits_eq(RCC_CFGR, RCC_CFGR_SWS_POS, RCC_CFGR_SWS_WIDTH, RCC_CFGR_SW_PLL));
-
-  reg32_clear_bit(RCC_CR, RCC_CR_HSION_POS);
-  while(reg32_bit_is_set(RCC_CR, RCC_CR_HSIRDY_POS));
-}
 
 void usb_hp_isr(void)
 {
@@ -890,9 +728,9 @@ void usb_init(void)
   usb_init_descriptors();
   rcc_set_72mhz_usb();
   systick_wait_ms(20);
-  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_USBEN);
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPAEN);
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_AFIOEN);
+  rcc_enable_usb();
+  rcc_enable_gpio_a();
+  rcc_enable_afio();
   gpioa_set_cr(11, 3, 2);
   gpioa_set_cr(12, 3, 2);
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_HP_CAN_TX);

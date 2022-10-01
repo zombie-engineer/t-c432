@@ -1,5 +1,6 @@
 #pragma once
 #include <stdbool.h>
+#include <stdint.h>
 
 #define reg_write(__reg, __value) \
   *(volatile uint32_t *)(__reg) = (__value)
