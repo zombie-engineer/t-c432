@@ -2,14 +2,17 @@
 firmware.bin: firmware.elf
 	arm-none-eabi-objcopy firmware.elf --output-target binary firmware.bin
 
-firmware.elf: main.o start.o isr_vector.o rcc.o flash.o link.ld
-	arm-none-eabi-ld main.o start.o isr_vector.o rcc.o flash.o -o firmware.elf -T link.ld
+firmware.elf: main.o start.o isr_vector.o rcc.o flash.o gpio.o link.ld
+	arm-none-eabi-ld main.o start.o isr_vector.o rcc.o flash.o gpio.o -o firmware.elf -T link.ld
 
 start.o: start.S
 	arm-none-eabi-as start.S -o start.o
 
 main.o: main.c
 	arm-none-eabi-gcc -c -g main.c -o main.o -mthumb
+
+gpio.o: gpio.c
+	arm-none-eabi-gcc -c -g gpio.c -o gpio.o -mthumb
 
 flash.o: flash.c
 	arm-none-eabi-gcc -c -g flash.c -o flash.o -mthumb

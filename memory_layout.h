@@ -1,4 +1,6 @@
 #pragma once
 
+#define IOPA_BASE  0x40010800
+#define IOPC_BASE  0x40011000
+#define RCC_BASE   0x40021000
 #define FLASH_BASE 0x40022000
-#define RCC_BASE 0x40021000

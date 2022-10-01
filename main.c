@@ -3,6 +3,7 @@
 #include "reg_access.h"
 #include "usb.h"
 #include "rcc.h"
+#include "gpio.h"
 
 #define SYSTICK_BASE 0xe000e010
 #define STK_CTRL (volatile uint32_t *)(SYSTICK_BASE + 0x00)
@@ -25,24 +26,6 @@
 #define USART_DR  (volatile uint32_t *)(USART_BASE + 0x04)
 #define USART_BRR (volatile uint32_t *)(USART_BASE + 0x08)
 #define USART_CR1 (volatile uint32_t *)(USART_BASE + 0x0c)
-
-#define IOPC_BASE 0x40011000
-#define GPIOC_CRL  (volatile uint32_t *)(IOPC_BASE + 0x00)
-#define GPIOC_CRH  (volatile uint32_t *)(IOPC_BASE + 0x04)
-#define GPIOC_IDR  (volatile uint32_t *)(IOPC_BASE + 0x08)
-#define GPIOC_ODR  (volatile uint32_t *)(IOPC_BASE + 0x0c)
-#define GPIOC_BSRR (volatile uint32_t *)(IOPC_BASE + 0x10)
-#define GPIOC_BRR  (volatile uint32_t *)(IOPC_BASE + 0x14)
-#define GPIOC_LCKR (volatile uint32_t *)(IOPC_BASE + 0x14)
-
-#define IOPA_BASE 0x40010800
-#define GPIOA_CRL  (volatile uint32_t *)(IOPA_BASE + 0x00)
-#define GPIOA_CRH  (volatile uint32_t *)(IOPA_BASE + 0x04)
-#define GPIOA_IDR  (volatile uint32_t *)(IOPA_BASE + 0x08)
-#define GPIOA_ODR  (volatile uint32_t *)(IOPA_BASE + 0x0c)
-#define GPIOA_BSRR (volatile uint32_t *)(IOPA_BASE + 0x10)
-#define GPIOA_BRR  (volatile uint32_t *)(IOPA_BASE + 0x14)
-#define GPIOA_LCKR (volatile uint32_t *)(IOPA_BASE + 0x14)
 
 #define AFIO_BASE 0x40010000
 #define AFIO_EVCR (volatile uint32_t *)(AFIO_BASE + 0x00)
@@ -266,49 +249,6 @@ static void memcpy_sram_to_pma(uint32_t pma_dest, const void *src, int num_bytes
   }
 }
 
-static void gpioc_bit_set(int pin_nr)
-{
-  reg_write(GPIOC_BSRR, 1<<pin_nr);
-}
-
-static void gpioc_bit_clear(int pin_nr)
-{
-  reg_write(GPIOC_BSRR, 1 << (pin_nr + 16));
-}
-
-static void gpiox_set_cr(volatile uint32_t *basereg, int pin_nr, int mode, int cnf)
-{
-  uint32_t v;
-  int b;
-  volatile uint32_t *addr;
-
-  addr = basereg;
-  addr += (pin_nr / 8) * (4/4);
-  b = (pin_nr % 8) * 4;
-
-  v = reg_read(addr);
-  u32_modify_bits(&v, b, 2, mode);
-  u32_modify_bits(&v, b + 2, 2, cnf);
-  reg_write(addr, v);
-}
-
-static void gpioc_set_cr(int pin_nr, int mode, int cnf)
-{
-  gpiox_set_cr(GPIOC_CRL, pin_nr, mode, cnf);
-}
-
-static void gpioa_set_cr(int pin_nr, int mode, int cnf)
-{
-  gpiox_set_cr(GPIOA_CRL, pin_nr, mode, cnf);
-}
-
-static void gpioc_set_pin13(void)
-{
-  gpioc_set_cr(13, 1, 1);
-  gpioc_bit_set(13);
-  gpioc_bit_clear(13);
-}
-
 #define TIMx_CEN  (1<<0)
 #define TIMx_UDIS (1<<1)
 #define TIMx_URS  (1<<2)
@@ -433,7 +373,7 @@ void uart2_setup(void)
 
   gpioa_set_cr(2, 3, 2);
   gpioa_set_cr(3, 0, 2);
-  reg32_set_bit(GPIOA_ODR, 3);
+  gpioa_set_odr(3);
   v = reg_read(AFIO_MAPR);
   reg_write(USART_CR1, 0);
   reg_write(USART_CR1, 1<<13);
