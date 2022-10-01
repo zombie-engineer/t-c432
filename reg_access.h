@@ -51,6 +51,13 @@ static inline void reg32_modify_bits(volatile uint32_t *v, int bitpos, int bitwi
   reg_write(v, tmp_v);
 }
 
+static inline void reg32_modify_bit(volatile uint32_t *v, int bitpos, int set)
+{
+  uint32_t set_bit = (set & 1) << bitpos;
+  uint32_t clear_bit = ~(uint32_t)(1 << bitpos);
+  reg_write(v, (reg_read(v) & clear_bit) | set_bit);
+}
+
 static inline void reg32_set_bit(volatile uint32_t *v, int bitpos)
 {
   reg_write(v, reg_read(v) | (1<<bitpos));
