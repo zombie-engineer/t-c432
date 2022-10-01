@@ -1,5 +1,6 @@
 #pragma once
 
+#define AFIO_BASE  0x40010000
 #define IOPA_BASE  0x40010800
 #define IOPB_BASE  0x40010c00
 #define IOPC_BASE  0x40011000

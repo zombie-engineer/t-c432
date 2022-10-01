@@ -27,10 +27,6 @@
 #define USART_BRR (volatile uint32_t *)(USART_BASE + 0x08)
 #define USART_CR1 (volatile uint32_t *)(USART_BASE + 0x0c)
 
-#define AFIO_BASE 0x40010000
-#define AFIO_EVCR (volatile uint32_t *)(AFIO_BASE + 0x00)
-#define AFIO_MAPR (volatile uint32_t *)(AFIO_BASE + 0x04)
-
 #define TIM2_BASE 0x40000000
 
 #define TIM2_CR1   (volatile uint32_t *)(TIM2_BASE + 0x00)
@@ -367,14 +363,12 @@ void adc_setup(void)
 
 void uart2_setup(void)
 {
-  uint32_t v;
   rcc_enable_gpio_a();
   rcc_enable_usart2();
 
   gpioa_set_cr(2, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
   gpioa_set_cr(3, GPIO_MODE_INPUT     , GPIO_CNF_IN_PULLUP_PULLDOWN);
   gpioa_set_odr(3);
-  v = reg_read(AFIO_MAPR);
   reg_write(USART_CR1, 0);
   reg_write(USART_CR1, 1<<13);
   reg_write(USART_BRR, 5 | (4 << 4));

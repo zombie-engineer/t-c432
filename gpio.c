@@ -2,6 +2,9 @@
 #include "memory_layout.h"
 #include "reg_access.h"
 
+#define AFIO_EVCR (volatile uint32_t *)(AFIO_BASE + 0x00)
+#define AFIO_MAPR (volatile uint32_t *)(AFIO_BASE + 0x04)
+
 #define GPIOA_CRL  (volatile uint32_t *)(IOPA_BASE + 0x00)
 #define GPIOA_CRH  (volatile uint32_t *)(IOPA_BASE + 0x04)
 #define GPIOA_IDR  (volatile uint32_t *)(IOPA_BASE + 0x08)
@@ -79,3 +82,7 @@ void gpioa_set_odr(int bit)
   reg32_set_bit(GPIOA_ODR, bit);
 }
 
+void gpio_remap_i2c1(int mapping)
+{
+  reg32_modify_bit(AFIO_MAPR, 1, mapping);
+}
