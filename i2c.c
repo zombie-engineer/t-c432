@@ -135,25 +135,61 @@ void i2c_start(void)
   while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_SB));
 }
 
-void i2c_write_addr(uint8_t address)
+void i2c_write_addr(uint8_t addr)
 {
-  reg_write(I2C_DR, address);
+  reg_write(I2C_DR, addr);
   while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_ADDR));
   volatile uint32_t v = reg_read(I2C_SR1) | reg_read(I2C_SR2);
 }
 
-void i2c_write_data(uint8_t data)
+void i2c_write_byte(uint8_t v)
 {
   while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_TXE));
-  reg_write(I2C_DR, data);
+  reg_write(I2C_DR, v);
+}
+
+void i2c_wait_stop(void)
+{
   while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_BTF));
 }
 
-void i2c_write_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data)
+void i2c_write_bytes1(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data)
 {
   i2c_start();
   i2c_write_addr(i2c_addr);
-  i2c_write_data(reg_addr);
-  i2c_write_data(data);
+  i2c_write_byte(reg_addr);
+  i2c_write_byte(data);
+  i2c_wait_stop();
 }
 
+void i2c_write_bytes2(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data0, uint8_t data1)
+{
+  i2c_start();
+  i2c_write_addr(i2c_addr);
+  i2c_write_byte(reg_addr);
+  i2c_write_byte(data0);
+  i2c_write_byte(data1);
+  i2c_wait_stop();
+}
+
+void i2c_write_bytes3(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data0, uint8_t data1, uint8_t data2)
+{
+  i2c_start();
+  i2c_write_addr(i2c_addr);
+  i2c_write_byte(reg_addr);
+  i2c_write_byte(data0);
+  i2c_write_byte(data1);
+  i2c_write_byte(data2);
+  i2c_wait_stop();
+}
+
+void i2c_write_bytes(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *data, int count)
+{
+  int i;
+  i2c_start();
+  i2c_write_addr(i2c_addr);
+  i2c_write_byte(reg_addr);
+  for (i = 0; i < count; ++i)
+    i2c_write_byte(data[i]);
+  i2c_wait_stop();
+}
