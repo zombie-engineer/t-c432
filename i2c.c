@@ -77,9 +77,10 @@
 #define I2C_CCR_FS_FM 1
 #define I2C_TRISE (volatile uint32_t *)(I2C1_BASE + 0x20)
 
-void b()
+void b(void)
 {
-  while(1);
+  volatile int xxx = 1;
+  while(xxx);
 }
 
 #define PCLK1_MHZ 36
@@ -142,6 +143,10 @@ void i2c_write_addr(uint8_t addr)
   volatile uint32_t v = reg_read(I2C_SR1) | reg_read(I2C_SR2);
 }
 
+void i2c_write_addr_mode_recv(uint8_t addr)
+{
+}
+
 void i2c_write_byte(uint8_t v)
 {
   while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_TXE));
@@ -160,6 +165,21 @@ void i2c_write_bytes1(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data)
   i2c_write_byte(reg_addr);
   i2c_write_byte(data);
   i2c_wait_stop();
+}
+
+void i2c_read_bytes1(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *data)
+{
+  /* Start / ACK */
+  reg32_set_bit(I2C_CR1, I2C_CR1_ACK);
+  reg32_set_bit(I2C_CR1, I2C_CR1_START);
+  while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_SB));
+  reg_write(I2C_DR, i2c_addr | 1);
+  while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_ADDR));
+  reg32_clear_bit(I2C_CR1, I2C_CR1_ACK);
+  volatile uint32_t v = reg_read(I2C_SR1) | reg_read(I2C_SR2);
+  while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_RXNE));
+  *data = reg_read(I2C_DR);
+  reg32_set_bit(I2C_CR1, I2C_CR1_STOP);
 }
 
 void i2c_write_bytes2(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data0, uint8_t data1)
