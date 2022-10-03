@@ -27,7 +27,7 @@
   CMD(0xaf)
 
 #define CMD_SET_CONTRAST(__value) \
-  CMD2(0x81, __value)
+  CMD2(0x81,(__value))
 
 #define DISPL_ON_RESUME_RAM 0
 #define DISPL_ON_IGNORE_RAM 1
@@ -86,7 +86,8 @@
   CMD2(0xd3, ((__v) & 0x3f))
 
 #define CMD_SET_COM_PINS_HW_CONF(__a5, __a4) \
-  CMD2(0xda, 0x02 | ((__a5) << 5) | ((__a4) << 4))
+  CMD2(0xda, 0x12);
+//  CMD2(0xda, 0x02 | ((__a5) << 5) | ((__a4) << 4))
 
 /* Timing and driving config */
 #define CMD_SET_CLK_DIV_RATIO(__freq, __div) \
@@ -108,19 +109,25 @@ static uint8_t display_buf[SIZE_X * SIZE_Y / 8];
 
 void dbuffer_init(void)
 {
-  for (int i = 0; i < sizeof(display_buf); ++i)
-    display_buf[i] = 0x07;
+  for (int page = 0; page < 8; ++page) {
+    for (int col = 0; col < 128; ++col) {
+      display_buf[page * SIZE_X + col] = col & 0xf;
+    }
+  }
 }
 
-void dbuffer_flush(void)
+void dbuffer_flush(char arg)
 {
   CMD_SET_COL_LO(0);
   CMD_SET_COL_HI(0);
-  for (int page = 4; page < 8; ++page) {
+  for (int page = 0; page < 8; ++page) {
     CMD_SET_PAGE_START_ADDRESS(page);
-    for (int col = 0; col < 128 / 2; ++col) {
-      for (int i = 0; i < 20000; ++i);
-      DATA2(display_buf[page * 128 + col], display_buf[page * 128 + col + 1]);
+    for (int col = 0; col < 128 / 8; ++col) {
+      DATA2(0xff, 0x01);
+      DATA2(arg, 0x00);
+      DATA2(0x0, 0x00);
+      DATA2(0x0, 0x00);
+ //     DATA2(display_buf[page * 128 + col], display_buf[page * 128 + col + 1]);
     }
   }
 }
@@ -147,6 +154,44 @@ void dbuffer_draw_pixel(int x, int y, int color)
 
 extern void b(void);
 
+void ssd1306_horizontal_scroll(int start_page, int end_page, int duration)
+{
+  char buf[8] = {
+    0x00,
+    0x26,
+    0x00,
+    start_page & 7,
+    duration & 7,
+    end_page & 7,
+    0x00,
+    0xff
+  };
+
+  i2c_write_bytes(SSD1306_I2C_ADDR, buf, 8);
+  CMD(0x2f);
+}
+
+void ssd1306_vertical_scroll(int start_page, int end_page, int duration)
+{
+  char buf[7] = {
+    0x00,
+    0x2a,
+    0x00,
+    start_page & 7,
+    duration & 7,
+    end_page & 7,
+    0 
+  };
+
+  i2c_write_bytes(SSD1306_I2C_ADDR, buf, 7);
+  CMD(0x2f);
+}
+
+void ssd1306_arg(uint16_t arg)
+{
+  CMD_SET_CONTRAST(arg >> 4);
+}
+
 void ssd1306_init(void)
 {
   CMD_SET_MULTIPLEX_RATIO(0x3f);
@@ -154,7 +199,7 @@ void ssd1306_init(void)
   CMD_SET_START_LINE_ADDR(0);
   CMD_SET_SEGMENT_REMAP(0);
   CMD_SET_COM_SCAN_DIR(COM_SCAN_DOWN);
-  CMD_SET_COM_PINS_HW_CONF(0, 0);
+  CMD_SET_COM_PINS_HW_CONF(1, 0);
   CMD_SET_CONTRAST(0x7f);
   CMD_DISPL_SET_ON_OFF(DISPL_OFF);
   CMD_SET_INVERTED(DISPL_INVERTED_OFF);
@@ -164,13 +209,17 @@ void ssd1306_init(void)
   CMD_SET_COL_LO(0);
   CMD_SET_PAGE_START_ADDRESS(0);
   CMD_DISPL_SET_TURN_ON_BEHAVIOR(DISPL_ON_RESUME_RAM);
-  CMD_SET_PRECHARGE_PERIOD(0x2, 0x2);
+  CMD_SET_PRECHARGE_PERIOD(0x1, 0x1);
   CMD_SET_VCOM_DESELECT_LEVEL(2);
   CMD_CHARGE_PUMP_ENA();
   CMD_DISPL_SET_ON_OFF(DISPL_ON);
   dbuffer_init();
-  dbuffer_flush();
+  dbuffer_flush(0);
   while(1);
+  // ssd1306_horizontal_scroll(0, 1, 0);
+  // ssd1306_vertical_scroll(0, 1, 2);
+  // while(1);
+  //return;
 
   i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0x00);
 #if 0
@@ -186,5 +235,5 @@ void ssd1306_init(void)
     i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, i & 0xff);
   }
   i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0x00);
-  b ();
+//  b ();
 }
