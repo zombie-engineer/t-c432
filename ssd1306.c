@@ -3,6 +3,12 @@
 
 #define SSD1306_I2C_ADDR 0x78
 
+#define DATA(__byte) \
+  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, __byte)
+
+#define DATA2(__byte0, __byte1) \
+  i2c_write_bytes2(SSD1306_I2C_ADDR, 0x40, __byte0, __byte1)
+
 #define CMD(__cmdbyte) \
   i2c_write_bytes1(SSD1306_I2C_ADDR, 0x00, (__cmdbyte))
 
@@ -33,10 +39,10 @@
 #define CMD_SET_INVERTED(__value) \
   CMD(0xa6 | ((__value) & 1))
 
-#define CMD_SET_LOWER_COL(__value) \
+#define CMD_SET_COL_LO(__value) \
   CMD((__value) & 0xf)
 
-#define CMD_SET_HIGH_COL(__value) \
+#define CMD_SET_CO_HI(__value) \
   CMD(0x10 | ((__value) & 0xf))
 
 #define MEMORY_ADDRESSING_HORIZ 0b00
@@ -52,7 +58,7 @@
 #define CMD_SET_PAGE_ADDRESS(__start, __end) \
   CMD3(0x22, (__start) & 0x07, (__end) & 0x07)
 
-#define CMD_SET_PAGE_START(__start) \
+#define CMD_SET_PAGE_START_ADDRESS(__start) \
   CMD(0xb0 | ((__start) & 7))
 
 #define COM_SCAN_UP 0
@@ -87,16 +93,58 @@
 
 #define CMD_SET_MULTIPLEX_RATIO(__v) \
   CMD2(0xa8, 0xa0 | (__v) & 0x3f)
+
+#define SIZE_X 128
+#define SIZE_Y 64
+static uint8_t display_buf[SIZE_X * SIZE_Y / 8];
+
+void dbuffer_init(void)
+{
+  for (int i = 0; i < sizeof(display_buf); ++i)
+    display_buf[i] = 0xff;
+}
+
+void dbuffer_flush(void)
+{
+  for (int page = 0; page < 4; ++page) {
+    CMD_SET_PAGE_START_ADDRESS(page);
+    for (int col = 0; col < 128; ++col) {
+      DATA(display_buf[page * 128 + col]);
+    }
+  }
+}
+
+int dbuffer_get_pixel(int x, int y)
+{
+  int page_idx = y / SIZE_Y;
+  int bitpos = y % SIZE_Y;
+  int byte_idx = page_idx * SIZE_X + x;
+  uint8_t b = display_buf[byte_idx];
+  return (b >> bitpos) & 1;
+}
+
+void dbuffer_draw_pixel(int x, int y, int color)
+{
+  int page_idx = y / SIZE_Y;
+  int bitpos = y % SIZE_Y;
+  int byte_idx = page_idx * SIZE_X + x;
+  uint8_t b = display_buf[byte_idx];
+  b &= ~(uint8_t)(1<<bitpos);
+  b |= (uint8_t)((color & 1)<<bitpos);
+  display_buf[byte_idx] = b;
+}
+
+extern void b(void);
+
 void ssd1306_init(void)
 {
   CMD_DISPL_SET_ON_OFF(DISPL_OFF);
-#if 0
-  CMD_MEMORY_ADDRESSING(MEMORY_ADDRESSING_HORIZ);
-  CMD_SET_HIGH_COL(0);
-  CMD_SET_PAGE_START(0);
+  CMD_MEMORY_ADDRESSING(MEMORY_ADDRESSING_PAGE);
+  CMD_SET_CO_HI(0);
+  CMD_SET_COL_LO(0);
+  CMD_SET_PAGE_START_ADDRESS(0);
   CMD_SET_COM_SCAN_DIR(COM_SCAN_DOWN);
-  CMD_SET_LOWER_COL(0);
-  CMD_SET_HIGH_COL(0);
+  CMD_SET_CO_HI(0);
   CMD_SET_START_LINE_ADDR(0);
   CMD_SET_CONTRAST(0xff);
   CMD_SET_SEGMENT_REMAP(0);
@@ -106,38 +154,28 @@ void ssd1306_init(void)
   CMD_SET_DISPL_OFFSET(0);
   CMD_SET_CLK_DIV_RATIO(0x00);
   CMD_SET_PRECHARGE_PERIOD(1, 0);
-#endif
   CMD_SET_COM_PINS_HW_CONF(1, 0);
   CMD_SET_VCOM_DESELECT_LEVEL(2);
   CMD_CHARGE_PUMP_ENA();
-  for (volatile int i = 0; i < 200000; ++i);
   CMD_DISPL_SET_ON_OFF(DISPL_ON);
-  while(1) {
-  for (volatile int x = 0; x < 128; ++x) {
-    i2c_write_bytes1(0x78, 0x40, 0x1);
-  }
-  }
 
-
-  int r = 0;
-  while(1) {
-  for (int i = 0; i < 0xffffffff; ++i) {
-    r++;
-    CMD_SET_COLUMN_ADDRESS(59+ r , 62 + r);
-    i2c_write_bytes1(0x78, 0x40, 0xff);
-    i2c_write_bytes1(0x78, 0x40, 0x00);
-    i2c_write_bytes1(0x78, 0x40, 0x00);
-    i2c_write_bytes1(0x78, 0x40, 0x00);
-    CMD_SET_COLUMN_ADDRESS(0, 3);
-    i2c_write_bytes1(0x78, 0x40, 0xff);
-    i2c_write_bytes1(0x78, 0x40, 0xff);
-    i2c_write_bytes1(0x78, 0x40, 0xff);
-
-    CMD_SET_COLUMN_ADDRESS(0, 3);
-    i2c_write_bytes1(0x78, 0x40, 0xff);
-    i2c_write_bytes1(0x78, 0x40, 0xff);
-    i2c_write_bytes1(0x78, 0x40, 0xff);
+  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0x00);
+  CMD_SET_COL_LO(0);
+  CMD_SET_CO_HI(0);
+  for (int i = 0; i < sizeof(display_buf); ++i) {
+    i2c_read_bytes1(SSD1306_I2C_ADDR, 0x40, &display_buf[i]);
   }
-  }
-  while(1);
+  b ();
+  CMD_SET_COL_LO(0);
+  CMD_SET_CO_HI(0);
+  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0x00);
+  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0x00);
+  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0x00);
+  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0x00);
+  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0xff);
+  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0xff);
+  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0xff);
+  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0);
+  b ();
+  
 }
