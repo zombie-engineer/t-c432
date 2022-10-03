@@ -192,6 +192,16 @@ void i2c_write_bytes2(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data0, uint8_t
   i2c_wait_stop();
 }
 
+void i2c_write_bytes(uint8_t i2c_addr, uint8_t *data, int count)
+{
+  i2c_start();
+  i2c_write_addr(i2c_addr);
+  for (int i = 0; i < count; ++i) {
+    i2c_write_byte(data[i]);
+  }
+  i2c_wait_stop();
+}
+
 void i2c_write_bytes3(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data0, uint8_t data1, uint8_t data2)
 {
   i2c_start();
@@ -200,16 +210,5 @@ void i2c_write_bytes3(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data0, uint8_t
   i2c_write_byte(data0);
   i2c_write_byte(data1);
   i2c_write_byte(data2);
-  i2c_wait_stop();
-}
-
-void i2c_write_bytes(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *data, int count)
-{
-  int i;
-  i2c_start();
-  i2c_write_addr(i2c_addr);
-  i2c_write_byte(reg_addr);
-  for (i = 0; i < count; ++i)
-    i2c_write_byte(data[i]);
   i2c_wait_stop();
 }
