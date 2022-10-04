@@ -156,6 +156,7 @@ void i2c_write_byte(uint8_t v)
 void i2c_wait_stop(void)
 {
   while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_BTF));
+  reg32_set_bit(I2C_CR1, I2C_CR1_STOP);
 }
 
 void i2c_write_bytes1(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data)
