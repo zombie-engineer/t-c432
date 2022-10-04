@@ -1,9 +1,11 @@
+CROSSDIR := /home/user_user/Downloads/arm-gnu-toolchain-12.2.mpacbti-bet1-x86_64-arm-none-eabi
+LIBGCC := $(CROSSDIR)/lib/gcc/arm-none-eabi/12.2.0/thumb/v7-m/nofp/libgcc.a
 
 firmware.bin: firmware.elf
 	arm-none-eabi-objcopy firmware.elf --output-target binary firmware.bin
 
 firmware.elf: main.o start.o isr_vector.o rcc.o i2c.o flash.o gpio.o ssd1306.o link.ld
-	arm-none-eabi-ld main.o start.o isr_vector.o rcc.o flash.o gpio.o i2c.o ssd1306.o -o firmware.elf -T link.ld
+	arm-none-eabi-ld main.o start.o isr_vector.o rcc.o flash.o gpio.o i2c.o ssd1306.o $(LIBGCC) -o firmware.elf -T link.ld
 
 start.o: start.S
 	arm-none-eabi-as start.S -o start.o
