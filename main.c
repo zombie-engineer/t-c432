@@ -322,9 +322,28 @@ static int tim2_setup(
 
 static volatile int last_adc = 0;
 
+int x = 0;
+
+void update_display()
+{
+  x += 2;
+  if (x >= 128)
+    x = 0;
+
+  int y = last_adc >> 5;
+  if (y >= 64)
+    y = 64;
+  dbuf_clear();
+  dbuf_draw_line(0, 0, 10, 12, 1);
+  dbuf_draw_line(10, 12, x, y, 1);
+  dbuf_draw_line(x, y, 127, 63, 1);
+  dbuf_flush();
+}
+
 void adc_isr(void)
 {
   last_adc = reg_read(ADC1_DR);
+  update_display();
   reg_write(ADC1_SR, 0);
   reg_write(ADC1_CR2, 1 << ADC_CR2_EON);
 }
@@ -333,9 +352,11 @@ void tim2_isr(void)
 {
   static int toggle_flag = 0;
   // reg_write(TIM2_ARR, last_adc + 600);
+
   reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_TIM2);
   reg_write(TIM2_SR, 0);
   reg32_set_bit(TIM2_CR1, 0);
+
 
   if (toggle_flag) {
     gpioc_bit_set(13);
@@ -386,7 +407,7 @@ void timer_setup(void)
   rcc_enable_tim2();
   rcc_enable_gpio_c();
   gpioc_set_pin13();
-  tim2_setup(true, CALC_PSC(0.5, F_CLK, 0xffff), 0xffff, true, true);
+  tim2_setup(true, CALC_PSC(0.1, F_CLK, 0xffff), 0xffff, true, true);
 }
 
 
@@ -712,6 +733,6 @@ void main(void)
 
   timer_setup();
 //  uart2_setup();
-  // adc_setup();
+  adc_setup();
   while(1);
 }

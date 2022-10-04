@@ -54,6 +54,11 @@
 #define CMD_SET_COL_HI(__value) \
   CMD(0x10 | ((__value) & 0xf))
 
+#define CMD_SET_COL(__x) \
+  CMD_SET_COL_LO((__x) & 0xf); \
+  CMD_SET_COL_HI(((__x) >> 4) & 0xf)
+
+
 /* Page addressing only */
 #define CMD_SET_PAGE_START_ADDRESS(__start) \
   CMD(0xb0 | ((__start) & 7))
@@ -97,59 +102,82 @@
   CMD2(0xd9, ((__v0 << 4) & 0xf0) | ((__v1 << 0) & 0x0f))
 
 #define CMD_SET_VCOM_DESELECT_LEVEL(__v1) \
-  CMD2(0xdb, 0x30)
+  CMD2(0xdb, (__v1) << 4)
 
 #define CMD_CHARGE_PUMP_ENA()\
   CMD2(0x8d, 0x14)
 
 #define SIZE_X 128
 #define SIZE_Y 64
+#define ROWS_PER_PAGE 8
+#define NUM_PAGES (SIZE_Y / ROWS_PER_PAGE)
+#define NUM_COLUMNS SIZE_X
 
-static uint8_t display_buf[SIZE_X * SIZE_Y / 8];
+static uint8_t dbuf[SIZE_X * SIZE_Y / 8];
 
-void dbuffer_init(void)
+
+#define DBYTE(__col, __page) (dbuf[__col + __page * SIZE_X])
+
+void dbuf_clear(void)
 {
-  for (int page = 0; page < 8; ++page) {
-    for (int col = 0; col < 128; ++col) {
-      display_buf[page * SIZE_X + col] = col & 0xf;
+  int page;
+  int col;
+
+  for (page = 0; page < NUM_PAGES; ++page) {
+    for (col = 0; col < NUM_COLUMNS; ++col) {
+      DBYTE(col, page)  = 0;
     }
   }
 }
 
-void dbuffer_flush(char arg)
+void dbuf_init(void)
 {
-  CMD_SET_COL_LO(0);
-  CMD_SET_COL_HI(0);
-  for (int page = 0; page < 8; ++page) {
-    CMD_SET_PAGE_START_ADDRESS(page);
-    for (int col = 0; col < 128 / 8; ++col) {
-      DATA2(0xff, 0x01);
-      DATA2(arg, 0x00);
-      DATA2(0x0, 0x00);
-      DATA2(0x0, 0x00);
- //     DATA2(display_buf[page * 128 + col], display_buf[page * 128 + col + 1]);
+  dbuf_clear();
+}
+
+void dbuf_draw_pixel(int x, int y, int color)
+{
+  uint8_t *p = &DBYTE(x, y / ROWS_PER_PAGE);
+  int bitidx = y % ROWS_PER_PAGE;
+  *p = (*p & ~(1<<bitidx)) | (1<<bitidx);
+}
+
+void dbuf_draw_line(int x0, int y0, int x1, int y1, int color)
+{
+  if (x1 - x0 > y1 - y0)  {
+    float slope = (float)(y1 - y0) / (x1 - x0);
+    for (int x = x0; x <= x1; x++) {
+      int y = y0 + slope * (x - x0);
+      dbuf_draw_pixel(x, y, color);
+    }
+  } else {
+    float slope = (float)(x1 - x0) / (y1 - y0);
+    for (int y = y0; y <= y1; y++) {
+      int x = x0 + slope * (y - y0);
+      dbuf_draw_pixel(x, y, color);
     }
   }
 }
 
-int dbuffer_get_pixel(int x, int y)
+int dbuf_get_pixel(int x, int y)
 {
   int page_idx = y / SIZE_Y;
   int bitpos = y % SIZE_Y;
   int byte_idx = page_idx * SIZE_X + x;
-  uint8_t b = display_buf[byte_idx];
+  uint8_t b = dbuf[byte_idx];
   return (b >> bitpos) & 1;
 }
 
-void dbuffer_draw_pixel(int x, int y, int color)
+void dbuf_flush(void)
 {
-  int page_idx = y / SIZE_Y;
-  int bitpos = y % SIZE_Y;
-  int byte_idx = page_idx * SIZE_X + x;
-  uint8_t b = display_buf[byte_idx];
-  b &= ~(uint8_t)(1<<bitpos);
-  b |= (uint8_t)((color & 1)<<bitpos);
-  display_buf[byte_idx] = b;
+  int page;
+  int col;
+
+  CMD_SET_COL(0);
+  for (page = 0; page < NUM_PAGES; ++page) {
+    CMD_SET_PAGE_START_ADDRESS(page);
+    i2c_write_bytes_x(SSD1306_I2C_ADDR, 0x40, &DBYTE(0, page), NUM_COLUMNS);
+  }
 }
 
 extern void b(void);
@@ -203,37 +231,15 @@ void ssd1306_init(void)
   CMD_SET_CONTRAST(0x7f);
   CMD_DISPL_SET_ON_OFF(DISPL_OFF);
   CMD_SET_INVERTED(DISPL_INVERTED_OFF);
-  CMD_SET_CLK_DIV_RATIO(1, 1);
+  CMD_SET_CLK_DIV_RATIO(15, 0);
   CMD_MEMORY_ADDRESSING(MEMORY_ADDRESSING_PAGE);
-  CMD_SET_COL_HI(0);
-  CMD_SET_COL_LO(0);
+  CMD_SET_COL(0);
   CMD_SET_PAGE_START_ADDRESS(0);
   CMD_DISPL_SET_TURN_ON_BEHAVIOR(DISPL_ON_RESUME_RAM);
   CMD_SET_PRECHARGE_PERIOD(0x1, 0x1);
-  CMD_SET_VCOM_DESELECT_LEVEL(2);
+  CMD_SET_VCOM_DESELECT_LEVEL(1);
   CMD_CHARGE_PUMP_ENA();
   CMD_DISPL_SET_ON_OFF(DISPL_ON);
-  dbuffer_init();
-  dbuffer_flush(0);
-  while(1);
-  // ssd1306_horizontal_scroll(0, 1, 0);
-  // ssd1306_vertical_scroll(0, 1, 2);
-  // while(1);
-  //return;
-
-  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0x00);
-#if 0
-  for (int i = 0; i < sizeof(display_buf); ++i) {
-    i2c_read_bytes1(SSD1306_I2C_ADDR, 0x40, &display_buf[i]);
-  }
-#endif
-  
-  CMD_SET_COL_LO(0);
-  CMD_SET_COL_HI(0);
-  for (int i = 0; i < 128 * 64 / 8; ++i)  {
-    for (volatile int z = 0; z < 200000; ++z);
-    i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, i & 0xff);
-  }
-  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, 0x00);
-//  b ();
+  dbuf_init();
+  dbuf_flush();
 }

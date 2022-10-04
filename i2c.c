@@ -168,6 +168,18 @@ void i2c_write_bytes1(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data)
   i2c_wait_stop();
 }
 
+void i2c_write_bytes_x(uint8_t i2c_addr, uint8_t cmdbyte, uint8_t *data, int count)
+{
+  i2c_start();
+  i2c_write_addr(i2c_addr);
+  i2c_write_byte(cmdbyte);
+  for (int i = 0; i < count; ++i) {
+    i2c_write_byte(data[i]);
+  }
+  i2c_wait_stop();
+}
+
+
 void i2c_read_bytes1(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *data)
 {
   /* Start / ACK */
