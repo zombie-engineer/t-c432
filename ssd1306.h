@@ -8,3 +8,7 @@ void dbuf_draw_line(int x0, int y0, int x1, int y1, int color);
 void dbuf_draw_pixel(int x, int y, int color);
 void dbuf_clear(void);
 void dbuf_flush(void);
+
+struct font_descriptor;
+void dbuf_draw_char(int *x, int y, char c, const struct font_descriptor *f);
+void dbuf_draw_text(int x, int y, const char *text, const struct font_descriptor *f);

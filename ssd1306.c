@@ -1,5 +1,6 @@
 #include "ssd1306.h"
 #include "i2c.h"
+#include "font.h"
 
 #define SSD1306_I2C_ADDR 0x78
 
@@ -139,7 +140,7 @@ void dbuf_draw_pixel(int x, int y, int color)
 {
   uint8_t *p = &DBYTE(x, y / ROWS_PER_PAGE);
   int bitidx = y % ROWS_PER_PAGE;
-  *p = (*p & ~(1<<bitidx)) | (1<<bitidx);
+  *p = (*p & ~(1<<bitidx)) | (color<<bitidx);
 }
 
 void dbuf_draw_line(int x0, int y0, int x1, int y1, int color)
@@ -156,6 +157,39 @@ void dbuf_draw_line(int x0, int y0, int x1, int y1, int color)
       int x = x0 + slope * (y - y0);
       dbuf_draw_pixel(x, y, color);
     }
+  }
+}
+
+void dbuf_draw_char(int *x, int y, char ch, const struct font_descriptor *f)
+{
+  const struct font_glyph *g;
+  const uint8_t *p;
+
+  g = font_get_glyph(f, ch);
+  if (!g)
+    return;
+
+  p = &f->data[g->bitmap_offset];
+  for (int cy = 0; cy < g->height; ++cy) {
+    for (int cx = 0; cx < g->width; ++cx) {
+      int bit_no = cy * g->width + cx;
+      int bit_pos = 7 - (bit_no % 8);
+      uint8_t b = p[bit_no / 8];
+      int val = (b >> bit_pos) & 1;
+      dbuf_draw_pixel(*x + cx, y + g->height - cy, val);
+    }
+  }
+  *x += g->x_advance;
+}
+
+void dbuf_draw_text(int x, int y, const char *text, const struct font_descriptor *f)
+{
+  const char *p = text;
+  while(1) {
+    char c = *p++;
+    if (!c)
+      break;
+    dbuf_draw_char(&x, y, c, f);
   }
 }
 
