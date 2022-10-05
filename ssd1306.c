@@ -143,8 +143,66 @@ void dbuf_draw_pixel(int x, int y, int color)
   *p = (*p & ~(1<<bitidx)) | (color<<bitidx);
 }
 
+void dbuf_draw_filled_rect(int x0, int y0, int x1, int y1, int color)
+{
+  if (x1 < x0) {
+    int tmp = x0;
+    x0 = x1;
+    x1 = tmp;
+  }
+  if (y1 < y0) {
+    int tmp = y0;
+    y0 = y1;
+    y1 = tmp;
+  }
+  for (int y = y0; y < y1; ++y) {
+    for (int x = x0; x < x1; ++x) {
+      dbuf_draw_pixel(x, y, color);
+    }
+  }
+}
+
+void dbuf_draw_hatched_rect(int x0, int y0, int x1, int y1, int color)
+{
+  int p = 0;
+  if (x1 < x0) {
+    int tmp = x0;
+    x0 = x1;
+    x1 = tmp;
+  }
+  if (y1 < y0) {
+    int tmp = y0;
+    y0 = y1;
+    y1 = tmp;
+  }
+  for (int y = y0; y < y1; ++y) {
+    for (int x = x0; x < x1; ++x) {
+      p++;
+      dbuf_draw_pixel(x, y, (p % 4) == 0);
+    }
+  }
+}
+
+void dbuf_draw_rect(int x0, int y0, int x1, int y1, int color)
+{
+  dbuf_draw_line(x0, y0, x0, y1, color);
+  dbuf_draw_line(x0, y1, x1, y1, color);
+  dbuf_draw_line(x1, y0, x1, y1, color);
+  dbuf_draw_line(x0, y0, x1, y0, color);
+}
+
 void dbuf_draw_line(int x0, int y0, int x1, int y1, int color)
 {
+  if (x1 < x0) {
+    int tmp = x0;
+    x0 = x1;
+    x1 = tmp;
+  }
+  if (y1 < y0) {
+    int tmp = y0;
+    y0 = y1;
+    y1 = tmp;
+  }
   if (x1 - x0 > y1 - y0)  {
     float slope = (float)(y1 - y0) / (x1 - x0);
     for (int x = x0; x <= x1; x++) {
@@ -182,7 +240,7 @@ void dbuf_draw_char(int *x, int y, char ch, const struct font_descriptor *f)
   *x += g->x_advance;
 }
 
-void dbuf_draw_text(int x, int y, const char *text, const struct font_descriptor *f)
+int dbuf_draw_text(int x, int y, const char *text, const struct font_descriptor *f)
 {
   const char *p = text;
   while(1) {
@@ -191,6 +249,7 @@ void dbuf_draw_text(int x, int y, const char *text, const struct font_descriptor
       break;
     dbuf_draw_char(&x, y, c, f);
   }
+  return x;
 }
 
 int dbuf_get_pixel(int x, int y)
@@ -262,7 +321,7 @@ void ssd1306_init(void)
   CMD_SET_SEGMENT_REMAP(0);
   CMD_SET_COM_SCAN_DIR(COM_SCAN_DOWN);
   CMD_SET_COM_PINS_HW_CONF(1, 0);
-  CMD_SET_CONTRAST(0x7f);
+  CMD_SET_CONTRAST(0xef);
   CMD_DISPL_SET_ON_OFF(DISPL_OFF);
   CMD_SET_INVERTED(DISPL_INVERTED_OFF);
   CMD_SET_CLK_DIV_RATIO(15, 0);
