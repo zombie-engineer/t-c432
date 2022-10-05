@@ -342,79 +342,97 @@ struct bar_widget {
 
 void bar_widget_draw(const struct bar_widget *b)
 {
-  dbuf_draw_line(
-    b->pos_x,
+  dbuf_draw_rect(
+    b->pos_x, b->pos_y,
+    b->pos_x + b->size_x,
+    b->pos_y + b->size_y, 1);
+
+  dbuf_draw_hatched_rect(
+    b->pos_x + 2,
     b->pos_y,
-    b->pos_x,
-    b->pos_y + b->size_y,
-    1);
-
-  dbuf_draw_line(
-    b->pos_x,
-    b->pos_y,
-    b->pos_x + b->size_x,
-    b->pos_y,
-    1);
-
-  dbuf_draw_line(
-    b->pos_x,
-    b->pos_y + b->size_y,
-    b->pos_x + b->size_x,
-    b->pos_y + b->size_y,
-    1);
-
-  dbuf_draw_line(
-    b->pos_x,
-    b->pos_y + b->size_y,
-    b->pos_x + b->size_x,
-    b->pos_y + b->size_y,
-    1);
-
-  dbuf_draw_line(
-    b->pos_x + b->size_x,
-    b->pos_y,
-    b->pos_x + b->size_x,
-    b->pos_y + b->size_y,
-    1);
-
-  dbuf_draw_line(
-    b->pos_x,
+    b->pos_x + b->size_x - 1,
     b->pos_y + b->level,
-    b->pos_x + b->size_x,
+    1);
+
+  dbuf_draw_line(
+    b->pos_x + 2,
+    b->pos_y + b->level,
+    b->pos_x + b->size_x - 1,
     b->pos_y + b->level,
     1);
 }
 
-void update_display()
+void draw_tim2_cntr(int x, int y)
 {
-  int y;
-  char *p = buf;
-  float adc_normalized = (float)last_adc / 4096;
-  int level = adc_normalized * 64;
-  int num_volt = adc_normalized * 3300;
-  int first = num_volt / 1000;
-  int next = num_volt - first * 1000;
+  char counterbuf[32];
+  itoa(reg_read(TIM2_TCNT), counterbuf, 10);
+  x = dbuf_draw_text(x, y, "TIM2_TCNT:", &font_1);
+  dbuf_draw_text(x, y, counterbuf, &font_2);
+}
+
+void draw_dynamic_bar(int level)
+{
   struct bar_widget w = {
-    .pos_x = 100,
+    .pos_x = 110,
     .pos_y = 0,
     .size_x = 10,
     .size_y = 63,
     .level = level
   };
+  bar_widget_draw(&w);
+}
 
-  itoa(first, p, 10);
+void draw_voltmeter(int x, int y, int volt_int, int volt_frac)
+{
+  char b[32];
+  char *p = b;
+  itoa(volt_int, p, 10);
   p += strlen(p);
   *p++ = '.';
-  itoa(next, p, 10);
+  itoa(volt_frac, p, 10);
   p += strlen(p);
+  x = dbuf_draw_text(x, y, "V:", &font_3);
+  dbuf_draw_text(x, y, b, &font_3);
+}
 
-  if (y >= 64)
-    y = 64;
+int frame_counter = 0;
+int duration;
+
+void draw_blinker_icon(int x, int y, int sz, int num_frames, int interval)
+{
+  if (!duration && !(frame_counter % interval)) {
+    duration = num_frames;
+  }
+  if (duration) {
+    dbuf_draw_filled_rect(x, y, x + sz, y + sz, 1);
+    duration--;
+  }
+}
+
+void update_display()
+{
+  frame_counter++;
+  int y;
+  float adc_normalized = (float)last_adc / 4096;
+  int level = adc_normalized * 64;
+  int num_volt = adc_normalized * 3300;
+  int first = num_volt / 1000;
+  int next = num_volt - first * 1000;
+
+
   dbuf_clear();
+  draw_dynamic_bar(level);
+  draw_voltmeter(2, 35, first, next);
+  dbuf_draw_text(20, 4, "Test", &font_4);
 
-  bar_widget_draw(&w);
-  dbuf_draw_text(0, 35, buf, &font_3);
-  dbuf_draw_text(20, 4, "test", &font_4);
+  y = 40;
+  dbuf_draw_line(64, y, 64, y + 3, 1);
+  y = 20;
+  dbuf_draw_line(64, y, 64, y + 3, 1);
+  y = 5;
+  dbuf_draw_line(64, y, 64, y + 3, 1);
+  draw_tim2_cntr(10, 50);
+  draw_blinker_icon(89, 6, 5, 3, 13);
   dbuf_flush();
 }
 
