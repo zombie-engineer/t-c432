@@ -6,6 +6,10 @@
 #include "i2c.h"
 #include "gpio.h"
 #include "ssd1306.h"
+#include "font.h"
+#include "string.h"
+#include <stdlib.h>
+
 
 #define SYSTICK_BASE 0xe000e010
 #define STK_CTRL (volatile uint32_t *)(SYSTICK_BASE + 0x00)
@@ -324,19 +328,93 @@ static volatile int last_adc = 0;
 
 int x = 0;
 
+int dig = 0;
+char buf[32];
+int tick = 0;
+
+struct bar_widget {
+  int pos_x;
+  int pos_y;
+  int size_x;
+  int size_y;
+  int level;
+};
+
+void bar_widget_draw(const struct bar_widget *b)
+{
+  dbuf_draw_line(
+    b->pos_x,
+    b->pos_y,
+    b->pos_x,
+    b->pos_y + b->size_y,
+    1);
+
+  dbuf_draw_line(
+    b->pos_x,
+    b->pos_y,
+    b->pos_x + b->size_x,
+    b->pos_y,
+    1);
+
+  dbuf_draw_line(
+    b->pos_x,
+    b->pos_y + b->size_y,
+    b->pos_x + b->size_x,
+    b->pos_y + b->size_y,
+    1);
+
+  dbuf_draw_line(
+    b->pos_x,
+    b->pos_y + b->size_y,
+    b->pos_x + b->size_x,
+    b->pos_y + b->size_y,
+    1);
+
+  dbuf_draw_line(
+    b->pos_x + b->size_x,
+    b->pos_y,
+    b->pos_x + b->size_x,
+    b->pos_y + b->size_y,
+    1);
+
+  dbuf_draw_line(
+    b->pos_x,
+    b->pos_y + b->level,
+    b->pos_x + b->size_x,
+    b->pos_y + b->level,
+    1);
+}
+
 void update_display()
 {
-  x += 2;
-  if (x >= 128)
-    x = 0;
+  int y;
+  char *p = buf;
+  float adc_normalized = (float)last_adc / 4096;
+  int level = adc_normalized * 64;
+  int num_volt = adc_normalized * 3300;
+  int first = num_volt / 1000;
+  int next = num_volt - first * 1000;
+  struct bar_widget w = {
+    .pos_x = 100,
+    .pos_y = 0,
+    .size_x = 10,
+    .size_y = 63,
+    .level = level
+  };
 
-  int y = last_adc >> 5;
+  itoa(first, p, 10);
+  p += strlen(p);
+  *p++ = '.';
+  itoa(next, p, 10);
+  p += strlen(p);
+
   if (y >= 64)
     y = 64;
   dbuf_clear();
-  dbuf_draw_line(0, 0, 10, 12, 1);
-  dbuf_draw_line(10, 12, x, y, 1);
-  dbuf_draw_line(x, y, 127, 63, 1);
+
+  bar_widget_draw(&w);
+  dbuf_draw_text(0, 35, buf, &font_3);
+  dbuf_draw_text(20, 4, "test", &font_4);
   dbuf_flush();
 }
 
