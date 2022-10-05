@@ -13,3 +13,21 @@ const struct font_glyph *font_get_glyph(const struct font_descriptor *f, char ch
 
   return &f->glyphs[ch - f->start_char];
 }
+
+int font_get_string_width(const struct font_descriptor *f, const char *str)
+{
+  int result = 0;
+  const struct font_glyph *g;
+  char ch;
+
+  while(1) {
+    ch = *str++;
+    if (!ch)
+      break;
+    g = font_get_glyph(f, ch);
+    if (ch) {
+      result += g->x_advance;
+    }
+  }
+  return result;
+}

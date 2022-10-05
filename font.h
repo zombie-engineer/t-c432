@@ -24,3 +24,4 @@ extern const struct font_descriptor font_3;
 extern const struct font_descriptor font_4;
 
 const struct font_glyph *font_get_glyph(const struct font_descriptor *f, char ch);
+int font_get_string_width(const struct font_descriptor *f, const char *str);
