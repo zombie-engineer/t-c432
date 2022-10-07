@@ -10,6 +10,7 @@
 #include "tim.h"
 #include "nvic.h"
 #include "string.h"
+#include "debug_pin.h"
 #include <stdlib.h>
 
 
@@ -351,22 +352,12 @@ void timer_setup(void)
 {
   /* SYSCLK = 72MHz */
   rcc_enable_tim2();
-  rcc_enable_gpio_c();
-  gpioc_set_pin13();
   tim2_setup(true, CALC_PSC(0.1, F_CLK, 0xffff), 0xffff, true, true);
 }
 
 void tim2_isr_cb()
 {
-  static int toggle_flag = 0;
-
-  if (toggle_flag) {
-    gpioc_bit_set(13);
-    toggle_flag = 0;
-  } else {
-    gpioc_bit_clear(13);
-    toggle_flag = 1;
-  }
+  debug_pin_toggle();
 }
 
 void usb_hp_isr(void)
@@ -690,6 +681,7 @@ void main(void)
   usb_init();
 
   timer_setup();
+  debug_pin_setup();
 //  uart2_setup();
   adc_setup();
   while(1);
