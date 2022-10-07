@@ -279,6 +279,11 @@ void draw_blinker_icon(int x, int y, int sz, int num_frames, int interval)
   }
 }
 
+static void update_display_usb_stats()
+{
+  dbuf_draw_text(20, 4, "sof:", &font_1);
+}
+
 void update_display()
 {
   frame_counter++;
@@ -291,9 +296,9 @@ void update_display()
 
 
   dbuf_clear();
+  update_display_usb_stats();
   draw_dynamic_bar(level);
   draw_voltmeter(2, 35, first, next);
-  dbuf_draw_text(20, 4, "Test", &font_4);
 
   y = 40;
   dbuf_draw_line(64, y, 64, y + 3, 1);
@@ -678,11 +683,12 @@ void main(void)
   rcc_set_72mhz_usb();
   i2c_init();
   ssd1306_init();
-  usb_init();
-
   timer_setup();
   debug_pin_setup();
+
+  usb_init();
 //  uart2_setup();
+
   adc_setup();
   while(1);
 }
