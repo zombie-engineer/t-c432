@@ -6,6 +6,7 @@
 #include "i2c.h"
 #include "gpio.h"
 #include "ssd1306.h"
+#include "scb.h"
 #include "font.h"
 #include "tim.h"
 #include "nvic.h"
@@ -679,13 +680,15 @@ static void i2c_init(void)
 
 void main(void)
 {
+  struct scb_cpuid i;
+  scb_get_cpuid(&i);
+
   zero_bss();
   rcc_set_72mhz_usb();
   i2c_init();
   ssd1306_init();
   timer_setup();
   debug_pin_setup();
-
   usb_init();
 //  uart2_setup();
 
