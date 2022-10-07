@@ -21,6 +21,11 @@ int scb_is_interrupt_pending(void);
 
 bool scb_is_in_nested_exception(void);
 
+void scb_set_prigroup(int prigroup_value);
+
+int scb_get_prigroup(void);
+
 uint32_t scb_get_vector_table_address(void);
 
 void scb_system_reset(void);
+

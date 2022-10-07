@@ -682,16 +682,20 @@ void main(void)
 {
   struct scb_cpuid i;
   scb_get_cpuid(&i);
+  // scb_set_prigroup(3);
+  nvic_set_priority(NVIC_INTERRUPT_NUMBER_ADC1, 1);
+  nvic_set_priority(NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0, 0);
 
   zero_bss();
   rcc_set_72mhz_usb();
   i2c_init();
   ssd1306_init();
-  timer_setup();
+//  timer_setup();
   debug_pin_setup();
   usb_init();
 //  uart2_setup();
 
   adc_setup();
+ 
   while(1);
 }

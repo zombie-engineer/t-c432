@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 #define NVIC_BASE 0xe000e100
 /*
@@ -53,3 +54,5 @@
 #define NVIC_INTERRUPT_NUMBER_TIM2 28
 #define NVIC_INTERRUPT_NUMBER_USB_WAKEUP 42
 
+uint8_t nvic_get_priority(int interrupt_no);
+void nvic_set_priority(int interrupt_no, uint8_t pri);

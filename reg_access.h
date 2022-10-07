@@ -5,8 +5,14 @@
 #define reg_write(__reg, __value) \
   *(volatile uint32_t *)(__reg) = (__value)
 
+#define reg_write8(__reg, __value) \
+  *(volatile uint8_t *)(__reg) = (__value)
+
 #define reg_read(__reg) \
   (*(volatile uint32_t *)(__reg))
+
+#define reg_read8(__reg) \
+  (*(volatile uint8_t *)(__reg))
 
 static inline void u32_modify_bits(uint32_t *v, int bitpos, int bitwidth, int value)
 {

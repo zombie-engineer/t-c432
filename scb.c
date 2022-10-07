@@ -58,6 +58,8 @@
 #define SCB_AIRCR_VECTKEY_READ_VALUE 0xfa05
 #define SCB_AIRCR_VECTKEY_WRITE_VALUE 0x05fa
 
+#define SCB_SHPR1 (volatile uint32_t *)(SCB_BASE + 0x18)
+
 void scb_get_cpuid(struct scb_cpuid *i)
 {
   uint32_t v = reg_read(SCB_CPUID);
@@ -101,8 +103,23 @@ uint32_t scb_get_vector_table_address(void)
     SCB_VTOR_TBLOFF, SCB_VTOR_TBLOFF_WIDTH) << SCB_VTOR_TBLOFF;
 }
 
+void scb_set_prigroup(int prigroup_value)
+{
+  uint32_t v = reg_read(SCB_AIRCR);
+
+  u32_modify_bits(&v, SCB_AIRCR_VECTKEYSTAT, SCB_AIRCR_VECTKEYSTAT_WIDTH,
+    SCB_AIRCR_VECTKEY_WRITE_VALUE);
+
+  u32_modify_bits(&v, SCB_AIRCR_PRIGROUP, SCB_AIRCR_PRIGROUP_WIDTH,
+    prigroup_value);
+
+  reg_write(SCB_AIRCR, v);
+}
+
 int scb_get_prigroup(void)
 {
+  return u32_extract_bits(reg_read(SCB_AIRCR),
+    SCB_AIRCR_PRIGROUP, SCB_AIRCR_PRIGROUP_WIDTH);
 }
 
 void scb_system_reset(void)
