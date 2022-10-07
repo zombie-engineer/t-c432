@@ -4,6 +4,7 @@ LIBC := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libc.a
 $(info $(LIBC))
 
 OBJS := main.o \
+  tim.o \
   font.o\
   isr_vector.o\
   rcc.o \

@@ -7,6 +7,8 @@
 #include "gpio.h"
 #include "ssd1306.h"
 #include "font.h"
+#include "tim.h"
+#include "nvic.h"
 #include "string.h"
 #include <stdlib.h>
 
@@ -32,73 +34,6 @@
 #define USART_DR  (volatile uint32_t *)(USART_BASE + 0x04)
 #define USART_BRR (volatile uint32_t *)(USART_BASE + 0x08)
 #define USART_CR1 (volatile uint32_t *)(USART_BASE + 0x0c)
-
-#define TIM2_BASE 0x40000000
-
-#define TIM2_CR1   (volatile uint32_t *)(TIM2_BASE + 0x00)
-#define TIM2_CR2   (volatile uint32_t *)(TIM2_BASE + 0x04)
-#define TIM2_SMCR  (volatile uint32_t *)(TIM2_BASE + 0x08)
-#define TIM2_DIER  (volatile uint32_t *)(TIM2_BASE + 0x0c)
-#define TIM2_SR    (volatile uint32_t *)(TIM2_BASE + 0x10)
-#define TIM2_EGR   (volatile uint32_t *)(TIM2_BASE + 0x14)
-#define TIM2_CCMR1 (volatile uint32_t *)(TIM2_BASE + 0x18)
-#define TIM2_CCMR2 (volatile uint32_t *)(TIM2_BASE + 0x1c)
-#define TIM2_CCER  (volatile uint32_t *)(TIM2_BASE + 0x20)
-#define TIM2_TCNT  (volatile uint32_t *)(TIM2_BASE + 0x24)
-#define TIM2_PSC   (volatile uint32_t *)(TIM2_BASE + 0x28)
-#define TIM2_ARR   (volatile uint32_t *)(TIM2_BASE + 0x2c)
-#define TIM2_CCR1  (volatile uint32_t *)(TIM2_BASE + 0x34)
-#define TIM2_CCR2  (volatile uint32_t *)(TIM2_BASE + 0x38)
-#define TIM2_CCR3  (volatile uint32_t *)(TIM2_BASE + 0x3c)
-#define TIM2_CCR4  (volatile uint32_t *)(TIM2_BASE + 0x40)
-#define TIM2_DCR   (volatile uint32_t *)(TIM2_BASE + 0x48)
-#define TIM2_DMAR  (volatile uint32_t *)(TIM2_BASE + 0x4c)
-
-#define NVIC_BASE 0xe000e100
-/*
- * Interrupt set-enable registers.
- * On read shows which interrupts are enabled.
- * On writing 1 enables interrupt.
- */
-#define NVIC_ISER0 (volatile uint32_t *)(NVIC_BASE + 0x00)
-#define NVIC_ISER1 (volatile uint32_t *)(NVIC_BASE + 0x04)
-#define NVIC_ISER2 (volatile uint32_t *)(NVIC_BASE + 0x08)
-
-/*
- * Interrupt clear-enable registers.
- * On read shows which interrupts are enabled.
- * On writing 1 disables interrupt.
- */
-#define NVIC_ICER0 (volatile uint32_t *)(NVIC_BASE + 0x80)
-#define NVIC_ICER1 (volatile uint32_t *)(NVIC_BASE + 0x84)
-#define NVIC_ICER2 (volatile uint32_t *)(NVIC_BASE + 0x88)
-
-/*
- * Interrupt set-pending registers.
- * On read shows which interrupts are pending.
- * On writing 1 set pending status.
- */
-#define NVIC_ISPR0 (volatile uint32_t *)(NVIC_BASE + 0x100)
-#define NVIC_ISPR1 (volatile uint32_t *)(NVIC_BASE + 0x104)
-#define NVIC_ISPR2 (volatile uint32_t *)(NVIC_BASE + 0x108)
-
-/*
- * Interrupt clear-pending registers.
- * On read shows which interrupts are pending.
- * On writing 1 clears pending status.
- */
-#define NVIC_ICPR0 (volatile uint32_t *)(NVIC_BASE + 0x180)
-#define NVIC_ICPR1 (volatile uint32_t *)(NVIC_BASE + 0x184)
-#define NVIC_ICPR2 (volatile uint32_t *)(NVIC_BASE + 0x188)
-
-/* Interrupt active bits registers */
-#define NVIC_IABR0 (volatile uint32_t *)(NVIC_BASE + 0x200)
-#define NVIC_IABR1 (volatile uint32_t *)(NVIC_BASE + 0x204)
-#define NVIC_IABR2 (volatile uint32_t *)(NVIC_BASE + 0x208)
-
-/* Interrupt priority registers */
-#define NVIC_IPR0 (volatile uint32_t *)(NVIC_BASE + 0x300)
-#define NVIC_STIR (volatile uint32_t *)(NVIC_BASE + 0xe00)
 
 
 #define ADC1_BASE 0x40012400
@@ -251,78 +186,12 @@ static void memcpy_sram_to_pma(uint32_t pma_dest, const void *src, int num_bytes
   }
 }
 
-#define TIMx_CEN  (1<<0)
-#define TIMx_UDIS (1<<1)
-#define TIMx_URS  (1<<2)
-#define TIMx_OPM  (1<<3)
-#define TIMx_DIR  (1<<4)
-#define TIMx_CMS  (3<<5)
-#define TIMx_ARPE (1<<7)
-#define TIMx_CKD  (3<<8)
-
-#define NVIC_INTERRUPT_NUMBER_ADC1 18
-#define NVIC_INTERRUPT_NUMBER_USB_HP_CAN_TX 19
-#define NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0 20
-#define NVIC_INTERRUPT_NUMBER_TIM2 28
-#define NVIC_INTERRUPT_NUMBER_USB_WAKEUP 42
-
 #if 0
 uint16_t tim_calc_psc(float timeout, uint32_t f_clk, uint16_t auto_reload_value)
 {
   return ;
 }
 #endif
-
-#define CALC_PSC(timeout, f_clk, auto_reload_value) (uint16_t)((float)f_clk * timeout / auto_reload_value - 1.0f)
-static int tim2_setup(
-  bool one_pulse,
-  uint16_t prescaler,
-  uint16_t counter_value,
-  bool enable_interrupt,
-  bool enable)
-{
-  uint16_t v;
-
-  reg_write(TIM2_ARR, counter_value);
-  reg_write(TIM2_PSC, prescaler);
-
-  v = reg_read(TIM2_CR1);
-
-  /* Auto-reload */
-  v |= TIMx_ARPE;
-
-  /* center-aligned off */
-  v &= ~TIMx_CMS;
-
-  /* count dir = up */
-  v &= ~TIMx_DIR;
-
-  if (one_pulse)
-    v |= TIMx_OPM;
-  else
-    v &= ~TIMx_OPM;
-
-  /* Update only from overflow */
-  v |= TIMx_URS;
-
-  /* Enable interrupt for TIM2 */
-  if (enable_interrupt) {
-    /* Event on overflow enabled */
-    reg_write(TIM2_SR, 0);
-    reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_TIM2);
-    v &= TIMx_UDIS;
-    reg_write(TIM2_DIER, 1);
-    reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_TIM2);
-  }
-
-  if (enable) {
-    v |= TIMx_CEN;;
-  }
-
-  reg_write(TIM2_CR1, v);
-  
-  return 0;
-}
 
 static volatile int last_adc = 0;
 
@@ -365,7 +234,7 @@ void bar_widget_draw(const struct bar_widget *b)
 void draw_tim2_cntr(int x, int y)
 {
   char counterbuf[32];
-  itoa(reg_read(TIM2_TCNT), counterbuf, 10);
+  itoa(tim2_read_counter_value(), counterbuf, 10);
   x = dbuf_draw_text(x, y, "TIM2_TCNT:", &font_1);
   dbuf_draw_text(x, y, counterbuf, &font_2);
 }
@@ -444,25 +313,6 @@ void adc_isr(void)
   reg_write(ADC1_CR2, 1 << ADC_CR2_EON);
 }
 
-void tim2_isr(void)
-{
-  static int toggle_flag = 0;
-  // reg_write(TIM2_ARR, last_adc + 600);
-
-  reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_TIM2);
-  reg_write(TIM2_SR, 0);
-  reg32_set_bit(TIM2_CR1, 0);
-
-
-  if (toggle_flag) {
-    gpioc_bit_set(13);
-    toggle_flag = 0;
-  } else {
-    gpioc_bit_clear(13);
-    toggle_flag = 1;
-  }
-}
-
 void adc_setup(void)
 {
   rcc_enable_gpio_a();
@@ -506,6 +356,18 @@ void timer_setup(void)
   tim2_setup(true, CALC_PSC(0.1, F_CLK, 0xffff), 0xffff, true, true);
 }
 
+void tim2_isr_cb()
+{
+  static int toggle_flag = 0;
+
+  if (toggle_flag) {
+    gpioc_bit_set(13);
+    toggle_flag = 0;
+  } else {
+    gpioc_bit_clear(13);
+    toggle_flag = 1;
+  }
+}
 
 void usb_hp_isr(void)
 {
