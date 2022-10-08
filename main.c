@@ -168,6 +168,8 @@ struct ep_buf_desc {
   uint16_t rx_count;
 };
 
+struct usb_descriptor_device device_desc = { 0 };
+
 static void memcpy_pma_to_sram(void *dst, uint32_t pma_offset, int num_bytes)
 {
   const volatile uint32_t *from = PMA_TO_SRAM_ADDR(pma_offset);
@@ -280,9 +282,29 @@ void draw_blinker_icon(int x, int y, int sz, int num_frames, int interval)
   }
 }
 
+struct usb_interrupt_stats {
+  int num_sofs;
+  int num_esofs;
+  int num_errs;
+  int num_susp;
+  int num_wkup;
+  int num_resets;
+  int num_transactions;
+};
+
+static struct usb_interrupt_stats usbstats = { 0 };
+
+
 static void update_display_usb_stats()
 {
-  dbuf_draw_text(20, 4, "sof:", &font_1);
+  char buf[32];
+  dbuf_draw_text(20, 4, "r:", &font_1);
+  itoa(usbstats.num_resets, buf, 10);
+  dbuf_draw_text(28, 4, buf, &font_1);
+  itoa(usbstats.num_errs, buf, 10);
+  dbuf_draw_text(34, 4, buf, &font_1);
+  itoa(usbstats.num_transactions, buf, 10);
+  dbuf_draw_text(40, 4, buf, &font_1);
 }
 
 void update_display()
@@ -371,17 +393,6 @@ void usb_hp_isr(void)
   while(1);
 }
 
-struct usb_interrupt_stats {
-  int num_sofs;
-  int num_esofs;
-  int num_errs;
-  int num_susp;
-  int num_resets;
-  int num_transactions;
-};
-
-static struct usb_interrupt_stats usbstats = { 0 };
-
 static void usb_sof_handler(void)
 {
   usbstats.num_sofs++;
@@ -409,13 +420,15 @@ static void pma_init_bdt(void)
 
   for (int i = 0; i < 8; ++i) {
     ebdt[i].tx_addr = next;
-    ebdt[i].tx_count = 0;
+    if (i == 0)
+    ebdt[i].tx_count = sizeof(device_desc);
     next += 64;
     ebdt[i].rx_addr = next;
     ebdt[i].rx_count = (1<<15) | 1 << 10;
     next += 64;
   }
   memcpy_sram_to_pma(reg_read(USB_BTABLE), ebdt, sizeof(ebdt));
+  memcpy_sram_to_pma(ebdt[0].tx_addr, &device_desc, sizeof(device_desc));
 }
 
 static void usb_ep_init(void)
@@ -444,7 +457,14 @@ static void usb_reset_handler(void)
 
 static void usb_susp_handler(void)
 {
+  // reg32_set_bit(USB_CNTR, USB_CNTR_FSUSP);
   usbstats.num_susp++;
+}
+
+static void usb_wakeup_handler(void)
+{
+  usbstats.num_wkup++;
+  // reg32_set_bit(USB_CNTR, USB_CNTR_RESUME);
 }
 
 static void bp(void)
@@ -455,8 +475,6 @@ static void usb_err_handler(void)
 {
   usbstats.num_errs++;
 }
-
-struct usb_descriptor_device device_desc = { 0 };
 
 #define min(__a, __b) ((__a) < (__b) ? (__a) : (__b))
 
@@ -506,13 +524,21 @@ static void usb_handle_get_device_descriptor(int ep_no, int numbytes)
   usb_prep_tx(ep_no, &device_desc, min(sizeof(device_desc), numbytes));
 }
 
+static uint32_t last_ep0r;
 
 static void usb_handle_get_descriptor(int ep_no, const struct usb_request *r)
 {
   int type = (r->wValue >> 8) & 0xff;
   int index = r->wValue & 0xff;
   if (type == USB_DESCRIPTOR_TYPE_DEVICE) {
-    usb_handle_get_device_descriptor(ep_no, r->wLength);
+    uint32_t v = reg_read(USB_EP0R);
+    /* clear toggle bits */
+    uint32_t vv = v & 0x8f8f;
+    /* Clear CTR_RX */
+    vv &= 0x7fff;
+    vv |= 0x10;
+    reg_write(USB_EP0R, vv);
+    last_ep0r = reg_read(USB_EP0R);
   }
 }
 
@@ -523,8 +549,13 @@ static void usb_handle_device_to_host_request(int ep_no, const struct usb_reques
   }
 }
 
+int crt = 0;
+
 static void usb_ctr_handler(int ep_no, int dir)
 {
+  crt++;
+  if (crt > 1)
+    bp();
   uint32_t ep_info = reg_read(USB_EP0R);
   if (u32_bit_is_set(ep_info, USB_EPXR_CTR_RX)) {
     if (u32_bit_is_set(ep_info, USB_EPXR_SETUP)) {
@@ -534,6 +565,16 @@ static void usb_ctr_handler(int ep_no, int dir)
         usb_handle_device_to_host_request(ep_no, &r);
       }
     }
+  } else if (u32_bit_is_set(ep_info, USB_EPXR_CTR_TX)) {
+    memcpy_sram_to_pma(usb_pma_get_tx_addr(ep_no), &device_desc, 8);
+    reg_write(pma_get_io_addr(ep_no, 2), 8);
+    last_ep0r = reg_read(USB_EP0R);
+    uint32_t vv = last_ep0r & 0x8f8f;
+    /* clear toggle bits */
+    /* Clear CTR_RX */
+    vv &= 0xff7f;
+    vv |= 0x10;
+    reg_write(USB_EP0R, vv);
   }
   // uint32_t ep_info = reg_read(0x40006000 + 0x40 * 2);
   usbstats.num_transactions++;
@@ -566,6 +607,11 @@ void usb_lp_isr(void)
   if (u32_bit_is_set(v, USB_ISTR_SUSP)) {
     reg32_clear_bit(USB_ISTR, USB_ISTR_SUSP);
     usb_susp_handler();
+    return;
+  }
+  if (u32_bit_is_set(v, USB_ISTR_WKUP)) {
+    reg32_clear_bit(USB_ISTR, USB_ISTR_WKUP);
+    usb_wakeup_handler();
     return;
   }
   if (u32_bit_is_set(v, USB_ISTR_CTR)) {
@@ -644,13 +690,18 @@ void usb_init(void)
   rcc_enable_afio();
   // TODO As soon as the USB is enabled, these pins are automatically connected to
   // the USB internal transceiver.
+#if 0
   gpioa_set_cr(11, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
   gpioa_set_cr(12, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
+#endif
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_HP_CAN_TX);
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0);
   reg_write(NVIC_ISER1, 1 << NVIC_INTERRUPT_NUMBER_USB_WAKEUP - 32);
   uint32_t v = reg_read(USB_CNTR);
   reg32_set_bit(USB_CNTR, USB_CNTR_RESETM);
+  // reg32_set_bit(USB_CNTR, USB_CNTR_SUSPM);
+  // reg32_set_bit(USB_CNTR, USB_CNTR_WKUPM);
+  reg32_set_bit(USB_CNTR, USB_CNTR_ERRM);
   reg32_clear_bit(USB_CNTR, USB_CNTR_PDWN);
   sleep_ms(1);
   reg32_clear_bit(USB_CNTR, USB_CNTR_FRES);
@@ -685,13 +736,20 @@ void main(void)
   // scb_set_prigroup(3);
   nvic_set_priority(NVIC_INTERRUPT_NUMBER_ADC1, 1);
   nvic_set_priority(NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0, 0);
+  /*
+   * usb irq should have higher priority than ADC or else it never gets
+   * a chance to execute
+   */
+  int usb_irq_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0);
+  int adc_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_ADC1);
 
   zero_bss();
   rcc_set_72mhz_usb();
   i2c_init();
   ssd1306_init();
-//  timer_setup();
+  timer_setup();
   debug_pin_setup();
+  update_display();
   usb_init();
 //  uart2_setup();
 
