@@ -48,7 +48,7 @@ define usregs
   end
   
   set $epxr = *(int *)0x40005c00
-  printf "\nUSB_EP0R: %08x", $epxr
+  printf "\nUSB_EP0R: %08x:", $epxr
 
   if $epxr & (1<<15)
     printf " OUT"
@@ -60,29 +60,29 @@ define usregs
     printf " IN"
   end
 
-  if $epxr & (3<<4) == 0
+  if (($epxr >> 4) & 3) == 0
     printf " TX-DIS"
   end
-  if $epxr & (3<<4) == 1
+  if (($epxr >> 4) & 3) == 1
     printf " TX-STALL"
   end
-  if $epxr & (3<<4) == 2
+  if (($epxr >> 4) & 3) == 2
     printf " TX-NAK"
   end
-  if $epxr & (3<<4) == 3
+  if (($epxr >> 4) & 3) == 3
     printf " TX-VALID"
   end
 
-  if $epxr & (3<<12) == 0
+  if (($epxr >> 12) & 3) == 0
     printf " RX-DIS"
   end
-  if $epxr & (3<<12) == 1
+  if (($epxr >> 12) & 3) == 1
     printf " RX-STALL"
   end
-  if $epxr & (3<<12) == 2
+  if (($epxr >> 12) & 3) == 2
     printf " RX-NAK"
   end
-  if $epxr & (3<<12) == 3
+  if (($epxr >> 12) & 3) == 3
     printf " RX-VALID"
   end
 
@@ -96,4 +96,7 @@ define usregs
   printf "\n"
 end
 
-# reup
+reup
+
+c
+usregs
