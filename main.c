@@ -487,11 +487,23 @@ static void pma_init_bdt(void)
   memcpy_sram_to_pma(reg_read(USB_BTABLE), ebdt, sizeof(ebdt));
 }
 
+/*
+ * During store op to EPxR register bits CTR_TX and CTR_RX
+ * when set to 1 are ignored and maintain their value.
+ * Not initializing these bits to 1 will initialize them to 0
+ * Writing 0 is same as clearing (and thus missing) one of those
+ * two events
+ */
+#define USB_EPxR_STATIC_BITS(__ep) \
+  ((USB_EPXR_EP_TYPE_CONTROL << USB_EPXR_EP_TYPE) \
+    | (1 << USB_EPXR_EP_TYPE) \
+    | (1 << USB_EPXR_CTR_TX) \
+    | (1 << USB_EPXR_CTR_RX) \
+    | (__ep & 0xf))
+
 static void usb_ep_init(void)
 {
-  uint32_t v = 0;
-  v |= USB_EPXR_EP_TYPE_CONTROL << USB_EPXR_EP_TYPE;
-  v |= USB_EPXR_EP_TYPE_CONTROL << USB_EPXR_EP_KIND;
+  uint32_t v = USB_EPxR_STATIC_BITS(0);
   v |= USB_EPXR_STAT_TX_STALL << USB_EPXR_STAT_TX;
   v |= USB_EPXR_STAT_RX_VALID << USB_EPXR_STAT_RX;
   reg_write(USB_EP0R, v);
@@ -587,6 +599,7 @@ static void usb_handle_get_descriptor(int ep_no, const struct usb_request *r)
   int type = (r->wValue >> 8) & 0xff;
   int index = r->wValue & 0xff;
   if (type == USB_DESCRIPTOR_TYPE_DEVICE) {
+#if 0
     uint32_t v = reg_read(USB_EP0R);
     /* clear toggle bits */
     uint32_t vv = v & 0x8f8f;
@@ -595,6 +608,9 @@ static void usb_handle_get_descriptor(int ep_no, const struct usb_request *r)
     vv |= 0x10;
     reg_write(USB_EP0R, vv);
     last_ep0r = reg_read(USB_EP0R);
+#endif
+    // BRK;
+    // reg_write(USB_EP0R, 0);
   }
 }
 
@@ -605,20 +621,39 @@ static void usb_handle_device_to_host_request(int ep_no, const struct usb_reques
   }
 }
 
-static void usb_ctr_handler(int ep_no, int dir)
+static void usb_ep_nak_to_valid(int ep)
+{
+  uint32_t v = USB_EPxR_STATIC_BITS(ep);
+  reg_write(USB_EP0R, v | ((2 ^ 3)<<12));
+}
+
+static int usb_ep_read_rx_packet(int ep, char *buf, int maxsz)
+{
+  int num_bytes = usb_pma_get_rx_count(ep);
+  if (num_bytes <= maxsz) {
+    memcpy_pma_to_sram(buf, usb_pma_get_rx_addr(ep), num_bytes);
+    usb_ep_nak_to_valid(ep);
+  }
+
+  return num_bytes;
+}
+
+static void usb_ctr_handler(int ep, int dir)
 {
   uint32_t ep_info = reg_read(USB_EP0R);
   if (u32_bit_is_set(ep_info, USB_EPXR_CTR_RX)) {
     if (u32_bit_is_set(ep_info, USB_EPXR_SETUP)) {
       struct usb_request r;
-      memcpy_pma_to_sram(&r, usb_pma_get_rx_addr(ep_no), usb_pma_get_rx_count(ep_no));
+      if (usb_ep_read_rx_packet(ep, (void *)&r, sizeof(r)) < sizeof(r)) {
+        BRK;
+      }
       if (r.bmRequestType == USB_REQUEST_DEVICE_TO_HOST_STANDARD) {
-        usb_handle_device_to_host_request(ep_no, &r);
+        usb_handle_device_to_host_request(ep, &r);
       }
     }
   } else if (u32_bit_is_set(ep_info, USB_EPXR_CTR_TX)) {
-    memcpy_sram_to_pma(usb_pma_get_tx_addr(ep_no), &device_desc, 8);
-    reg_write(pma_get_io_addr(ep_no, 2), 8);
+    memcpy_sram_to_pma(usb_pma_get_tx_addr(ep), &device_desc, 8);
+    reg_write(pma_get_io_addr(ep, 2), 8);
     last_ep0r = reg_read(USB_EP0R);
     uint32_t vv = last_ep0r & 0x8f8f;
     /* clear toggle bits */
