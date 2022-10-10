@@ -169,7 +169,7 @@
 /* 2 blocks by 32 bytes = 64 bytes */
 #define USB_COUNTn_RX_MAX_PACKET_SZ_64 \
   (USB_COUNTn_RX_BLSIZE_32_BYTES << USB_COUNTn_RX_BLSIZE) \
-  | (2 << USB_COUNTn_RX_NUM_BLOCKS)
+  | ((2 - 1) << USB_COUNTn_RX_NUM_BLOCKS)
 #define PMA_TO_SRAM_ADDR(__pma_addr) (USB_RAM + (__pma_addr) / 2)
 #define SRAM_TO_PMA_ADDR(__sram_addr) ((uint32_t)(__sram_addr) - (uint32_t)(USB_RAM) / 2)
 
@@ -467,10 +467,8 @@ static void pma_init_bdt(void)
     ebdt[i].tx_count = 0;
     ebdt[i].rx_addr = sizeof(ebdt) + 64 * (i + 1);
     ebdt[i].rx_count = USB_COUNTn_RX_MAX_PACKET_SZ_64;
-    ep_buf_addr += USB_MAX_PACKET_SIZE;
   }
   memcpy_sram_to_pma(reg_read(USB_BTABLE), ebdt, sizeof(ebdt));
-  memcpy_sram_to_pma(ebdt[0].tx_addr, &device_desc, sizeof(device_desc));
 }
 
 static void usb_ep_init(void)
@@ -618,14 +616,13 @@ static void usb_ctr_handler(int ep_no, int dir)
 }
 
 #define BRK asm volatile ("bkpt")
+
 void usb_lp_isr(void)
 {
-  BRK;
   uint32_t v;
   v = reg_read(USB_ISTR);
   if (u32_bit_is_set(v, USB_ISTR_ERR)) {
     reg32_clear_bit(USB_ISTR, USB_ISTR_ERR);
-    BRK;
     usb_err_handler();
     return;
   }
