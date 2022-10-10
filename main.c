@@ -184,7 +184,22 @@ struct ep_buf_desc {
   uint16_t rx_count;
 };
 
-struct usb_descriptor_device device_desc = { 0 };
+const struct usb_descriptor_device device_desc = {
+  .bLength = sizeof(struct usb_descriptor_device),
+  .bDescriptorType = USB_DESCRIPTOR_TYPE_DEVICE,
+  .bcdUSB = 0x0110,
+  .bDeviceClass = 0, // USB_DEVICE_CLASS_CDC,
+  .bDeviceSubClass = 0, //USB_DEVICE_SUBCLASS_ACM,
+  .bDeviceProtocol = 0,
+  .bMaxPacketSize0 = 64,
+  .idVendor = 0x10c4,
+  .idProduct = 0xea60,
+  .bcdDevice = 0x0100,
+  .iManufacturer = 1,
+  .iProduct = 2,
+  .iSerialNumber = 3,
+  .bNumConfigurations = 1
+};
 
 static void memcpy_pma_to_sram(void *dst, uint32_t pma_offset, int num_bytes)
 {
@@ -670,29 +685,6 @@ void usb_wakeup_isr(void)
   // while(1);
 }
 
-static void usb_init_device_descriptor(void)
-{
-  device_desc.bLength = sizeof(device_desc);
-  device_desc.bDescriptorType = USB_DESCRIPTOR_TYPE_DEVICE;
-  device_desc.bcdUSB = 0x0200;
-  device_desc.bDeviceClass = 0;
-  device_desc.bDeviceSubClass = 0;
-  device_desc.bDeviceProtocol = 2;
-  device_desc.bMaxPacketSize0 = 8;
-  device_desc.idVendor = 0xefef;
-  device_desc.idProduct = 0xdcdc;
-  device_desc.bcdDevice = 0x102;
-  device_desc.iManufacturer = 0;
-  device_desc.iProduct = 0;
-  device_desc.iSerialNumber = 0;
-  device_desc.bNumConfigurations = 1;
-}
-
-static void usb_init_descriptors(void)
-{
-  usb_init_device_descriptor();
-}
-
 void sleep_ms(uint32_t)
 {
 }
@@ -720,7 +712,6 @@ static void systick_wait_ms(uint32_t ms)
 
 void usb_init(void)
 {
-  usb_init_descriptors();
   systick_wait_ms(20);
   rcc_enable_usb();
   rcc_enable_gpio_a();
