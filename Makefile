@@ -26,7 +26,7 @@ firmware.elf: $(OBJS) link.ld
 	arm-none-eabi-as $< -o $@
 
 %.o : %.c
-	arm-none-eabi-gcc -c -g $< -o $@ -mthumb
+	arm-none-eabi-gcc -c -g $< -o $@ -mthumb -mcpu=cortex-m3
 
 d:
 	arm-none-eabi-gdb -q -x gdb.gdb firmware.elf
