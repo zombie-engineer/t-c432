@@ -15,6 +15,7 @@
 #include <stdlib.h>
 
 
+#define ARRAY_SIZE(__a) (sizeof(__a) / sizeof(__a[0]))
 #define SYSTICK_BASE 0xe000e010
 #define STK_CTRL (volatile uint32_t *)(SYSTICK_BASE + 0x00)
 #define STK_CTRL_ENABLE 0
@@ -60,6 +61,7 @@
 #define ADC_CR2_EON 0
 #define ADC_CR1_EOCIE 5
 
+#define USB_NUM_ENDPOINTS 8
 #define USB_BASE 0x40005c00
 #define USB_EP0R (volatile uint32_t *)(USB_BASE + 0x0000)
 #define USB_EPXR_EA 0
@@ -154,6 +156,20 @@
 #define USB_ISTR_CTR 15
 
 #define USB_RAM (volatile uint32_t *)0x40006000
+#define USB_COUNTn_RX_BLSIZE 15
+#define USB_COUNTn_RX_BLSIZE_WIDTH 1
+#define USB_COUNTn_RX_BLSIZE_2_BYTES 0
+#define USB_COUNTn_RX_BLSIZE_32_BYTES 1
+#define USB_COUNTn_RX_NUM_BLOCKS 10
+#define USB_COUNTn_RX_NUM_BLOCK_WIDTH 5
+#define USB_COUNTn_RX_BLSIZE_32_BYTES 1
+
+#define USB_MAX_PACKET_SIZE 64
+
+/* 2 blocks by 32 bytes = 64 bytes */
+#define USB_COUNTn_RX_MAX_PACKET_SZ_64 \
+  (USB_COUNTn_RX_BLSIZE_32_BYTES << USB_COUNTn_RX_BLSIZE) \
+  | (2 << USB_COUNTn_RX_NUM_BLOCKS)
 #define PMA_TO_SRAM_ADDR(__pma_addr) (USB_RAM + (__pma_addr) / 2)
 #define SRAM_TO_PMA_ADDR(__sram_addr) ((uint32_t)(__sram_addr) - (uint32_t)(USB_RAM) / 2)
 
@@ -412,20 +428,46 @@ static void usb_reset_clear_ram(void)
   }
 }
 
+/*
+ * Initialize buffer description table
+ * 0x40006000 (00) ADDR0_TX
+ * 0x40006004 (02) COUNT0_TX
+ * 0x40006008 (04) ADDR0_RX
+ * 0x4000600c (06) COUNT0_RX
+
+ * 0x40006010 (08) ADDR1_TX
+ * 0x40006014 (0a) COUNT1_TX
+ * 0x40006018 (0c) ADDR1_RX
+ * 0x4000601c (0e) COUNT1_RX
+
+ * 0x40006020 (10) ADDR2_TX
+ * 0x40006024 (12) COUNT2_TX
+ * 0x40006028 (14) ADDR2_RX
+ * 0x4000602c (16) COUNT2_RX
+ * ......
+ * 0x40006020 (38) ADDR7_TX
+ * 0x40006024 (3a) COUNT7_TX
+ * 0x40006028 (3c) ADDR7_RX
+ * 0x4000602c (40) COUNT7_RX
+ * Table describes 8 endpoints.
+ * Each endpoint has 8 bytes of data:
+ * tx addr(2bytes), tx count(2bytes), rx addr(2bytes), rx count(2 bytes)
+ * so Buffer descriptor table size is 8 * 8 = 64
+ * Start of free area is after these first 64 bytes (0x40)
+ */
 static void pma_init_bdt(void)
 {
-  uint16_t next;
-  struct ep_buf_desc ebdt[8];
-  next = sizeof(ebdt);
+  uint16_t ep_buf_addr;
+  struct ep_buf_desc ebdt[USB_NUM_ENDPOINTS];
 
-  for (int i = 0; i < 8; ++i) {
-    ebdt[i].tx_addr = next;
-    if (i == 0)
-    ebdt[i].tx_count = sizeof(device_desc);
-    next += 64;
-    ebdt[i].rx_addr = next;
-    ebdt[i].rx_count = (1<<15) | 1 << 10;
-    next += 64;
+  ep_buf_addr = sizeof(ebdt);
+
+  for (int i = 0; i < ARRAY_SIZE(ebdt); ++i) {
+    ebdt[i].tx_addr = sizeof(ebdt) + 64 * (i + 0);
+    ebdt[i].tx_count = 0;
+    ebdt[i].rx_addr = sizeof(ebdt) + 64 * (i + 1);
+    ebdt[i].rx_count = USB_COUNTn_RX_MAX_PACKET_SZ_64;
+    ep_buf_addr += USB_MAX_PACKET_SIZE;
   }
   memcpy_sram_to_pma(reg_read(USB_BTABLE), ebdt, sizeof(ebdt));
   memcpy_sram_to_pma(ebdt[0].tx_addr, &device_desc, sizeof(device_desc));
@@ -549,13 +591,8 @@ static void usb_handle_device_to_host_request(int ep_no, const struct usb_reques
   }
 }
 
-int crt = 0;
-
 static void usb_ctr_handler(int ep_no, int dir)
 {
-  crt++;
-  if (crt > 1)
-    bp();
   uint32_t ep_info = reg_read(USB_EP0R);
   if (u32_bit_is_set(ep_info, USB_EPXR_CTR_RX)) {
     if (u32_bit_is_set(ep_info, USB_EPXR_SETUP)) {
@@ -580,12 +617,15 @@ static void usb_ctr_handler(int ep_no, int dir)
   usbstats.num_transactions++;
 }
 
+#define BRK asm volatile ("bkpt")
 void usb_lp_isr(void)
 {
+  BRK;
   uint32_t v;
   v = reg_read(USB_ISTR);
   if (u32_bit_is_set(v, USB_ISTR_ERR)) {
     reg32_clear_bit(USB_ISTR, USB_ISTR_ERR);
+    BRK;
     usb_err_handler();
     return;
   }
@@ -697,14 +737,20 @@ void usb_init(void)
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_HP_CAN_TX);
   reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0);
   reg_write(NVIC_ISER1, 1 << NVIC_INTERRUPT_NUMBER_USB_WAKEUP - 32);
-  uint32_t v = reg_read(USB_CNTR);
+
+  /* Enable interrupts on RESET request from host */
   reg32_set_bit(USB_CNTR, USB_CNTR_RESETM);
-  // reg32_set_bit(USB_CNTR, USB_CNTR_SUSPM);
-  // reg32_set_bit(USB_CNTR, USB_CNTR_WKUPM);
+  /* Enable interrupts on ERR condition */
   reg32_set_bit(USB_CNTR, USB_CNTR_ERRM);
+
+  /* Disable power-down bit, USB peripheral powers up */
   reg32_clear_bit(USB_CNTR, USB_CNTR_PDWN);
+
   sleep_ms(1);
+  /* On power clear Force-RESET bit to exit reset state */
   reg32_clear_bit(USB_CNTR, USB_CNTR_FRES);
+  /* Clear all possible spurious interrupts */
+  reg_write(USB_ISTR, 0);
 }
 
 extern uint32_t __bss_start;
