@@ -46,8 +46,54 @@ define usregs
   if $istr & (1<<15)
     printf " CTR"
   end
-  printf "\nUSB_EP0R: "
-  x/1wx 0x40005c00
+  
+  set $epxr = *(int *)0x40005c00
+  printf "\nUSB_EP0R: %08x", $epxr
+
+  if $epxr & (1<<15)
+    printf " OUT"
+  end
+  if $epxr & (1<<11)
+    printf " SETUP"
+  end
+  if $epxr & (1<<7)
+    printf " IN"
+  end
+
+  if $epxr & (3<<4) == 0
+    printf " TX-DIS"
+  end
+  if $epxr & (3<<4) == 1
+    printf " TX-STALL"
+  end
+  if $epxr & (3<<4) == 2
+    printf " TX-NAK"
+  end
+  if $epxr & (3<<4) == 3
+    printf " TX-VALID"
+  end
+
+  if $epxr & (3<<12) == 0
+    printf " RX-DIS"
+  end
+  if $epxr & (3<<12) == 1
+    printf " RX-STALL"
+  end
+  if $epxr & (3<<12) == 2
+    printf " RX-NAK"
+  end
+  if $epxr & (3<<12) == 3
+    printf " RX-VALID"
+  end
+
+  if $epxr & (1<<6)
+    printf " TX-DTOG"
+  end
+
+  if $epxr & (1<<14)
+    printf " RX-DTOG"
+  end
+  printf "\n"
 end
 
 # reup
