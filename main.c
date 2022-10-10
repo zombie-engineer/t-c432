@@ -14,6 +14,7 @@
 #include "debug_pin.h"
 #include <stdlib.h>
 
+#define BRK asm volatile ("bkpt")
 
 #define ARRAY_SIZE(__a) (sizeof(__a) / sizeof(__a[0]))
 #define SYSTICK_BASE 0xe000e010
@@ -629,8 +630,6 @@ static void usb_ctr_handler(int ep_no, int dir)
   // uint32_t ep_info = reg_read(0x40006000 + 0x40 * 2);
   usbstats.num_transactions++;
 }
-
-#define BRK asm volatile ("bkpt")
 
 void usb_lp_isr(void)
 {
