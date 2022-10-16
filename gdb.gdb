@@ -17,7 +17,53 @@ define nvic
   x/3wx 0xe000e200
 end
 
-define usregs
+define epxr_decode
+  if $arg0 & (1<<15)
+    printf " OUT"
+  end
+  if $arg0 & (1<<11)
+    printf " SETUP"
+  end
+  if $arg0 & (1<<7)
+    printf " IN"
+  end
+
+  if (($arg0 >> 4) & 3) == 0
+    printf " TX-DIS"
+  end
+  if (($arg0 >> 4) & 3) == 1
+    printf " TX-STALL"
+  end
+  if (($arg0 >> 4) & 3) == 2
+    printf " TX-NAK"
+  end
+  if (($arg0 >> 4) & 3) == 3
+    printf " TX-VALID"
+  end
+
+  if (($arg0 >> 12) & 3) == 0
+    printf " RX-DIS"
+  end
+  if (($arg0 >> 12) & 3) == 1
+    printf " RX-STALL"
+  end
+  if (($arg0 >> 12) & 3) == 2
+    printf " RX-NAK"
+  end
+  if (($arg0 >> 12) & 3) == 3
+    printf " RX-VALID"
+  end
+
+  if $arg0 & (1<<6)
+    printf " TX-DTOG"
+  end
+
+  if $arg0 & (1<<14)
+    printf " RX-DTOG"
+  end
+end
+
+define usbr
   printf "USB_CNTR: "
   x/1wx 0x40005c40
   set $istr = *(int *)0x40005c44
@@ -49,54 +95,26 @@ define usregs
   
   set $epxr = *(int *)0x40005c00
   printf "\nUSB_EP0R: %08x:", $epxr
+  epxr_decode $epxr
+  printf "\n"
+  set $epxr = *(int *)0x40005c04
+  printf "USB_EP1R: %08x:", $epxr
+  epxr_decode $epxr
+  printf "\n"
+  set $epxr = *(int *)0x40005c08
+  printf "USB_EP2R: %08x:", $epxr
+  epxr_decode $epxr
+  printf "\n"
+  set $fnr = *(int *)0x40005c48
+  printf "USB_FNR : %08x", $fnr
+  printf "\n"
 
-  if $epxr & (1<<15)
-    printf " OUT"
-  end
-  if $epxr & (1<<11)
-    printf " SETUP"
-  end
-  if $epxr & (1<<7)
-    printf " IN"
-  end
-
-  if (($epxr >> 4) & 3) == 0
-    printf " TX-DIS"
-  end
-  if (($epxr >> 4) & 3) == 1
-    printf " TX-STALL"
-  end
-  if (($epxr >> 4) & 3) == 2
-    printf " TX-NAK"
-  end
-  if (($epxr >> 4) & 3) == 3
-    printf " TX-VALID"
-  end
-
-  if (($epxr >> 12) & 3) == 0
-    printf " RX-DIS"
-  end
-  if (($epxr >> 12) & 3) == 1
-    printf " RX-STALL"
-  end
-  if (($epxr >> 12) & 3) == 2
-    printf " RX-NAK"
-  end
-  if (($epxr >> 12) & 3) == 3
-    printf " RX-VALID"
-  end
-
-  if $epxr & (1<<6)
-    printf " TX-DTOG"
-  end
-
-  if $epxr & (1<<14)
-    printf " RX-DTOG"
-  end
+  set $fnr = *(int *)0x40005c4c
+  printf "USB_DADDR: %08x", $fnr
   printf "\n"
 end
 
 reup
 
 c
-usregs
+usbr

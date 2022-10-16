@@ -516,6 +516,8 @@ static void usb_reset_handler(void)
 {
   uint32_t v;
   usbstats.num_resets++;
+  if (reg_read(USB_DADDR) & 0x7f)
+    BRK;
 
   usb_reset_clear_ram();
   pma_init_bdt();
@@ -544,6 +546,8 @@ static void bp(void)
 
 static void usb_err_handler(void)
 {
+  if (usbstats.num_errs)
+    BRK;
   usbstats.num_errs++;
 }
 
@@ -637,16 +641,17 @@ static int log_idx = 0;
 
 static uint32_t last_ep0r;
 
+uint16_t addr = 0;
 static void usb_ep_tx_nak_to_valid(int ep)
 {
   uint32_t v = USB_EPxR_STATIC_BITS(ep);
-  reg_write(USB_EP0R, v | ((2 ^ 3)<<4));
+  reg_write(USB_EP0R, v | ((2 ^ 3)<<4)|addr);
 }
 
 static void usb_ep_rx_nak_to_valid(int ep)
 {
   uint32_t v = USB_EPxR_STATIC_BITS(ep);
-  reg_write(USB_EP0R, v | ((2 ^ 3)<<12));
+  reg_write(USB_EP0R, v | ((2 ^ 3)<<12) | addr);
 }
 
 static void usb_ep_tx_nak_to_stall(int ep)
@@ -673,7 +678,6 @@ static void usb_handle_set_address(uint16_t address)
   u32_modify_bits(&v, USB_DADDR_ADDR, USB_DADDR_ADDR_WIDTH, address);
   u32_set_bit(&v, USB_DADDR_EF);
   reg_write(USB_DADDR, v);
-  BRK;
 }
 
 static void usb_handle_get_descriptor(int ep, const struct usb_request *r)
@@ -686,15 +690,23 @@ static void usb_handle_get_descriptor(int ep, const struct usb_request *r)
     usb_pma_set_tx_count(ep, tx_count);
     usb_ep_tx_nak_to_valid(ep);
   }
+  else {
+    BRK;
+  }
 }
+
+static int next_addr = 0;
 
 static void usb_handle_host_to_device_request(int ep,
   const struct usb_request *r)
 {
   if (r->bRequest == USB_SETUP_REQUEST_SET_ADDRESS) {
-    usb_handle_set_address(r->wValue);
     usb_pma_set_tx_count(ep, 0);
     usb_ep_tx_nak_to_valid(ep);
+    next_addr = r->wValue & 0xf; 
+  }
+  else {
+    BRK;
   }
 }
 
@@ -703,6 +715,9 @@ static void usb_handle_device_to_host_request(int ep,
 {
   if (r->bRequest == USB_SETUP_REQUEST_GET_DESCRIPTOR) {
     usb_handle_get_descriptor(ep, r);
+  }
+  else {
+    BRK;
   }
 }
 
@@ -754,13 +769,23 @@ static void usb_ctr_handler(int ep, int dir)
       else if (r.bmRequestType == USB_REQUEST_HOST_TO_DEVICE_STANDARD) {
         usb_handle_host_to_device_request(ep, &r);
       }
+      else {
+        BRK;
+      }
     }
   } else {
+    if (next_addr) {
+      usb_handle_set_address(next_addr);
+      next_addr = 0;
+    }
     usb_ep_clear_ctr_tx(ep);
     usb_pma_set_tx_count(ep, 0);
     usb_ep_tx_nak_to_stall(ep);
     usb_ep_rx_nak_to_valid(ep);
-    // usb_ep_set_status_out(ep);
+    static int x = 0;
+    x++;
+    if (x > 2)
+      BRK;
   }
   usbstats.num_transactions++;
   l->epxr_on_exit= reg_read(USB_EP0R);
