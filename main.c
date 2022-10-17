@@ -753,26 +753,6 @@ static uint16_t usb_pma_reset_rx_count(int ep_no)
   return reg_write(pma_get_io_addr(ep_no, 6), v);
 }
 
-static void usb_prep_tx(int ep_no, const void *src, int numbytes)
-{
-  bp();
-  pmacpy_to(usb_pma_get_tx_addr(ep_no), src, numbytes);
-  reg_write(pma_get_io_addr(ep_no, 2), numbytes);
-  reg32_modify_bits(USB_EP0R, USB_EPXR_STAT_TX,
-    USB_EPXR_STAT_TX_WIDTH, USB_EPXR_STAT_TX_VALID);
-
-#if 0
-  volatile uint32_t *p = USB_RAM;
-  for (int i = 2; i < 256; ++i)
-  {
-    *p++ = 0x55;
-  }
-#endif
-}
-
-#define DIR_OUT 0
-#define DIR_IN 1
-
 struct usb_ctr_handler_log_entry {
   uint32_t dir;
   uint32_t is_setup;
@@ -832,12 +812,6 @@ static void usb_handle_get_descriptor(int ep, const struct usb_request *r)
    * num_transaction = 0 GET_DESCRIPTOR / DEVICE
    * num_transaction = 5 GET_DESCRIPTOR / DEVICE
    */
-#if 0
-  if (usbstats.num_transactions > 13) {
-    BRK;
-  }
-#endif
-
   if (type == USB_DESCRIPTOR_TYPE_DEVICE) {
     uint16_t tx_count = min(r->wLength, sizeof(device_desc));
     pmacpy_to(usb_pma_get_tx_addr(ep), &device_desc, tx_count);
@@ -980,8 +954,6 @@ static void usb_ctr_handler(int ep, int dir)
     usb_pma_set_tx_count(ep, 0);
     usb_ep_tx_nak_to_stall(ep);
     usb_ep_rx_nak_to_valid(ep);
-   //  if (usbstats.num_transactions == 6)
-   //   BRK;
   }
   usbstats.num_transactions++;
   l->epxr_on_exit= reg_read(USB_EP0R);
