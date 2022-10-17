@@ -186,22 +186,165 @@ struct ep_buf_desc {
   uint16_t rx_count;
 };
 
+#define USB_CONFIG_VALUE 1
+#define USB_STRING_ID_VENDOR 1
+#define USB_STRING_ID_PRODUCT 2
+#define USB_STRING_ID_SERIAL 3
+
 const struct usb_descriptor_device device_desc = {
-  .bLength = 0x12,
-  .bDescriptorType = 1,
-  .bcdUSB = 0x0110,
-  .bDeviceClass = 2, // USB_DEVICE_CLASS_CDC,
-  .bDeviceSubClass = 0, //USB_DEVICE_SUBCLASS_ACM,
+  .bLength = sizeof(struct usb_descriptor_device),
+  .bDescriptorType = USB_DESCRIPTOR_TYPE_DEVICE,
+  .bcdUSB = 0x0200,
+  .bDeviceClass = 0xff,
+  .bDeviceSubClass = 0,
   .bDeviceProtocol = 0,
   .bMaxPacketSize0 = 64,
-  .idVendor = 0x0483,
-  .idProduct = 0x5740,
+  .idVendor = 0xd001,
+  .idProduct = 0xd002,
   .bcdDevice = 0x0200,
-  .iManufacturer = 1,
-  .iProduct = 2,
-  .iSerialNumber = 3,
+  .iManufacturer = USB_STRING_ID_VENDOR,
+  .iProduct = USB_STRING_ID_PRODUCT,
+  .iSerialNumber = USB_STRING_ID_SERIAL,
   .bNumConfigurations = 1
 };
+
+const struct usb_descriptor_device_qualifier device_qual = {
+  .bLength = sizeof(struct usb_descriptor_device_qualifier),
+  .bDescriptorType = USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER,
+  .bcdUSB = 0x0200,
+  .bDeviceClass = 0xff,
+  .bDeviceSubClass = 0,
+  .bDeviceProtocol = 0,
+  .bMaxPacketSize0 = 64,
+  .bNumConfigurations = 1,
+  .bReserved = 0
+};
+
+struct usb_config_full {
+  struct usb_descriptor_config c;
+  struct usb_descriptor_interface i;
+  struct usb_descriptor_endpoint ep;
+};
+
+const struct usb_config_full config_desc = {
+  .c = {
+    .bLength = sizeof(struct usb_descriptor_config),
+    .bDescriptorType = USB_DESCRIPTOR_TYPE_CONFIGURATION,
+    .wTotalLength = sizeof(struct usb_config_full),
+    .bNumInterfaces = 1,
+    .bConfigurationValue = USB_CONFIG_VALUE,
+    .iConfiguration = 0,
+    .bmAttributes = 0x80, /* bit 7 is reserved as 1 */
+    .bMaxPower = 50 /* max power = 100mA */
+  },
+  .i = {
+    .bLength = sizeof(struct usb_descriptor_interface),
+    .bDescriptorType = USB_DESCRIPTOR_TYPE_INTERFACE,
+    .bInterfaceNumber = 0,
+    .bAlternativeSetting = 0,
+    .bNumEndpoints = 1,
+    .bInterfaceClass = 2, /* CDC */
+    .bInterfaceSubClass = 2, /* CDC ACM */
+    .bInterfaceProtocol = 1, /* Common AT commands */
+    .iInterface = 0
+  },
+  .ep = {
+    .bLength = sizeof(struct usb_descriptor_endpoint),
+    .bDescriptorType = USB_DESCRIPTOR_TYPE_ENDPOINT,
+    .bEndpointAddress = 1,
+    .bmAttributes = USB_EP_ATTRIBUTE_TYPE_BULK,
+    .wMaxPacketSize = 256,
+    .bInterval = 0
+  }
+};
+
+const struct usb_descriptor_string_0 string_desc_0 = {
+  .bLength = sizeof(struct usb_descriptor_string_0),
+  .bDescriptorType = USB_DESCRIPTOR_TYPE_STRING,
+  .wLangId = 0x0409
+};
+
+struct usb_descriptor_string_vendor {
+  struct usb_descriptor_string_header h;
+  char buf[14 * 2];
+};
+
+const struct usb_descriptor_string_vendor vendor_string_desc = {
+  .h = {
+    .bLength = sizeof(struct usb_descriptor_string_vendor),
+    .bDescriptorType = USB_DESCRIPTOR_TYPE_STRING,
+  },
+  .buf = {
+    'C', 0,
+    '4', 0,
+    'a', 0,
+    '0', 0,
+    '$', 0,
+    '-', 0,
+    'E', 0,
+    'n', 0,
+    '9', 0,
+    '1', 0,
+    'N', 0,
+    'E', 0,
+    'E', 0,
+    'r', 0,
+  }
+};
+
+struct usb_descriptor_string_product {
+  struct usb_descriptor_string_header h;
+  char buf[13 * 2];
+};
+
+const struct usb_descriptor_string_product product_string_desc = {
+  .h = {
+    .bLength = sizeof(struct usb_descriptor_string_product),
+    .bDescriptorType = USB_DESCRIPTOR_TYPE_STRING,
+  },
+  .buf = {
+    'r', 0,
+    'o', 0,
+    't', 0,
+    't', 0,
+    'e', 0,
+    'd', 0,
+    '.', 0,
+    'O', 0,
+    's', 0,
+    'C', 0,
+    '1', 0,
+    'l', 0,
+    'l', 0,
+  }
+};
+
+struct usb_descriptor_string_serial {
+  struct usb_descriptor_string_header h;
+  char buf[11 * 2];
+};
+
+const struct usb_descriptor_string_serial serial_string_desc = {
+  .h = {
+    .bLength = sizeof(struct usb_descriptor_string_serial),
+    .bDescriptorType = USB_DESCRIPTOR_TYPE_STRING,
+  },
+  .buf = {
+    '0', 0,
+    'x', 0,
+    'd', 0,
+    '0', 0,
+    '0', 0,
+    '1', 0,
+    '0', 0,
+    'x', 0,
+    'd', 0,
+    '0', 0,
+    '0', 0,
+  }
+};
+
+
 
 static void pmacpy_from(void *dst, uint32_t pma_offset, int num_bytes)
 {
@@ -322,6 +465,12 @@ struct usb_interrupt_stats {
   int num_susp;
   int num_wkup;
   int num_resets;
+    /* 0:GET_DESCRIPTOR */
+    /* 1:GET_DESCRIPTOR_IN_COMPLETED */
+    /* 2:RESET */
+    /* 3:SET_ADDRESS */
+    /* 4:SET_ADDRESS_IN */
+    /* 5:GET_DESCRIPTOR */
   int num_transactions;
 };
 
@@ -621,11 +770,6 @@ static void usb_prep_tx(int ep_no, const void *src, int numbytes)
 #endif
 }
 
-static void usb_handle_get_device_descriptor(int ep_no, int numbytes)
-{
-  usb_prep_tx(ep_no, &device_desc, min(sizeof(device_desc), numbytes));
-}
-
 #define DIR_OUT 0
 #define DIR_IN 1
 
@@ -684,18 +828,61 @@ static void usb_handle_get_descriptor(int ep, const struct usb_request *r)
 {
   int type = (r->wValue >> 8) & 0xff;
   int index = r->wValue & 0xff;
+  /*
+   * num_transaction = 0 GET_DESCRIPTOR / DEVICE
+   * num_transaction = 5 GET_DESCRIPTOR / DEVICE
+   */
+#if 0
+  if (usbstats.num_transactions > 13) {
+    BRK;
+  }
+#endif
+
   if (type == USB_DESCRIPTOR_TYPE_DEVICE) {
     uint16_t tx_count = min(r->wLength, sizeof(device_desc));
     pmacpy_to(usb_pma_get_tx_addr(ep), &device_desc, tx_count);
     usb_pma_set_tx_count(ep, tx_count);
     usb_ep_tx_nak_to_valid(ep);
-  }
-  else {
+  } else if (type == USB_DESCRIPTOR_TYPE_CONFIGURATION) {
+    uint16_t tx_count = min(r->wLength, sizeof(config_desc));
+    pmacpy_to(usb_pma_get_tx_addr(ep), &config_desc, tx_count);
+    usb_pma_set_tx_count(ep, tx_count);
+    usb_ep_tx_nak_to_valid(ep);
+  } else if (type == USB_DESCRIPTOR_TYPE_DEVICE_QUALIFIER) {
+    uint16_t tx_count = min(r->wLength, sizeof(device_qual));
+    pmacpy_to(usb_pma_get_tx_addr(ep), &device_qual, tx_count);
+    usb_pma_set_tx_count(ep, tx_count);
+    usb_ep_tx_nak_to_valid(ep);
+  } else if (type == USB_DESCRIPTOR_TYPE_STRING) {
+    if (index == 0) {
+      uint16_t tx_count = min(r->wLength, sizeof(string_desc_0));
+      pmacpy_to(usb_pma_get_tx_addr(ep), &string_desc_0, tx_count);
+      usb_pma_set_tx_count(ep, tx_count);
+      usb_ep_tx_nak_to_valid(ep);
+    } else if (index == USB_STRING_ID_VENDOR) {
+      uint16_t tx_count = min(r->wLength, sizeof(vendor_string_desc));
+      pmacpy_to(usb_pma_get_tx_addr(ep), &vendor_string_desc, tx_count);
+      usb_pma_set_tx_count(ep, tx_count);
+      usb_ep_tx_nak_to_valid(ep);
+    } else if (index == USB_STRING_ID_PRODUCT) {
+      uint16_t tx_count = min(r->wLength, sizeof(product_string_desc));
+      pmacpy_to(usb_pma_get_tx_addr(ep), &product_string_desc, tx_count);
+      usb_pma_set_tx_count(ep, tx_count);
+      usb_ep_tx_nak_to_valid(ep);
+    } else if (index == USB_STRING_ID_SERIAL) {
+      uint16_t tx_count = min(r->wLength, sizeof(serial_string_desc));
+      pmacpy_to(usb_pma_get_tx_addr(ep), &serial_string_desc, tx_count);
+      usb_pma_set_tx_count(ep, tx_count);
+      usb_ep_tx_nak_to_valid(ep);
+    }
+  } else {
     BRK;
   }
 }
 
 static int next_addr = 0;
+static int next_config = 0;
+static bool usb_config_initialized = 0;
 
 static void usb_handle_host_to_device_request(int ep,
   const struct usb_request *r)
@@ -703,7 +890,11 @@ static void usb_handle_host_to_device_request(int ep,
   if (r->bRequest == USB_SETUP_REQUEST_SET_ADDRESS) {
     usb_pma_set_tx_count(ep, 0);
     usb_ep_tx_nak_to_valid(ep);
-    next_addr = r->wValue & 0xf; 
+    next_addr = r->wValue & 0xf;
+  } else if (r->bRequest == USB_SETUP_REQUEST_SET_CONFIGURATION) {
+    usb_pma_set_tx_count(ep, 0);
+    usb_ep_tx_nak_to_valid(ep);
+    next_config = r->wValue & 0xf;
   }
   else {
     BRK;
@@ -778,14 +969,19 @@ static void usb_ctr_handler(int ep, int dir)
       usb_handle_set_address(next_addr);
       next_addr = 0;
     }
+    if (next_config) {
+      if (next_config == USB_CONFIG_VALUE) {
+        usb_config_initialized = 1;
+      }
+      next_config = 0;
+    }
+
     usb_ep_clear_ctr_tx(ep);
     usb_pma_set_tx_count(ep, 0);
     usb_ep_tx_nak_to_stall(ep);
     usb_ep_rx_nak_to_valid(ep);
-    static int x = 0;
-    x++;
-    if (x > 2)
-      BRK;
+   //  if (usbstats.num_transactions == 6)
+   //   BRK;
   }
   usbstats.num_transactions++;
   l->epxr_on_exit= reg_read(USB_EP0R);
@@ -949,6 +1145,6 @@ void main(void)
 //  uart2_setup();
 
 //  adc_setup();
- 
+
   while(1);
 }
