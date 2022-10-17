@@ -66,6 +66,12 @@
 #define USB_NUM_ENDPOINTS 8
 #define USB_BASE 0x40005c00
 #define USB_EP0R (volatile uint32_t *)(USB_BASE + 0x0000)
+
+static inline volatile uint32_t *usb_get_ep_reg(int ep)
+{
+  return USB_EP0R + ep;
+}
+
 #define USB_EPXR_EA 0
 #define USB_EPXR_EA_WIDTH 4
 #define USB_EPXR_STAT_TX 4
@@ -253,7 +259,7 @@ const struct usb_config_full config_desc = {
     .bDescriptorType = USB_DESCRIPTOR_TYPE_ENDPOINT,
     .bEndpointAddress = 1,
     .bmAttributes = USB_EP_ATTRIBUTE_TYPE_BULK,
-    .wMaxPacketSize = 256,
+    .wMaxPacketSize = 64,
     .bInterval = 0
   }
 };
@@ -658,7 +664,7 @@ static void usb_ep_init(void)
   uint32_t v = USB_EPxR_STATIC_BITS(0);
   v |= USB_EPXR_STAT_TX_NAK << USB_EPXR_STAT_TX;
   v |= USB_EPXR_STAT_RX_VALID << USB_EPXR_STAT_RX;
-  reg_write(USB_EP0R, v);
+  reg_write(usb_get_ep_reg(0), v);
 }
 
 static void usb_reset_handler(void)
@@ -769,31 +775,31 @@ uint16_t addr = 0;
 static void usb_ep_tx_nak_to_valid(int ep)
 {
   uint32_t v = USB_EPxR_STATIC_BITS(ep);
-  reg_write(USB_EP0R, v | ((2 ^ 3)<<4)|addr);
+  reg_write(usb_get_ep_reg(ep), v | ((2 ^ 3)<<4)|addr);
 }
 
 static void usb_ep_rx_nak_to_valid(int ep)
 {
   uint32_t v = USB_EPxR_STATIC_BITS(ep);
-  reg_write(USB_EP0R, v | ((2 ^ 3)<<12) | addr);
+  reg_write(usb_get_ep_reg(ep), v | ((2 ^ 3)<<12) | addr);
 }
 
 static void usb_ep_tx_nak_to_stall(int ep)
 {
   uint32_t v = USB_EPxR_STATIC_BITS(ep);
-  reg_write(USB_EP0R, v | ((2 ^ 1)<<4));
+  reg_write(usb_get_ep_reg(ep), v | ((2 ^ 1)<<4));
 }
 
 static void usb_ep_set_status_out(int ep)
 {
   uint32_t v = USB_EPxR_STATIC_BITS(ep);
-  reg_write(USB_EP0R, v | (1<<8));
+  reg_write(usb_get_ep_reg(ep), v | (1<<8));
 }
 
 static void usb_ep_rx_nak_to_stall(int ep)
 {
   uint32_t v = USB_EPxR_STATIC_BITS(ep);
-  reg_write(USB_EP0R, v | ((2 ^ 1)<<12));
+  reg_write(usb_get_ep_reg(ep), v | ((2 ^ 1)<<12));
 }
 
 static void usb_handle_set_address(uint16_t address)
@@ -890,14 +896,14 @@ static void usb_ep_clear_ctr_tx(int ep)
 {
   uint32_t v = USB_EPxR_STATIC_BITS(ep);
   u32_clear_bit(&v, USB_EPXR_CTR_TX);
-  reg_write(USB_EP0R, v);
+  reg_write(usb_get_ep_reg(ep), v);
 }
 
 static void usb_ep_clear_ctr_rx(int ep)
 {
   uint32_t v = USB_EPxR_STATIC_BITS(ep);
   u32_clear_bit(&v, USB_EPXR_CTR_RX);
-  reg_write(USB_EP0R, v);
+  reg_write(usb_get_ep_reg(ep), v);
 }
 
 static int usb_ep_read_rx_packet(int ep, char *buf, int maxsz)
@@ -913,16 +919,16 @@ static int usb_ep_read_rx_packet(int ep, char *buf, int maxsz)
 static void usb_ctr_handler(int ep, int dir)
 {
   struct usb_ctr_handler_log_entry *l = &log[log_idx++];
-  l->epxr_on_entry = reg_read(USB_EP0R);
+  l->epxr_on_entry = reg_read(usb_get_ep_reg(ep));
   l->dir = dir;
   l->is_setup = u32_bit_is_set(l->epxr_on_entry, USB_EPXR_SETUP);
 
   if (dir) {
     /* CTR_RX should be set because this is an RX (OUT or SETUP) packet */
-    if (!reg32_bit_is_set(USB_EP0R, USB_EPXR_CTR_RX)) {
+    if (!reg32_bit_is_set(usb_get_ep_reg(ep), USB_EPXR_CTR_RX)) {
     }
     usb_ep_clear_ctr_rx(ep);
-    if (reg32_bit_is_set(USB_EP0R, USB_EPXR_SETUP)) {
+    if (reg32_bit_is_set(usb_get_ep_reg(ep), USB_EPXR_SETUP)) {
       struct usb_request r;
       if (usb_ep_read_rx_packet(ep, (void *)&r, sizeof(r)) < sizeof(r)) {
       }
@@ -956,7 +962,7 @@ static void usb_ctr_handler(int ep, int dir)
     usb_ep_rx_nak_to_valid(ep);
   }
   usbstats.num_transactions++;
-  l->epxr_on_exit= reg_read(USB_EP0R);
+  l->epxr_on_exit = reg_read(usb_get_ep_reg(ep));
 }
 
 void usb_lp_isr(void)
