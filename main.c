@@ -229,7 +229,8 @@ const struct usb_descriptor_device_qualifier device_qual = {
 struct usb_config_full {
   struct usb_descriptor_config c;
   struct usb_descriptor_interface i;
-  struct usb_descriptor_endpoint ep;
+  struct usb_descriptor_endpoint ep1;
+  struct usb_descriptor_endpoint ep2;
 };
 
 const struct usb_config_full config_desc = {
@@ -248,16 +249,24 @@ const struct usb_config_full config_desc = {
     .bDescriptorType = USB_DESCRIPTOR_TYPE_INTERFACE,
     .bInterfaceNumber = 0,
     .bAlternativeSetting = 0,
-    .bNumEndpoints = 1,
-    .bInterfaceClass = 2, /* CDC */
-    .bInterfaceSubClass = 2, /* CDC ACM */
-    .bInterfaceProtocol = 1, /* Common AT commands */
+    .bNumEndpoints = 2,
+    .bInterfaceClass = 0xff, //2, /* CDC */
+    .bInterfaceSubClass = 0, // 2, /* CDC ACM */
+    .bInterfaceProtocol = 0, //1, /* Common AT commands */
     .iInterface = 0
   },
-  .ep = {
+  .ep1 = {
     .bLength = sizeof(struct usb_descriptor_endpoint),
     .bDescriptorType = USB_DESCRIPTOR_TYPE_ENDPOINT,
-    .bEndpointAddress = 1,
+    .bEndpointAddress = 0x81,
+    .bmAttributes = USB_EP_ATTRIBUTE_TYPE_BULK,
+    .wMaxPacketSize = 64,
+    .bInterval = 0
+  },
+  .ep2 = {
+    .bLength = sizeof(struct usb_descriptor_endpoint),
+    .bDescriptorType = USB_DESCRIPTOR_TYPE_ENDPOINT,
+    .bEndpointAddress = 0x02,
     .bmAttributes = USB_EP_ATTRIBUTE_TYPE_BULK,
     .wMaxPacketSize = 64,
     .bInterval = 0
@@ -627,21 +636,6 @@ static void usb_reset_clear_ram(void)
  * so Buffer descriptor table size is 8 * 8 = 64
  * Start of free area is after these first 64 bytes (0x40)
  */
-static void pma_init_bdt(void)
-{
-  uint16_t ep_buf_addr;
-  struct ep_buf_desc ebdt[USB_NUM_ENDPOINTS];
-
-  ep_buf_addr = sizeof(ebdt);
-
-  for (int i = 0; i < ARRAY_SIZE(ebdt); ++i) {
-    ebdt[i].tx_addr = sizeof(ebdt) + 64 * (i + 0);
-    ebdt[i].tx_count = 0;
-    ebdt[i].rx_addr = sizeof(ebdt) + 64 * (i + 1);
-    ebdt[i].rx_count = USB_COUNTn_RX_MAX_PACKET_SZ_64;
-  }
-  pmacpy_to(reg_read(USB_BTABLE), ebdt, sizeof(ebdt));
-}
 
 /*
  * During store op to EPxR register bits CTR_TX and CTR_RX
@@ -650,37 +644,61 @@ static void pma_init_bdt(void)
  * Writing 0 is same as clearing (and thus missing) one of those
  * two events
  */
-#define USB_EPxR_STATIC_BITS(__ep) \
-  ((USB_EPXR_EP_TYPE_CONTROL << USB_EPXR_EP_TYPE) \
+#define USB_EPxR_STATIC_BITS(__ep, __type) \
+  (((__type) << USB_EPXR_EP_TYPE) \
     | (1 << USB_EPXR_EP_KIND) \
     | (1 << USB_EPXR_EP_TYPE) \
     | (1 << USB_EPXR_CTR_TX) \
     | (1 << USB_EPXR_CTR_RX) \
     | (__ep & 0xf))
 
-static void usb_ep_init(void)
-{
-  static int xx = 0;
-  uint32_t v = USB_EPxR_STATIC_BITS(0);
-  v |= USB_EPXR_STAT_TX_NAK << USB_EPXR_STAT_TX;
-  v |= USB_EPXR_STAT_RX_VALID << USB_EPXR_STAT_RX;
-  reg_write(usb_get_ep_reg(0), v);
-}
-
 static void usb_reset_handler(void)
 {
-  uint32_t v;
+  struct ep_buf_desc ebdt[USB_NUM_ENDPOINTS] = { 0 };
   usbstats.num_resets++;
   if (reg_read(USB_DADDR) & 0x7f)
     BRK;
 
   usb_reset_clear_ram();
-  pma_init_bdt();
+
+  ebdt[0].tx_addr = sizeof(ebdt);
+  ebdt[0].tx_count = 0;
+  ebdt[0].rx_addr = sizeof(ebdt) + 64;
+  ebdt[0].rx_count = USB_COUNTn_RX_MAX_PACKET_SZ_64;
+
+  ebdt[1].tx_addr = sizeof(ebdt) + 64 * 2;
+  ebdt[1].tx_count = 0;
+  ebdt[1].rx_addr = 0;
+  ebdt[1].rx_count = 0;
+
+  ebdt[2].tx_addr = 0;
+  ebdt[2].tx_count = 0;
+  ebdt[2].rx_addr = sizeof(ebdt) + 64 * 3;
+  ebdt[2].rx_count = USB_COUNTn_RX_MAX_PACKET_SZ_64;
+
+  pmacpy_to(reg_read(USB_BTABLE), ebdt, sizeof(ebdt));
+
   reg_write(USB_BTABLE, 0);
-  usb_ep_init();
-  v = 0;
-  u32_set_bit(&v, USB_DADDR_EF);
-  reg_write(USB_DADDR, v);
+
+  reg_write(usb_get_ep_reg(0), 0
+    | USB_EPXR_EP_TYPE_CONTROL << USB_EPXR_EP_TYPE
+    | 1                        << USB_EPXR_EP_KIND
+    | USB_EPXR_STAT_TX_NAK     << USB_EPXR_STAT_TX
+    | USB_EPXR_STAT_RX_VALID   << USB_EPXR_STAT_RX
+  );
+
+  reg_write(usb_get_ep_reg(1), 1
+    | USB_EPXR_EP_TYPE_BULK    << USB_EPXR_EP_TYPE
+    | USB_EPXR_STAT_TX_NAK     << USB_EPXR_STAT_TX
+  );
+
+  reg_write(usb_get_ep_reg(2), (2
+    | USB_EPXR_EP_TYPE_BULK    << USB_EPXR_EP_TYPE
+    | USB_EPXR_STAT_RX_VALID   << USB_EPXR_STAT_RX)
+  );
+
+  /* Set address 0 and enable */
+  reg_write(USB_DADDR, 1 << USB_DADDR_EF);
 }
 
 static void usb_susp_handler(void)
@@ -708,7 +726,8 @@ static void usb_err_handler(void)
 
 #define min(__a, __b) ((__a) < (__b) ? (__a) : (__b))
 
-#define BTABLE_EP_FIELD_OFFSET(__ep, __field_off) (__ep * 8 + __field_off * 2)
+#define BTABLE_EP_FIELD_OFFSET(__ep, __field_off) ((__ep) * 16 + __field_off * 2)
+
 #define BTABLE_FIELD_OFFSET_TX_ADDR(__ep) \
   BTABLE_EP_FIELD_OFFSET(__ep, 0)
 
@@ -721,42 +740,43 @@ static void usb_err_handler(void)
 #define BTABLE_FIELD_OFFSET_RX_COUNT(__ep) \
   BTABLE_EP_FIELD_OFFSET(__ep, 6)
 
-static volatile uint32_t *pma_get_io_addr(int ep_no, int field_offset)
+static volatile uint32_t *pma_get_io_addr(int ep, int field_offset)
 {
   volatile char *addr = ((volatile char *)USB_RAM) + reg_read(USB_BTABLE);
+
   return (volatile uint32_t *)(addr
-    + BTABLE_EP_FIELD_OFFSET(ep_no, field_offset));
+    + BTABLE_EP_FIELD_OFFSET(ep, field_offset));
 }
 
-static uint16_t usb_pma_get_tx_addr(int ep_no)
+static uint16_t usb_pma_get_tx_addr(int ep)
 {
-  return reg_read(pma_get_io_addr(ep_no, 0)) & 0xffff;
+  return reg_read(pma_get_io_addr(ep, 0)) & 0xffff;
 }
 
-static void usb_pma_set_tx_count(int ep_no, uint16_t value)
+static void usb_pma_set_tx_count(int ep, uint16_t value)
 {
-  reg_write(pma_get_io_addr(ep_no, 2), value);
+  reg_write(pma_get_io_addr(ep, 2), value);
 }
 
-static uint16_t usb_pma_get_tx_count(int ep_no)
+static uint16_t usb_pma_get_tx_count(int ep)
 {
-  return reg_read(pma_get_io_addr(ep_no, 2)) & 0xffff;
+  return reg_read(pma_get_io_addr(ep, 2)) & 0xffff;
 }
 
-static uint16_t usb_pma_get_rx_addr(int ep_no)
+static uint16_t usb_pma_get_rx_addr(int ep)
 {
-  return reg_read(pma_get_io_addr(ep_no, 4)) & 0xffff;
+  return reg_read(pma_get_io_addr(ep, 4)) & 0xffff;
 }
 
-static uint16_t usb_pma_get_rx_count(int ep_no)
+static uint16_t usb_pma_get_rx_count(int ep)
 {
-  return reg_read(pma_get_io_addr(ep_no, 6)) & u32_bitmask(10);
+  return reg_read(pma_get_io_addr(ep, 6)) & u32_bitmask(10);
 }
 
-static uint16_t usb_pma_reset_rx_count(int ep_no)
+static uint16_t usb_pma_reset_rx_count(int ep)
 {
-  uint32_t v = reg_read(pma_get_io_addr(ep_no, 6)) & ~u32_bitmask(10);
-  return reg_write(pma_get_io_addr(ep_no, 6), v);
+  uint32_t v = reg_read(pma_get_io_addr(ep, 6)) & ~u32_bitmask(10);
+  return reg_write(pma_get_io_addr(ep, 6), v);
 }
 
 struct usb_ctr_handler_log_entry {
@@ -772,33 +792,47 @@ static int log_idx = 0;
 static uint32_t last_ep0r;
 
 uint16_t addr = 0;
+
+static uint32_t usb_get_static_epxr_bits(int ep)
+{
+  int type;
+
+  if (ep == 0) {
+    type = USB_EPXR_EP_TYPE_CONTROL;
+  } else {
+    type = USB_EPXR_EP_TYPE_BULK;
+  }
+
+  return USB_EPxR_STATIC_BITS(ep, type);
+}
+
 static void usb_ep_tx_nak_to_valid(int ep)
 {
-  uint32_t v = USB_EPxR_STATIC_BITS(ep);
-  reg_write(usb_get_ep_reg(ep), v | ((2 ^ 3)<<4)|addr);
+  uint32_t v = usb_get_static_epxr_bits(ep);
+  reg_write(usb_get_ep_reg(ep), v | ((2 ^ 3)<<4) | addr);
 }
 
 static void usb_ep_rx_nak_to_valid(int ep)
 {
-  uint32_t v = USB_EPxR_STATIC_BITS(ep);
+  uint32_t v = usb_get_static_epxr_bits(ep);
   reg_write(usb_get_ep_reg(ep), v | ((2 ^ 3)<<12) | addr);
 }
 
 static void usb_ep_tx_nak_to_stall(int ep)
 {
-  uint32_t v = USB_EPxR_STATIC_BITS(ep);
+  uint32_t v = usb_get_static_epxr_bits(ep);
   reg_write(usb_get_ep_reg(ep), v | ((2 ^ 1)<<4));
 }
 
 static void usb_ep_set_status_out(int ep)
 {
-  uint32_t v = USB_EPxR_STATIC_BITS(ep);
+  uint32_t v = usb_get_static_epxr_bits(ep);
   reg_write(usb_get_ep_reg(ep), v | (1<<8));
 }
 
 static void usb_ep_rx_nak_to_stall(int ep)
 {
-  uint32_t v = USB_EPxR_STATIC_BITS(ep);
+  uint32_t v = usb_get_static_epxr_bits(ep);
   reg_write(usb_get_ep_reg(ep), v | ((2 ^ 1)<<12));
 }
 
@@ -894,14 +928,14 @@ static void usb_handle_device_to_host_request(int ep,
 
 static void usb_ep_clear_ctr_tx(int ep)
 {
-  uint32_t v = USB_EPxR_STATIC_BITS(ep);
+  uint32_t v = usb_get_static_epxr_bits(ep);
   u32_clear_bit(&v, USB_EPXR_CTR_TX);
   reg_write(usb_get_ep_reg(ep), v);
 }
 
 static void usb_ep_clear_ctr_rx(int ep)
 {
-  uint32_t v = USB_EPxR_STATIC_BITS(ep);
+  uint32_t v = usb_get_static_epxr_bits(ep);
   u32_clear_bit(&v, USB_EPXR_CTR_RX);
   reg_write(usb_get_ep_reg(ep), v);
 }
@@ -916,29 +950,61 @@ static int usb_ep_read_rx_packet(int ep, char *buf, int maxsz)
   return num_bytes;
 }
 
-static void usb_ctr_handler(int ep, int dir)
+int ddx = 0;
+
+static void ep1_tx_handler()
+{
+  usb_ep_clear_ctr_tx(1);
+  ddx++;
+  char buf[64] = { 0x5a };
+  memset(buf, 0x5a, sizeof(buf));
+  pmacpy_to(usb_pma_get_tx_addr(1), buf, 64);
+  if (ddx > 2)
+  {
+    usb_pma_set_tx_count(1, 0);
+  }
+  else
+  {
+    usb_pma_set_tx_count(1, 64);
+  }
+  reg_write(pma_get_io_addr(1, 6), 0);
+  usb_ep_tx_nak_to_valid(1);
+}
+
+static void ep2_rx_handler()
+{
+  BRK;
+  char buf[64] = { 0x5a };
+  memset(buf, 0x5a, sizeof(buf));
+  pmacpy_to(usb_pma_get_tx_addr(1), buf, 64);
+  usb_pma_set_tx_count(1, 64);
+  reg_write(pma_get_io_addr(1, 6), 0);
+  usb_ep_tx_nak_to_valid(1);
+}
+
+static void usb_ep0_handler(int dir)
 {
   struct usb_ctr_handler_log_entry *l = &log[log_idx++];
-  l->epxr_on_entry = reg_read(usb_get_ep_reg(ep));
+  l->epxr_on_entry = reg_read(usb_get_ep_reg(0));
   l->dir = dir;
   l->is_setup = u32_bit_is_set(l->epxr_on_entry, USB_EPXR_SETUP);
 
   if (dir) {
     /* CTR_RX should be set because this is an RX (OUT or SETUP) packet */
-    if (!reg32_bit_is_set(usb_get_ep_reg(ep), USB_EPXR_CTR_RX)) {
+    if (!reg32_bit_is_set(usb_get_ep_reg(0), USB_EPXR_CTR_RX)) {
     }
-    usb_ep_clear_ctr_rx(ep);
-    if (reg32_bit_is_set(usb_get_ep_reg(ep), USB_EPXR_SETUP)) {
+    usb_ep_clear_ctr_rx(0);
+    if (reg32_bit_is_set(usb_get_ep_reg(0), USB_EPXR_SETUP)) {
       struct usb_request r;
-      if (usb_ep_read_rx_packet(ep, (void *)&r, sizeof(r)) < sizeof(r)) {
+      if (usb_ep_read_rx_packet(0, (void *)&r, sizeof(r)) < sizeof(r)) {
       }
-      usb_pma_reset_rx_count(ep);
+      usb_pma_reset_rx_count(0);
 
       if (r.bmRequestType == USB_REQUEST_DEVICE_TO_HOST_STANDARD) {
-        usb_handle_device_to_host_request(ep, &r);
+        usb_handle_device_to_host_request(0, &r);
       }
       else if (r.bmRequestType == USB_REQUEST_HOST_TO_DEVICE_STANDARD) {
-        usb_handle_host_to_device_request(ep, &r);
+        usb_handle_host_to_device_request(0, &r);
       }
       else {
         BRK;
@@ -951,18 +1017,33 @@ static void usb_ctr_handler(int ep, int dir)
     }
     if (next_config) {
       if (next_config == USB_CONFIG_VALUE) {
+        ep1_tx_handler();
         usb_config_initialized = 1;
       }
       next_config = 0;
     }
 
-    usb_ep_clear_ctr_tx(ep);
-    usb_pma_set_tx_count(ep, 0);
-    usb_ep_tx_nak_to_stall(ep);
-    usb_ep_rx_nak_to_valid(ep);
+    usb_ep_clear_ctr_tx(0);
+    usb_pma_set_tx_count(0, 0);
+    usb_ep_tx_nak_to_stall(0);
+    usb_ep_rx_nak_to_valid(0);
   }
   usbstats.num_transactions++;
-  l->epxr_on_exit = reg_read(usb_get_ep_reg(ep));
+  l->epxr_on_exit = reg_read(usb_get_ep_reg(0));
+}
+
+static void usb_ctr_handler(int ep, int dir)
+{
+  if (ep == 0) {
+    usb_ep0_handler(dir);
+  }
+  else if (ep == 1) {
+    ep1_tx_handler();
+  }
+  else if (ep == 2) {
+    BRK;
+    ep2_rx_handler();
+  }
 }
 
 void usb_lp_isr(void)
@@ -1099,6 +1180,8 @@ static void i2c_init(void)
 void main(void)
 {
   struct scb_cpuid i;
+
+  zero_bss();
   scb_get_cpuid(&i);
   // scb_set_prigroup(3);
   nvic_set_priority(NVIC_INTERRUPT_NUMBER_ADC1, 1);
@@ -1110,15 +1193,12 @@ void main(void)
   int usb_irq_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0);
   int adc_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_ADC1);
 
-  zero_bss();
   rcc_set_72mhz_usb();
-#if 0
   i2c_init();
   ssd1306_init();
   timer_setup();
   debug_pin_setup();
   update_display();
-#endif
   usb_init();
 //  uart2_setup();
 
