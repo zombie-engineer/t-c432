@@ -7,6 +7,7 @@ OBJS := main.o \
   scb.o \
   nvic.o \
   tim.o \
+  time.o \
   font.o\
   isr_vector.o\
   rcc.o \

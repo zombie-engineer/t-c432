@@ -1099,10 +1099,6 @@ void usb_wakeup_isr(void)
   // while(1);
 }
 
-void sleep_ms(uint32_t)
-{
-}
-
 uint32_t wait_complete;
 
 void systick_isr(void)
@@ -1148,7 +1144,7 @@ void usb_init(void)
   /* Disable power-down bit, USB peripheral powers up */
   reg32_clear_bit(USB_CNTR, USB_CNTR_PDWN);
 
-  sleep_ms(1);
+  wait_ms(1);
   /* On power clear Force-RESET bit to exit reset state */
   reg32_clear_bit(USB_CNTR, USB_CNTR_FRES);
   /* Clear all possible spurious interrupts */
