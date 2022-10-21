@@ -15,7 +15,9 @@ OBJS := main.o \
   flash.o \
   gpio.o \
   ssd1306.o \
-  start.o
+  start.o \
+  usb_driver.o \
+  systick.o
 
 firmware.bin: firmware.elf
 	arm-none-eabi-objcopy firmware.elf --output-target binary firmware.bin
