@@ -18,6 +18,7 @@ OBJS := main.o \
   ssd1306.o \
   start.o \
   usb_driver.o \
+  usart.o \
   systick.o
 
 firmware.bin: firmware.elf
