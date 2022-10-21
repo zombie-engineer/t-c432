@@ -11,10 +11,9 @@
 #include "nvic.h"
 #include "string.h"
 #include "debug_pin.h"
+#include "adc.h"
 #include "usb_driver.h"
 #include <stdlib.h>
-
-
 
 #define USART_BASE 0x40004400
 #define USART_SR  (volatile uint32_t *)(USART_BASE + 0x00)
@@ -23,27 +22,6 @@
 #define USART_CR1 (volatile uint32_t *)(USART_BASE + 0x0c)
 
 
-#define ADC1_BASE 0x40012400
-#define ADC1_SR    (volatile uint32_t *)(ADC1_BASE + 0x00)
-#define ADC1_CR1   (volatile uint32_t *)(ADC1_BASE + 0x04)
-#define ADC1_CR2   (volatile uint32_t *)(ADC1_BASE + 0x08)
-#define ADC1_SMPR1 (volatile uint32_t *)(ADC1_BASE + 0x0c)
-#define ADC1_SMPR2 (volatile uint32_t *)(ADC1_BASE + 0x10)
-#define ADC1_JOFR0 (volatile uint32_t *)(ADC1_BASE + 0x14)
-#define ADC1_JOFR1 (volatile uint32_t *)(ADC1_BASE + 0x18)
-#define ADC1_JOFR2 (volatile uint32_t *)(ADC1_BASE + 0x1c)
-#define ADC1_JOFR3 (volatile uint32_t *)(ADC1_BASE + 0x20)
-#define ADC1_HTR   (volatile uint32_t *)(ADC1_BASE + 0x24)
-#define ADC1_LTR   (volatile uint32_t *)(ADC1_BASE + 0x28)
-#define ADC1_JSQR  (volatile uint32_t *)(ADC1_BASE + 0x2c)
-#define ADC1_JDR0  (volatile uint32_t *)(ADC1_BASE + 0x3c)
-#define ADC1_JDR1  (volatile uint32_t *)(ADC1_BASE + 0x40)
-#define ADC1_JDR2  (volatile uint32_t *)(ADC1_BASE + 0x44)
-#define ADC1_JDR3  (volatile uint32_t *)(ADC1_BASE + 0x48)
-#define ADC1_DR    (volatile uint32_t *)(ADC1_BASE + 0x4c)
-
-#define ADC_CR2_EON 0
-#define ADC_CR1_EOCIE 5
 
 #define THUMB __attribute__((target("thumb")))
 
@@ -56,7 +34,6 @@ uint16_t tim_calc_psc(float timeout, uint32_t f_clk, uint16_t auto_reload_value)
 }
 #endif
 
-static volatile int last_adc = 0;
 
 int x = 0;
 
@@ -159,7 +136,7 @@ void update_display()
 {
   frame_counter++;
   int y;
-  float adc_normalized = (float)last_adc / 4096;
+  float adc_normalized = 0.0f;// (float)last_adc / 4096;
   int level = adc_normalized * 64;
   int num_volt = adc_normalized * 3300;
   int first = num_volt / 1000;
@@ -180,31 +157,6 @@ void update_display()
   draw_tim2_cntr(10, 50);
   draw_blinker_icon(89, 6, 5, 3, 13);
   dbuf_flush();
-}
-
-void adc_isr(void)
-{
-  last_adc = reg_read(ADC1_DR);
-  update_display();
-  reg_write(ADC1_SR, 0);
-  reg_write(ADC1_CR2, 1 << ADC_CR2_EON);
-}
-
-void adc_setup(void)
-{
-  rcc_enable_gpio_a();
-  rcc_enable_adc1();
-  gpioa_set_cr(1, GPIO_MODE_INPUT, GPIO_CNF_IN_ANALOG);
-
-  reg_write(ADC1_CR2, 1 << ADC_CR2_EON);
-  reg32_set_bit(ADC1_CR1, ADC_CR1_EOCIE);
-  reg_write(ADC1_SR, 0);
-  reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_ADC1);
-  reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_ADC1);
-  for (volatile int i = 0; i < 400; ++i)
-  {
-  }
-  reg_write(ADC1_CR2, 1 << ADC_CR2_EON);
 }
 
 void uart2_setup(void)
