@@ -9,7 +9,7 @@ SECTIONS {
   {
     . = ALIGN(4);
     __bss_start = .;
-    main.o(.bss)
+    *.o(.bss)
     . = ALIGN(4);
     __bss_end = .;
   } > RAM

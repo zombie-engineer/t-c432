@@ -18,9 +18,7 @@
 #include "scheduler.h"
 #include "task.h"
 #include "main_task.h"
-
-
-#define THUMB __attribute__((target("thumb")))
+#include "compiler.h"
 
 #define F_CLK 36000000
 
@@ -89,7 +87,8 @@ void main(void)
   int adc_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_ADC1);
 
   rcc_set_72mhz_usb();
-  task_create(main_task);
+  BRK;
+  task_create("main", main_task);
   scheduler_start();
   i2c_init();
   ssd1306_init();
