@@ -25,7 +25,7 @@ uint32_t wait_complete;
 
 void systick_set(uint32_t ms)
 {
-  uint32_t reload_value = F_SYSTICK / 1000 * 500;
+  uint32_t reload_value = F_SYSTICK / 1000 * ms;
   reg_write(STK_LOAD, reload_value);
   reg_write(STK_CTRL,
     (1<<STK_CTRL_ENABLE) |

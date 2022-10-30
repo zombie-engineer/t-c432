@@ -28,3 +28,8 @@ static struct list_node *list_remove_head(struct list_node *list)
   node->next = node->prev = node;
   return node;
 }
+
+static struct list_node *list_get_first(struct list_node *list)
+{
+  return list->next;
+}

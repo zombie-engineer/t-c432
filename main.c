@@ -70,6 +70,14 @@ static void i2c_init(void)
   i2c_clock_setup();
 }
 
+void test_task(void *arg)
+{
+  while(1) {
+    debug_pin_toggle();
+    asm volatile ("wfi");
+  }
+}
+
 void main(void)
 {
   struct scb_cpuid i;
@@ -94,14 +102,22 @@ void main(void)
     while(1);
   }
 
+  debug_pin_setup();
   scheduler_init();
+  scheduler_enqueue_runnable(t);
+
+  t = task_create("test_task", test_task, scheduler_exit_task);
+  if (!t) {
+    BRK;
+    while(1);
+  }
+
   scheduler_enqueue_runnable(t);
   scheduler_start();
 
   i2c_init();
   ssd1306_init();
   timer_setup();
-  debug_pin_setup();
   ui_update();
   usb_init();
 //  uart2_setup();

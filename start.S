@@ -1,6 +1,7 @@
 .arch armv7-m
 .thumb
 .globl reset_isr
+.align 5
 reset_isr:
 # SCB_SHCSR Enable MEMFAULT, BUSFAULT, USGFAULT handling
 ldr r0, =0xe000ed24
@@ -9,92 +10,15 @@ mov r1, #7
 bfi r2, r1, #16, #3
 str r2, [r0]
 
-
-
 mov r0, #0x20
 lsl r0, r0, #24
 mov r1, #0x10
 lsl r1, r1, #8
 add r0, r1
 mov sp, r0
-
-bl main
-ldr r0, =0x40021018
-ldr r1, [r0]
-mov r2, #1
-lsl r2, #2
-orr r1, r2
-str r1, [r0]
-ldr r0, =0x4002101c
-ldr r1, [r0]
-mov r2, #1
-lsl r2, #17
-orr r1, r2
-str r1, [r0]
-
-# CRL PA2
-ldr r0, =0x40010800
-ldr r1, [r0]
-
-# value |= 3 << 8
-mov r2, #3
-bfi r1, r2, #8, #2
-
-# value |= 2 << 10
-bfc r1, #10, #2
-mov r2, #2
-bfi r1, r2, #10, #2
-
-
-# CRL PA3
-# value ~= (3 << 12)
-bfc r1, #12, #2
-
-# value ~= (3 << 14)
-bfc r1, #14, #2
-# value |= 2 << 14
-mov r2, #2
-bfi r1, r2, #14, #2
-ldr r0, =0x40010800
-str r1, [r0]
-
-ldr r0, =0x4001080c
-ldr r1, [r0]
-mov r2, #1
-bfi r1, r2, #3, #1
-str r1, [r0]
-
-.globl usart_init2
-usart_init2:
-ldr r0, =0x4000440c
-ldr r1, [r0]
-# BIT 13 UE - Usart enable
-mov r2, #1
-bfi r1, r2, #13, #1
-str r1, [r0]
-
-mov r4, #0x45
-ldr r3, =0x40004408
-str r4, [r3]
-
-# BIT 13 M = 0  Start bit, 8 data bits, n Stop bit
-bfc r1, #12, #1
-# BIT 3 TE: transmitter enabled
-bfi r1, r2, #3, #1
-# BIT 2 RE: receiver enabled
-bfi r1, r2, #3, #1
-str r1, [r0]
-.globl usart_complete
-usart_complete:
-
-
-
-
-
 bl main
 1:
 b 1b
-
 
 .globl idle
 idle:
@@ -109,18 +33,21 @@ b 1b
 bx lr
 
 .globl memfault_isr
+.align 3
 memfault_isr:
 1:
 wfe
 b 1b
 
 .globl reserved_isr
+.align 3
 reserved_isr:
 1:
 wfe
 b 1b
 
 .globl svcall_isr
+.align 3
 svcall_isr:
 # What is the argeument to SVC?
 # SVC syntax is 'svc imm', where 'imm' is numeric svc argument
@@ -137,6 +64,7 @@ svcall_isr:
 # stacked pc.
 # svc encoding is (SVC opcode << 8) | (imm & 0xf)
 # imm byte goes first, so we can just read 1 byte at offset pc - 2
+bl save_context
 ldr r0, [sp, #24]
 sub r0, #2
 ldrb r0, [r0]
@@ -144,6 +72,7 @@ bl svc_handler
 b restore_context
 
 .globl usgfault_isr
+.align 3
 usgfault_isr:
 1:
 b 1b
@@ -154,10 +83,17 @@ b 1b
 .endm
 
 .macro load_current_ctx, dst_reg
-  ldr \dst_reg, =current_ctx
+# context ptr is retrieved from struct task *current->ctx
+# we first load address under the pointer of current, this is where the task is
+# then in the task we read the field at offset 8 this is a struct task->ctx
+# 
+  ldr \dst_reg, =current
   ldr \dst_reg, [\dst_reg]
+  ldr \dst_reg, [\dst_reg, #8]
 .endm
 
+.globl save_context
+.align 4
 save_context:
 # first column is old_sp offset
 # second column is new_sp offset
@@ -178,13 +114,11 @@ save_context:
 # -8  +52 lr
 # -4  +56 pc
 # -0  +60 psr <- HW stacking starts here
-bkpt
-load_current_ctx r0
 # r0 - is the base of the context frame
-cbz r0, 1f
 # r0 moves to end of HW stacking
-sub r0, #28
-sub r0, #36
+.macro do_save_context
+mrs r0, psp
+sub r0, #32
 str r4, [r0, #0]
 str r5, [r0, #4]
 str r6, [r0, #8]
@@ -197,12 +131,22 @@ mov r1, r10
 str r1, [r0, #24]
 mov r1, r11
 str r1, [r0, #28]
-1:
+
+# Store top of the stacked process frame to current task->ctx
+# First ,load address of 'current', then read value of current, this is the
+# address of current task
+ldr r1, =current
+ldr r1, [r1]
+# Next write r0 (top of processor frame on stack) to ctx field ot struct task
+str r0, [r1, #8]
+.endm
+do_save_context
 bx lr
 
+.globl restore_context
+.align 6
 restore_context:
 load_current_ctx r0
-cbz r0, 1f
 ldm r0!, {r4-r7}
 ldr r1, [r0, #0]
 mov r8, r1
@@ -215,12 +159,12 @@ mov r11, r1
 add r0, #16
 msr psp, r0
 isb
-1:
+# Load PC with EXCEPTION_RETURN (thread mode, PSP stack)
 ldr r0, =0xfffffffd
-push {r0}
-pop {pc}
+bx r0
 
 .globl systick_isr
+.align 5
 systick_isr:
 bl save_context
 bl scheduler_select_next_current

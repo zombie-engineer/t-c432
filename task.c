@@ -19,11 +19,12 @@ struct regset_stm32f103 {
   regtype psr;
 };
 
-static SECTION(".stack") struct stack stack_pool[NUM_STACKS];
+SECTION(".stack") struct stack stack_pool[NUM_STACKS];
 
 static uint32_t stack_pool_busy_mask = 0;
 
 static struct task task_pool[MAX_TASKS];
+
 static uint32_t task_pool_busy_mask = 0;
 
 static inline struct stack *stack_pool_get(void)
@@ -58,18 +59,13 @@ static inline struct task *task_pool_get(void)
   return NULL;
 }
 
-static inline void init_process_frame(const struct task *t,
+void task_init_process_frame(struct task *t,
   task_entr_fn entry_fn,
   task_exit_fn exit_fn)
 {
   struct hw_stored_ctx *p;
   struct sw_stored_ctx *psw;
-#if 0
-  uint32_t *sp = &t->stack->stack[64 - num_words_per_hw_frame];
-#endif
-  uint32_t *sp = &t->stack->stack[64];
-  sp -= sizeof(*p) / sizeof(uint32_t);
-  p = (void *)sp;
+  p = &t->ctx->hw;
   p->r0  = 0x00000000;
   p->r1  = 0x01010101;
   p->r2  = 0x02020202;
@@ -78,9 +74,7 @@ static inline void init_process_frame(const struct task *t,
   p->lr  = (uint32_t)exit_fn;
   p->pc  = (uint32_t)entry_fn;
   p->psr = 0x01000000;
-
-  sp -= sizeof(*psw) / sizeof(uint32_t);
-  psw = (void *)sp;
+  psw = &t->ctx->sw;
 
   psw->r4 = 0x04040404;
   psw->r5 = 0x05050505;
@@ -97,6 +91,7 @@ struct task *task_create(const char *task_name, task_entr_fn entry_fn,
 {
   struct task *t;
   struct stack *s;
+  int init_ctx_pos;
 
   s = stack_pool_get();
   if (!s)
@@ -111,15 +106,22 @@ struct task *task_create(const char *task_name, task_entr_fn entry_fn,
   t->name = task_name;
   t->stack = s;
 
-  init_process_frame(t, entry_fn, exit_fn);
+  /*
+   * Context is stored on the task's stack so t->ctx with store the address
+   * somewhere on the stack to where processor + system  has stacked the
+   * context at interrupt. Initially the context is on the stack bottom
+   */
+  init_ctx_pos = STACK_SIZE - sizeof(struct context) / sizeof(uint32_t);
+
+  t->ctx = (struct context *)&s->raw[init_ctx_pos];
+
+  task_init_process_frame(t, entry_fn, exit_fn);
   list_init(&t->scheduler_list);
 
   return t;
 }
 
-uint32_t *task_get_process_frame(const struct task *t)
+uint32_t *task_get_context_ptr(const struct task *t)
 {
-  int num_words_per_hw_frame = (sizeof(struct hw_stored_ctx)+sizeof(struct sw_stored_ctx)) / sizeof(uint32_t);
-  uint32_t *sp = &t->stack->stack[64 - num_words_per_hw_frame];
-  return sp;
+  return (uint32_t *)t->ctx;
 }
