@@ -1,6 +1,6 @@
 #include "scb.h"
+#include "memory_layout.h"
 
-#define SCB_BASE 0xe000ed00
 #define SCB_CPUID (volatile uint32_t *)(SCB_BASE + 0x00)
 #define SCB_CPUID_REVISION 0
 #define SCB_CPUID_REVISION_WIDTH 4
@@ -59,6 +59,34 @@
 #define SCB_AIRCR_VECTKEY_WRITE_VALUE 0x05fa
 
 #define SCB_SHPR1 (volatile uint32_t *)(SCB_BASE + 0x18)
+
+#define SCB_SHCSR (volatile uint32_t *)(SCB_BASE + 0x24)
+#define SCB_SHCSR_MEMFAULT_ACT    0
+#define SCB_SHCSR_BUSFAULT_ACT    1
+#define SCB_SHCSR_USGFAULT_ACT    3
+#define SCB_SHCSR_SVCALL_ACT      7
+#define SCB_SHCSR_MONITOR_ACT     8
+#define SCB_SHCSR_PENDSV_ACT      10
+#define SCB_SHCSR_SYSTICK_ACT     11
+#define SCB_SHCSR_USGFAULT_PENDED 12
+#define SCB_SHCSR_MEMFAULT_PENDED 13
+#define SCB_SHCSR_BUSFAULT_PENDED 13
+#define SCB_SHCSR_SVCALL_PENDED   15
+#define SCB_SHCSR_MEMFAULT_ENA    16
+#define SCB_SHCSR_BUSFAULT_ENA    17
+#define SCB_SHCSR_USGFAULT_ENA    18
+
+#define SCB_CFSR (volatile uint32_t *)(SCB_BASE + 0x28)
+#define SCB_CFSR_IACCVIOL 0
+#define SCB_CFSR_IACCVIOL_WIDTH 1
+
+#define SCB_HFSR (volatile uint32_t *)(SCB_BASE + 0x2c)
+#define SCB_HFSR_VECTTBL 1
+#define SCB_HFSR_VECTTBL_WIDTH 1
+#define SCB_HFSR_FORCED 30
+#define SCB_HFSR_FORCED_WIDTH 1
+#define SCB_HFSR_DEBUG_VT 31
+#define SCB_HFSR_DEBUG_VT_WIDTH 1
 
 void scb_get_cpuid(struct scb_cpuid *i)
 {
@@ -131,4 +159,24 @@ void scb_system_reset(void)
   u32_set_bit(&v, SCB_AIRCR_SYSRESETREQ);
 
   reg_write(SCB_AIRCR, v);
+}
+
+bool scb_is_vector_table_hardfault(void)
+{
+  return reg32_bit_is_set(SCB_HFSR, SCB_HFSR_VECTTBL);
+}
+
+uint32_t scb_get_shcsr(void)
+{
+  return reg_read(SCB_SHCSR);
+}
+
+uint32_t scb_get_cfsr(void)
+{
+  return reg_read(SCB_CFSR);
+}
+
+bool scb_memfault_is_access_violation(void)
+{
+  return reg32_bit_is_set(SCB_CFSR, SCB_CFSR_IACCVIOL);
 }

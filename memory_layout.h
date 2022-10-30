@@ -16,3 +16,4 @@
 #define RCC_BASE     0x40021000
 #define FLASH_BASE   0x40022000
 #define SYSTICK_BASE 0xe000e010
+#define SCB_BASE     0xe000ed00
