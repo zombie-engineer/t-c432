@@ -14,6 +14,8 @@
 #define reg_read8(__reg) \
   (*(volatile uint8_t *)(__reg))
 
+#define bitmask_size(__bitmask) (sizeof(__bitmask) * 8)
+
 static inline void u32_modify_bits(uint32_t *v, int bitpos, int bitwidth, int value)
 {
   uint32_t tmp_v = *v;
