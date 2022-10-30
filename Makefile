@@ -30,7 +30,7 @@ firmware.bin: firmware.elf
 	arm-none-eabi-objcopy firmware.elf --output-target binary firmware.bin
 
 firmware.elf: $(OBJS) link.ld
-	arm-none-eabi-ld $(OBJS) $(LIBGCC) $(LIBC) -o firmware.elf -T link.ld
+	arm-none-eabi-ld $(OBJS) $(LIBGCC) $(LIBC) -o firmware.elf -T link.ld -Map firmware.map
 
 %.o: %.S
 	arm-none-eabi-as $< -o $@
