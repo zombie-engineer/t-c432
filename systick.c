@@ -1,3 +1,4 @@
+#include "config.h"
 #include "systick.h"
 #include "memory_layout.h"
 #include "reg_access.h"
@@ -20,6 +21,18 @@ extern void idle(void);
 
 uint32_t wait_complete;
 
+#define F_SYSTICK (F_CPU / 8)
+
+void systick_set(uint32_t ms)
+{
+  uint32_t reload_value = F_SYSTICK / 1000 * 500;
+  reg_write(STK_LOAD, reload_value);
+  reg_write(STK_CTRL,
+    (1<<STK_CTRL_ENABLE) |
+    (1<<STK_CTRL_TICKINT)
+  );
+}
+
 void systick_wait_ms(uint32_t ms)
 {
   reg_write(STK_LOAD, (uint32_t)((float)0x44aa20 / 1000.0f) * ms);
@@ -31,9 +44,3 @@ void systick_wait_ms(uint32_t ms)
 
   idle();
 }
-
-void systick_isr(void)
-{
-  wait_complete = 1;
-}
-
