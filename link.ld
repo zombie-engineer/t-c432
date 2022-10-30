@@ -13,4 +13,7 @@ SECTIONS {
     . = ALIGN(4);
     __bss_end = .;
   } > RAM
+  .stack(NOLOAD):
+  {
+  } > RAM
 }

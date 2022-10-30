@@ -73,6 +73,7 @@ static void i2c_init(void)
 void main(void)
 {
   struct scb_cpuid i;
+  struct task *t;
 
   zero_bss();
   scb_get_cpuid(&i);
@@ -87,9 +88,16 @@ void main(void)
   int adc_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_ADC1);
 
   rcc_set_72mhz_usb();
-  BRK;
-  task_create("main", main_task);
+  t = task_create("main", main_task, scheduler_exit_task);
+  if (!t) {
+    BRK;
+    while(1);
+  }
+
+  scheduler_init();
+  scheduler_enqueue_runnable(t);
   scheduler_start();
+
   i2c_init();
   ssd1306_init();
   timer_setup();

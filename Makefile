@@ -4,6 +4,7 @@ LIBC := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libc.a
 $(info $(LIBC))
 
 OBJS := main.o \
+  svc.o \
   scheduler.o \
   task.o \
   main_task.o \
