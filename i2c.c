@@ -2,17 +2,42 @@
 #include "i2c_regs.h"
 #include "reg_access.h"
 
-
 #define PCLK1_MHZ 36
-void i2c_clock_setup(void)
+
+// #define I2C_STANDARD_MODE
+#define I2C_FAST_MODE
+
+#if defined(I2C_FAST_MODE)
+void i2c_clock_setup_fast(void)
 {
   uint32_t v = 0;
-  reg32_clear_bit(I2C_CR1, I2C_CR1_PE);
-   /*
-    * PCLK1 = 36MHz (see rcc.c)
-    */
-  u32_modify_bits(&v, I2C_CR2_FREQ, I2C_CR2_FREQ_WIDTH, PCLK1_MHZ);
-  reg_write(I2C_CR2, v);
+
+  u32_modify_bits(&v, I2C_CCR_FS, 1, I2C_CCR_FS_FM);
+  /*
+   * In Fast mode:
+   *   T_high = CCR * T_PCLK1
+   *   T_low  = 2 * CCR * T_PCLK1
+   *   CCR = T_high / T_PCLK1 => T_low = 2 * T_high
+   *   ,so T_high = 2 * T_low
+   *   T = T_low + T_high = 2 * T_high + T_high = 3 * T_high
+   * Desired I2C clock speed is 400KHz = 400000
+   * T (1 period) will be 1/400000 which is 1/400 of a millisecond,
+   * same as 2.5 microseconds which is 2500 nanoseconds
+   * Because T_high = 2 * T_low and T = T_high + T_low, this results that
+   * T_high = T/3 = 2500 / 3 = 833.33 nanoseconds T_high and T_low is required
+   * Knowing T_PCLK1 and any of T_high or T_low we can calculate CCR
+   * CCR = T_high / T_PCLK1 = 833.33 / 28 = 29.76 = ~30 = 0x1e
+   */
+  u32_modify_bits(&v, I2C_CCR_CCR, I2C_CCR_CCR_WIDTH, 0x29);
+  reg_write(I2C_CCR, v);
+  reg_write(I2C_TRISE, PCLK1_MHZ + 1);
+}
+#endif
+
+#if defined(I2C_STANDARD_MODE)
+void i2c_clock_setup_standard(void)
+{
+  uint32_t v = 0;
   /*
    * T_low is time when clock signal was at logical 0 in a single clock pulse
    * T_high is time when clock signal was at logical 1 in a single clock pulse
@@ -45,7 +70,25 @@ void i2c_clock_setup(void)
    * in our case PCLK1 is 36 MHz so TRISE would be + 1 of that = 37
    */
   reg_write(I2C_TRISE, PCLK1_MHZ + 1);
-  // v = (I2C_CCR_FS_FM << I2C_CCR_FS);
+}
+#endif
+
+void i2c_clock_setup(void)
+{
+  reg32_clear_bit(I2C_CR1, I2C_CR1_PE);
+
+  uint32_t v = 0;
+   /*
+    * PCLK1 = 36MHz (see rcc.c)
+    */
+  u32_modify_bits(&v, I2C_CR2_FREQ, I2C_CR2_FREQ_WIDTH, PCLK1_MHZ);
+  reg_write(I2C_CR2, v);
+
+#if defined(I2C_STANDARD_MODE)
+  i2c_clock_setup_standard();
+#elif defined(I2C_FAST_MODE)
+  i2c_clock_setup_fast();
+#endif
   reg32_set_bit(I2C_CR1, I2C_CR1_PE);
 }
 
