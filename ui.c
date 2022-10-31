@@ -105,7 +105,6 @@ void ui_update(void)
   int first = num_volt / 1000;
   int next = num_volt - first * 1000;
 
-
   dbuf_clear();
   // update_display_usb_stats();
   draw_dynamic_bar(level);
