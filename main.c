@@ -70,11 +70,9 @@ static void i2c_init(void)
   i2c_clock_setup();
 }
 
-int num_schedules = 0;
 void test_task(void *arg)
 {
   while(1) {
-    num_schedules++;
     ui_update();
     debug_pin_toggle();
     asm volatile ("wfi");
