@@ -169,3 +169,57 @@ systick_isr:
 bl save_context
 bl scheduler_select_next_current
 b restore_context
+
+.globl exti_0_isr
+.align 5
+exti_0_isr:
+bl save_context
+mov r0, #0
+bl exti_isr
+b restore_context
+
+.globl exti_1_isr
+.align 5
+exti_1_isr:
+bl save_context
+mov r0, #1
+bl exti_isr
+b restore_context
+
+.globl exti_2_isr
+.align 5
+exti_2_isr:
+bl save_context
+mov r0, #2
+bl exti_isr
+b restore_context
+
+.globl exti_3_isr
+.align 5
+exti_3_isr:
+bl save_context
+mov r0, #3
+bl exti_isr
+b restore_context
+
+.globl exti_4_isr
+.align 5
+exti_4_isr:
+bl save_context
+mov r0, #4
+bl exti_isr
+b restore_context
+
+.globl exti_9_5_isr
+.align 5
+exti_9_5_isr:
+bl save_context
+bl exti_isr
+b restore_context
+
+.globl exti_10_15_isr
+.align 5
+exti_10_15_isr:
+bl save_context
+bl exti_isr
+b restore_context

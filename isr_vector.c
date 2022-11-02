@@ -1,6 +1,7 @@
 #include "compiler.h"
 #include "cpu_arm_stm32f103.h"
 #include "scb.h"
+#include "nvic.h"
 
 extern void reset_isr(void);
 extern void nmi_isr(void);
@@ -17,6 +18,12 @@ extern void usb_hp_isr(void);
 extern void usb_lp_isr(void);
 extern void usb_wakeup_isr(void);
 extern void reserved_isr(void);
+extern void exti_1_isr(void);
+extern void exti_2_isr(void);
+extern void exti_3_isr(void);
+extern void exti_4_isr(void);
+extern void exti_9_5_isr(void);
+extern void exti_10_15_isr(void);
 
 __attribute__((section(".isr_vector")))
 
@@ -43,11 +50,13 @@ int isr_vector[] = {
   ISR(13, generic_isr, 1),
   ISR(14, generic_isr, 1),
   ISR(15, systick_isr, 1),
-  ISR(16 + 18, adc_isr, 1),
-  ISR(16 + 19, usb_hp_isr, 1),
-  ISR(16 + 20, usb_lp_isr, 1),
-  ISR(16 + 28, tim2_isr, 1),
-  ISR(16 + 42, usb_wakeup_isr, 1),
+  ISR(16 + NVIC_INTERRUPT_NUMBER_ADC1, adc_isr, 1),
+  ISR(16 + NVIC_INTERRUPT_NUMBER_USB_HP_CAN_TX, usb_hp_isr, 1),
+  ISR(16 + NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0, usb_lp_isr, 1),
+  ISR(16 + NVIC_INTERRUPT_NUMBER_TIM2, tim2_isr, 1),
+  ISR(16 + NVIC_INTERRUPT_NUMBER_USB_WAKEUP, usb_wakeup_isr, 1),
+  ISR(16 + NVIC_INTERRUPT_NUMBER_EXTI9_5, exti_9_5_isr, 1),
+
 };
 
 void hardfault_isr(void)
