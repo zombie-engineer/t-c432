@@ -8,6 +8,10 @@
 static struct list_node runnable = { 0 };
 struct task *current = 0;
 
+struct scheduler_stats sched_stats = {
+  .task_switches = 0
+};
+
 void scheduler_select_next_current(void)
 {
   struct task *t;
@@ -18,6 +22,7 @@ void scheduler_select_next_current(void)
   }
 
   current = container_of(list_task, struct task, scheduler_list);
+  sched_stats.task_switches++;
   list_add_tail(&runnable, list_task);
 }
 

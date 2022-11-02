@@ -1,6 +1,12 @@
 #pragma once
 #include "task.h"
 
+struct scheduler_stats {
+  int task_switches;
+};
+
+extern struct scheduler_stats sched_stats;
+
 void scheduler_init(void);
 
 void scheduler_start(void);
