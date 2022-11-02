@@ -18,6 +18,7 @@
 #include "scheduler.h"
 #include "task.h"
 #include "main_task.h"
+#include "pushbuttons.h"
 #include "compiler.h"
 
 #define F_CLK 36000000
@@ -106,6 +107,7 @@ void main(void)
   debug_pin_setup();
   i2c_init();
   ssd1306_init();
+  pushbuttons_init();
 
   scheduler_init();
   scheduler_enqueue_runnable(t);

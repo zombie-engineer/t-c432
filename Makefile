@@ -5,6 +5,7 @@ $(info $(LIBC))
 
 OBJS := main.o \
   exti.o \
+  pushbuttons.o \
   svc.o \
   scheduler.o \
   task.o \
