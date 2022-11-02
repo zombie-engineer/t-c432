@@ -4,7 +4,7 @@ MEMORY {
 }
 SECTIONS {
   .isr_vector : { isr_vector.o(.isr_vector) } > FLASH
-  .text : { start.o(.text) main.o(.text) } > FLASH
+  .text : { exti.o(.text) start.o(.text) main.o(.text) } > FLASH
   .bss :
   {
     . = ALIGN(4);
