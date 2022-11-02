@@ -44,3 +44,5 @@ bool gpiob_pin_is_set(int pin_nr);
 
 void gpio_map_to_exti(int port, int pin_nr);
 
+void gpio_odr_modify(int port, int pin_nr, int set_clear);
+

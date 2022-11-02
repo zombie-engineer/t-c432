@@ -3,6 +3,9 @@
 #include "reg_access.h"
 #include "svc.h"
 
+#define GPIO_WORDS_PER_PORT ((IOPB_BASE - IOPA_BASE)/4)
+#define GPIO_PORT_CNT ((IOPG_BASE - IOPA_BASE) / GPIO_WORDS_PER_PORT)
+
 #define AFIO_EVCR (volatile uint32_t *)(AFIO_BASE + 0x00)
 #define AFIO_MAPR (volatile uint32_t *)(AFIO_BASE + 0x04)
 #define AFIO_EXTICR1 (volatile uint32_t *)(AFIO_BASE + 0x08)
@@ -110,4 +113,15 @@ void gpio_map_to_exti(int port, int pin_nr)
 
   r =  AFIO_EXTICR1 + exticr_reg_idx;
   reg32_modify_bits(r, exticr_pin_idx * 4, 4, port);
+}
+
+void gpio_odr_modify(int port, int pin_nr, int set_clear)
+{
+  volatile uint32_t *r = GPIOA_ODR;
+
+  if (port > GPIO_PORT_CNT)
+    svc_call(SVC_PANIC);
+
+  r += GPIO_WORDS_PER_PORT * port;
+  reg32_modify_bits(r, pin_nr, 1, set_clear);
 }
