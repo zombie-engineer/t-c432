@@ -62,7 +62,6 @@ void zero_bss(void)
 static void i2c_init(void)
 {
   rcc_enable_i2c1();
-  rcc_enable_gpio_b();
   /* B6 - SDA Alternate function open drain */
   gpiob_set_cr(6, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_OPEN_DRAIN);
   /* B7 - SCL Alternate function open drain */
@@ -73,6 +72,10 @@ static void i2c_init(void)
 
 void test_task(void *arg)
 {
+  pushbuttons_init();
+  i2c_init();
+  ssd1306_init();
+
   while(1) {
     ui_update();
     debug_pin_toggle();
@@ -104,10 +107,11 @@ void main(void)
     while(1);
   }
 
+  /* GPIO port B and AFIO needed to be enabled for push buttons */
+  rcc_enable_afio();
+  rcc_enable_gpio_b();
+
   debug_pin_setup();
-  i2c_init();
-  ssd1306_init();
-  pushbuttons_init();
 
   scheduler_init();
   scheduler_enqueue_runnable(t);
