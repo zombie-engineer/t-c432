@@ -3,7 +3,7 @@
 
 void main_task(void *)
 {
-  systick_set(100);
+  systick_set(40);
   while(1) {
   }
 }
