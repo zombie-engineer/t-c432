@@ -1,5 +1,6 @@
 #pragma once
 #define SVC_JUMP_TO_MAIN 55
+#define SVC_PANIC        56
 
 /*
  * svc_call macro uses preprocessor stringify feature
