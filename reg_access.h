@@ -71,6 +71,11 @@ static inline void reg32_set_bit(volatile uint32_t *v, int bitpos)
   reg_write(v, reg_read(v) | (1<<bitpos));
 }
 
+static inline void reg32_write_clear_bit(volatile uint32_t *v, int bitpos)
+{
+  reg_write(v, 1 << bitpos);
+}
+
 static inline void reg32_clear_bit(volatile uint32_t *v, int bitpos)
 {
   reg_write(v, reg_read(v) & ~(1<<bitpos));

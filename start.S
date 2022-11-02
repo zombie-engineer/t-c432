@@ -214,6 +214,18 @@ b restore_context
 .align 5
 exti_9_5_isr:
 bl save_context
+ldr r0, =0x40010414
+ldr r1, [r0]
+mov r0, #5
+lsr r1, #5
+mov r2, #1
+b 2f
+1:
+add r0, #1
+lsr r1, #1
+2:
+tst r1, r2
+beq 1b
 bl exti_isr
 b restore_context
 
@@ -221,5 +233,17 @@ b restore_context
 .align 5
 exti_10_15_isr:
 bl save_context
+ldr r0, =0x40010414
+ldr r1, [r0]
+mov r0, #10
+lsr r1, #10
+mov r2, #1
+b 2f
+1:
+add r0, #1
+lsr r1, #1
+2:
+tst r1, r2
+beq 1b
 bl exti_isr
 b restore_context

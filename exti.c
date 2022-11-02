@@ -18,7 +18,7 @@ void exti_enable_gpio_interrupt(int pin_nr, uint32_t trigger_flags)
     reg32_set_bit(EXTI_FSTR, pin_nr);
 }
 
-void exti_isr(int ext_interrupt_no)
+void exti_isr(int ext_int_nr)
 {
-  asm volatile("bkpt");
+  reg32_write_clear_bit(EXTI_PR, ext_int_nr);
 }
