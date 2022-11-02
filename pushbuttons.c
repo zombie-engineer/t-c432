@@ -18,14 +18,15 @@ void pushbuttons_init(void)
 
 bool pushbotton_a_is_pressed(void)
 {
-  gpiob_pin_is_set(8);
+  return gpiob_pin_is_set(8);
 }
 
 bool pushbotton_b_is_pressed(void)
 {
-  gpiob_pin_is_set(9);
+  return gpiob_pin_is_set(9);
 }
 
 bool pushbotton_c_is_pressed(void)
 {
+  return false;
 }
