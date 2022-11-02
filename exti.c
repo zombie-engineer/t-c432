@@ -9,9 +9,13 @@
 #define EXTI_SWIER (volatile uint32_t *)(EXTI_BASE + 0x10)
 #define EXTI_PR (volatile uint32_t *)(EXTI_BASE + 0x14)
 
-void exti_enable_gpio_interrupt(int pin_nr)
+void exti_enable_gpio_interrupt(int pin_nr, uint32_t trigger_flags)
 {
   reg32_set_bit(EXTI_IMR, pin_nr);
+  if (u32_bit_is_set(trigger_flags, EXTI_TRIGGER_FLAG_RISING))
+    reg32_set_bit(EXTI_RSTR, pin_nr);
+  if (u32_bit_is_set(trigger_flags, EXTI_TRIGGER_FLAG_FALLING))
+    reg32_set_bit(EXTI_FSTR, pin_nr);
 }
 
 void exti_isr(int ext_interrupt_no)
