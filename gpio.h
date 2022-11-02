@@ -1,4 +1,13 @@
 #pragma once
+#include <stdbool.h>
+
+#define GPIO_PORT_A 0
+#define GPIO_PORT_B 1
+#define GPIO_PORT_C 2
+#define GPIO_PORT_D 3
+#define GPIO_PORT_E 4
+#define GPIO_PORT_F 5
+#define GPIO_PORT_G 6
 
 #define GPIO_MODE_INPUT      0b00
 #define GPIO_MODE_OUT_10_MHZ 0b01
@@ -30,3 +39,8 @@ void gpiob_set_cr(int pin_nr, int mode, int cnf);
 #define GPIO_REMAP_I2C1_PB6_PB7 0
 #define GPIO_REMAP_I2C1_PB8_PB9 1
 void gpio_remap_i2c1(int mapping);
+
+bool gpiob_pin_is_set(int pin_nr);
+
+void gpio_map_to_exti(int port, int pin_nr);
+

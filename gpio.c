@@ -1,9 +1,15 @@
 #include "gpio.h"
 #include "memory_layout.h"
 #include "reg_access.h"
+#include "svc.h"
 
 #define AFIO_EVCR (volatile uint32_t *)(AFIO_BASE + 0x00)
 #define AFIO_MAPR (volatile uint32_t *)(AFIO_BASE + 0x04)
+#define AFIO_EXTICR1 (volatile uint32_t *)(AFIO_BASE + 0x08)
+#define AFIO_EXTICR2 (volatile uint32_t *)(AFIO_BASE + 0x0c)
+#define AFIO_EXTICR3 (volatile uint32_t *)(AFIO_BASE + 0x10)
+#define AFIO_EXTICR4 (volatile uint32_t *)(AFIO_BASE + 0x14)
+#define AFIO_MAPR2 (volatile uint32_t *)(AFIO_BASE + 0x18)
 
 #define GPIOA_CRL  (volatile uint32_t *)(IOPA_BASE + 0x00)
 #define GPIOA_CRH  (volatile uint32_t *)(IOPA_BASE + 0x04)
@@ -85,4 +91,23 @@ void gpioa_set_odr(int bit)
 void gpio_remap_i2c1(int mapping)
 {
   reg32_modify_bit(AFIO_MAPR, 1, mapping);
+}
+
+bool gpiob_pin_is_set(int pin_nr)
+{
+  return reg32_bit_is_set(GPIOB_IDR, pin_nr);
+}
+
+void gpio_map_to_exti(int port, int pin_nr)
+{
+  volatile uint32_t *r;
+  unsigned int exticr_reg_idx = pin_nr / 4;
+  int exticr_pin_idx = pin_nr % 4;
+
+  if (exticr_reg_idx >= 4) {
+    svc_call(SVC_PANIC);
+  }
+
+  r =  AFIO_EXTICR1 + exticr_reg_idx;
+  reg32_modify_bits(r, exticr_pin_idx * 4, 4, port);
 }

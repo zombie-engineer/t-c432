@@ -5,6 +5,7 @@
 #define I2C2_BASE    0x40005800
 #define USB_BASE     0x40005c00
 #define AFIO_BASE    0x40010000
+#define EXTI_BASE    0x40010400
 #define IOPA_BASE    0x40010800
 #define IOPB_BASE    0x40010c00
 #define IOPC_BASE    0x40011000
