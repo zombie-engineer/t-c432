@@ -113,3 +113,4 @@
 uint8_t nvic_get_priority(int interrupt_no);
 void nvic_set_priority(int interrupt_no, uint8_t pri);
 void nvic_enable_interrupt(int interrupt_no);
+void nvic_clear_pending(int interrupt_no);

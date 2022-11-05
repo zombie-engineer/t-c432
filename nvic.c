@@ -18,10 +18,20 @@ void nvic_enable_interrupt(int interrupt_no)
 {
   volatile uint32_t *r;
 
-  if (interrupt_no > NVIC_INTERRUPT_NUMBER_MAX) {
+  if (interrupt_no > NVIC_INTERRUPT_NUMBER_MAX)
     svc_call(SVC_PANIC);
-  }
 
   r = NVIC_ISER0 + interrupt_no / NVIC_ICER_INTS_PER_REG;
+  reg32_set_bit(r, interrupt_no % NVIC_ICER_INTS_PER_REG);
+}
+
+void nvic_clear_pending(int interrupt_no)
+{
+  volatile uint32_t *r;
+
+  if (interrupt_no > NVIC_INTERRUPT_NUMBER_MAX)
+    svc_call(SVC_PANIC);
+
+  r = NVIC_ICPR0 + interrupt_no / NVIC_ICER_INTS_PER_REG;
   reg32_set_bit(r, interrupt_no % NVIC_ICER_INTS_PER_REG);
 }
