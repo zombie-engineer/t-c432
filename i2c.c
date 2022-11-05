@@ -284,10 +284,18 @@ void i2c_init_isr(void)
 {
   nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_I2C1_EV);
   nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_I2C1_ER);
-  return;
   reg32_set_bit(I2C_CR2, I2C_CR2_ITERREN);
   reg32_set_bit(I2C_CR2, I2C_CR2_ITEVTEN);
   reg32_set_bit(I2C_CR2, I2C_CR2_ITBUFEN);
+}
+
+void i2c_isr_disable(void)
+{
+  nvic_disable_interrupt(NVIC_INTERRUPT_NUMBER_I2C1_EV);
+  nvic_disable_interrupt(NVIC_INTERRUPT_NUMBER_I2C1_ER);
+  reg32_clear_bit(I2C_CR2, I2C_CR2_ITERREN);
+  reg32_clear_bit(I2C_CR2, I2C_CR2_ITEVTEN);
+  reg32_clear_bit(I2C_CR2, I2C_CR2_ITBUFEN);
 }
 
 #define I2C_INTERRUPT_TYPE_EVENT 0
@@ -328,7 +336,7 @@ void i2c_handle_event(void)
     case I2C_ASYNC_STATE_WAIT_EV8:
     {
       if (!u32_bit_is_set(sr1, I2C_SR1_TXE)
-        || u32_bit_is_set(sr1, I2C_SR1_BTF))
+         )//|| u32_bit_is_set(sr1, I2C_SR1_BTF))
         svc_call(SVC_PANIC);
 
       reg_write(I2C_DR, *current_i2c_rq.data);
@@ -350,7 +358,6 @@ void i2c_handle_event(void)
 
       sr1 = reg_read(I2C_SR1);
       reg32_set_bit(I2C_CR1, I2C_CR1_STOP);
-      asm volatile ("bkpt");
       /*
        * STOP condition will need some time removing TxE bit, which causes
        * interrupt event, which we don't want
