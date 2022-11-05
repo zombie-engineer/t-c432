@@ -4,6 +4,24 @@
 
 #define SSD1306_I2C_ADDR 0x78
 
+//#define I2C_ASYNC 1
+
+#if defined(I2C_ASYNC)
+#define DATA(__byte) \
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x40, __byte)
+
+#define DATA2(__byte0, __byte1) \
+  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x40, __byte0, __byte1)
+
+#define CMD(__cmdbyte) \
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, (__cmdbyte))
+
+#define CMD2(__cmdbyte, __valuebyte) \
+  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, (__cmdbyte), (__valuebyte))
+
+#define CMD3(__cmdbyte, __valuebyte0, __valuebyte1) \
+  i2c_write_bytes3_async(SSD1306_I2C_ADDR, 0x00, (__cmdbyte), (__valuebyte0), (__valuebyte1))
+#else /* end of I2C_ASYNC */
 #define DATA(__byte) \
   i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, __byte)
 
@@ -18,6 +36,7 @@
 
 #define CMD3(__cmdbyte, __valuebyte0, __valuebyte1) \
   i2c_write_bytes3(SSD1306_I2C_ADDR, 0x00, (__cmdbyte), (__valuebyte0), (__valuebyte1))
+#endif
 
 #define DISPL_OFF 0
 #define DISPL_ON 1

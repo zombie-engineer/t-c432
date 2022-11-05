@@ -25,6 +25,8 @@ extern void exti_3_isr(void);
 extern void exti_4_isr(void);
 extern void exti_9_5_isr(void);
 extern void exti_10_15_isr(void);
+extern void i2c1_ev_isr(void);
+extern void i2c1_er_isr(void);
 
 __attribute__((section(".isr_vector")))
 
@@ -63,6 +65,8 @@ int isr_vector[] = {
   ISR(16 + NVIC_INTERRUPT_NUMBER_USB_WAKEUP, usb_wakeup_isr, 1),
   ISR(16 + NVIC_INTERRUPT_NUMBER_EXTI9_5, exti_9_5_isr, 1),
   ISR(16 + NVIC_INTERRUPT_NUMBER_EXTI10_15, exti_10_15_isr, 1),
+  ISR(16 + NVIC_INTERRUPT_NUMBER_I2C1_EV, i2c1_ev_isr, 1),
+  ISR(16 + NVIC_INTERRUPT_NUMBER_I2C1_ER, i2c1_er_isr, 1),
 
 };
 

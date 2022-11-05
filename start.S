@@ -247,3 +247,25 @@ tst r1, r2
 beq 1b
 bl exti_isr
 b restore_context
+
+.macro ISR_START name
+.globl \name\()_isr
+.align 5
+\name\()_isr:
+bl save_context
+.endm
+
+.macro ISR_END
+b restore_context
+.endm
+
+ISR_START i2c1_ev
+mov r0, #0
+bl i2c1_isr
+ISR_END
+
+ISR_START i2c1_er
+mov r0, #1
+bl i2c1_isr
+ISR_END
+
