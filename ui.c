@@ -3,6 +3,7 @@
 #include <string.h>
 #include "ssd1306.h"
 #include "tim.h"
+#include "pushbuttons.h"
 
 struct bar_widget {
   int pos_x;
@@ -118,6 +119,8 @@ void ui_update(void)
   dbuf_draw_line(64, y, 64, y + 3, 1);
   draw_tim2_cntr(10, 50);
   draw_blinker_icon(89, 6, 5, 3, 13);
+  if (pushbotton_a_is_pressed())
+    draw_blinker_icon(89 + 6, 10, 5, 3, 13);
   dbuf_flush();
 }
 

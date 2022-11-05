@@ -167,7 +167,7 @@ define show_i2c
 end
 
 reup
-b pushbutton_signal
+# b pushbutton_signal
 c
 show_i2c
 show_nvic

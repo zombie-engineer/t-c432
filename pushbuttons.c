@@ -16,7 +16,7 @@ struct button_state buttons[3] = { 0 };
 static void pushbutton_signal(int button_idx)
 {
   struct button_state *b;
-  if (button_idx < ARRAY_SIZE(buttons))
+  if (button_idx >= ARRAY_SIZE(buttons))
     return;
 
   b = &buttons[button_idx];
