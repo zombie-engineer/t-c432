@@ -8,6 +8,9 @@ int svc_handler(char arg)
     case SVC_JUMP_TO_MAIN:
       scheduler_jump_to_main();
       break;
+    case SVC_PANIC:
+      asm volatile("bkpt");
+      break;
     default:
       break;
   }
