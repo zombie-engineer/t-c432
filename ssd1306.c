@@ -4,7 +4,7 @@
 
 #define SSD1306_I2C_ADDR 0x78
 
-//#define I2C_ASYNC 1
+#define I2C_ASYNC 1
 
 #if defined(I2C_ASYNC)
 #define DATA(__byte) \
@@ -145,7 +145,7 @@ void dbuf_clear(void)
 
   for (page = 0; page < NUM_PAGES; ++page) {
     for (col = 0; col < NUM_COLUMNS; ++col) {
-      DBYTE(col, page)  = 0;
+      DBYTE(col, page)  = 0x00;
     }
   }
 }
@@ -286,9 +286,14 @@ void dbuf_flush(void)
   int col;
 
   CMD_SET_COL(0);
+#if 0
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0x00);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0x10);
+#endif
   for (page = 0; page < NUM_PAGES; ++page) {
     CMD_SET_PAGE_START_ADDRESS(page);
-    i2c_write_bytes_x(SSD1306_I2C_ADDR, 0x40, &DBYTE(0, page), NUM_COLUMNS);
+    // i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xb0 | page);
+    i2c_write_bytes_x_async(SSD1306_I2C_ADDR, 0x40, &DBYTE(0, page), NUM_COLUMNS);
   }
 }
 
@@ -352,6 +357,28 @@ void ssd1306_init(void)
   CMD_SET_VCOM_DESELECT_LEVEL(1);
   CMD_CHARGE_PUMP_ENA();
   CMD_DISPL_SET_ON_OFF(DISPL_ON);
+
+#if 0
+  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0xa8, 0x3f);
+  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0xd3, 0);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xa0);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xc8);
+  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0xda, 0x12);
+  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0x81, 0x3f);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xae);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xa6);
+  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0xd5, 15<<4);
+  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0x20, 2);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0x00);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0x10);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xb0);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xa4);
+  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0xd9, 0x11);
+  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0x8d, 0x14);
+  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xaf);
+#endif
+
   dbuf_init();
   dbuf_flush();
 }
