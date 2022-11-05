@@ -10,11 +10,12 @@ monitor reset init
 add-symbol-file firmware.elf
 end
 
-define nvic
-  printf "nvic enabled: "
-  x/3wx 0xe000e100
-  printf "nvic pending: "
-  x/3wx 0xe000e200
+define show_nvic
+  printf "NVIC_ISERx(set-end): %08x\n", *(int *)0xe000e100
+  printf "NVIC_ICERx(clr-ena): %08x\n", *(int *)0xe000e180
+  printf "NVIC_ISPRx(set-pnd): %08x\n", *(int *)0xe000e200
+  printf "NVIC_ICPRx(clr-pnd): %08x\n", *(int *)0xe000e280
+  printf "NVIC_IABR0(active ): %08x\n", *(int *)0xe000e300
 end
 
 define epxr_decode
@@ -63,7 +64,7 @@ define epxr_decode
   end
 end
 
-define usbr
+define show_usbr
   printf "USB_CNTR: "
   x/1wx 0x40005c40
   set $istr = *(int *)0x40005c44
@@ -114,7 +115,60 @@ define usbr
   printf "\n"
 end
 
-reup
+define show_i2c
+  set $cr1 = *(int *)0x40005400
+  printf "I2C1_CR1: %08x", $cr1
+  if $cr1 & (1<<0)
+    printf " PE"
+  end
+  if $cr1 & (1<<8)
+    printf " START"
+  end
+  if $cr1 & (1<<9)
+    printf " STOP"
+  end
+  if $cr1 & (1<<10)
+    printf " ACK"
+  end
+  if $cr1 & (1<<15)
+    printf " SWRST"
+  end
 
+  set $sr1 = *(int *)0x40005414
+  printf "\nI2C1_SR1: %08x", $sr1
+  if $sr1 & (1<<0)
+    printf " SB"
+  end
+  if $sr1 & (1<<1)
+    printf " ADDR"
+  end
+  if $sr1 & (1<<2)
+    printf " BTF"
+  end
+  if $sr1 & (1<<6)
+    printf " RxNE"
+  end
+  if $sr1 & (1<<7)
+    printf " TxE"
+  end
+
+  set $sr2 = *(int *)0x40005418
+  printf "\nI2C1_SR2: %08x", $sr2
+  if $sr2 & (1<<0)
+    printf " MSL"
+  end
+  if $sr2 & (1<<1)
+    printf " BUSY"
+  end
+  if $sr1 & (1<<2)
+    printf " TR"
+  end
+  printf "\n"
+end
+
+reup
+b pushbutton_signal
 c
-usbr
+show_i2c
+show_nvic
+show_usbr
