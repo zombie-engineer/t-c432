@@ -120,7 +120,7 @@ void ui_update(void)
   draw_tim2_cntr(10, 50);
   draw_blinker_icon(89, 6, 5, 3, 13);
   if (pushbotton_a_is_pressed())
-    draw_blinker_icon(89 + 6, 10, 5, 3, 13);
+    dbuf_draw_hatched_rect(89 + 5, 6, 89 + 5 + 20, 6 + 6, 1);
   dbuf_flush();
 }
 
