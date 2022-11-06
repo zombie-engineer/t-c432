@@ -1,6 +1,9 @@
 #include "ssd1306.h"
 #include "i2c.h"
+#include "rcc.h"
+#include "gpio.h"
 #include "font.h"
+#include "config.h"
 
 #define SSD1306_I2C_ADDR 0x78
 
@@ -339,6 +342,14 @@ void ssd1306_arg(uint16_t arg)
 
 void ssd1306_init(void)
 {
+#ifdef DISPLAY_PWR_CTRL
+  rcc_periph_ena(RCC_PERIPH_IOPA);
+  gpioa_set_cr(12, GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
+  gpio_odr_modify(GPIO_PORT_A, 12, false);
+  asm volatile ("bkpt");
+  gpio_odr_modify(GPIO_PORT_A, 12, true);
+#endif
+
   CMD_SET_MULTIPLEX_RATIO(0x3f);
   CMD_SET_DISPL_OFFSET(0);
   CMD_SET_START_LINE_ADDR(0);
