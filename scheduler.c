@@ -69,3 +69,8 @@ void scheduler_jump_to_main(void)
   current->ctx = (struct context *)&current->stack->raw[init_ctx_pos];
   task_init_process_frame(current, main_task, scheduler_exit_task);
 }
+
+void scheduler_wait_ms(uint32_t ms)
+{
+  for (volatile int i = 0; i < 1000 * ms; ++i);
+}

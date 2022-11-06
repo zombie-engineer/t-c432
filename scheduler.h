@@ -18,3 +18,5 @@ void scheduler_exit_task(void);
 void scheduler_select_next_current(void);
 
 void scheduler_jump_to_main(void);
+
+void scheduler_wait_ms(uint32_t ms);

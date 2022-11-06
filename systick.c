@@ -35,6 +35,10 @@ void systick_set(uint32_t ms)
 
 void systick_wait_ms(uint32_t ms)
 {
+  /*
+   * if scheduler is enabled, systick is used by it in auto-repeat mode, so
+   * this function should not be used
+   */
   reg_write(STK_LOAD, (uint32_t)((float)0x44aa20 / 1000.0f) * ms);
 
   wait_complete = 0;
