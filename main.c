@@ -40,7 +40,7 @@ int tick = 0;
 void timer_setup(void)
 {
   /* SYSCLK = 72MHz */
-  rcc_enable_tim2();
+  rcc_periph_ena(RCC_PERIPH_TIM2);
   tim2_setup(true, CALC_PSC(0.1, F_CLK, 0xffff), 0xffff, true, true);
 }
 
@@ -61,7 +61,7 @@ void zero_bss(void)
 
 static void i2c_init(void)
 {
-  rcc_enable_i2c1();
+  rcc_periph_ena(RCC_PERIPH_I2C1);
   /* B6 - SDA Alternate function open drain */
   gpiob_set_cr(6, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_OPEN_DRAIN);
   /* B7 - SCL Alternate function open drain */
@@ -109,8 +109,8 @@ void main(void)
   }
 
   /* GPIO port B and AFIO needed to be enabled for push buttons */
-  rcc_enable_afio();
-  rcc_enable_gpio_b();
+  rcc_periph_ena(RCC_PERIPH_AFIO);
+  rcc_periph_ena(RCC_PERIPH_IOPB);
 
   debug_pin_setup();
 

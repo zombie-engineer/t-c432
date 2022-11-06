@@ -30,8 +30,8 @@ static volatile int last_adc = 0;
 
 void adc_setup(void)
 {
-  rcc_enable_gpio_a();
-  rcc_enable_adc1();
+  rcc_periph_ena(RCC_PERIPH_IOPA);
+  rcc_periph_ena(RCC_PERIPH_ADC1);
   gpioa_set_cr(1, GPIO_MODE_INPUT, GPIO_CNF_IN_ANALOG);
 
   reg_write(ADC1_CR2, 1 << ADC_CR2_EON);

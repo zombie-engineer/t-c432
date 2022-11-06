@@ -2,6 +2,7 @@
 #include "flash.h"
 #include "memory_layout.h"
 #include "reg_access.h"
+#include "common_util.h"
 
 #define RCC_CR      (volatile uint32_t *)(RCC_BASE + 0x00)
 #define RCC_CFGR    (volatile uint32_t *)(RCC_BASE + 0x04)
@@ -10,6 +11,7 @@
 #define RCC_AHBENR   (volatile uint32_t *)(RCC_BASE + 0x14)
 #define RCC_APB2ENR  (volatile uint32_t *)(RCC_BASE + 0x18)
 #define RCC_APB1ENR  (volatile uint32_t *)(RCC_BASE + 0x1c)
+#define RCC_AHBRSTR (volatile uint32_t *)(RCC_BASE + 0x28)
 
 #define RCC_CFGR_SW_POS 0
 #define RCC_CFGR_SW_WIDTH 2
@@ -101,17 +103,166 @@
 #define RCC_APB1RSTR_TIM2RST 0
 #define RCC_APB1RSTR_IOPCRST 4
 
-#define RCC_APB1ENR_TIM2EN 0
-#define RCC_APB1ENR_USART2EN 17
-#define RCC_APB1ENR_I2C1EN 21
-#define RCC_APB1ENR_I2C2EN 22
-#define RCC_APB1ENR_USBEN 23
+#define RCC_PERIPH_AHB_DMA1      0
+#define RCC_PERIPH_AHB_DMA2      1
+#define RCC_PERIPH_AHB_SRAM      2
+#define RCC_PERIPH_AHB_FLIT      4
+#define RCC_PERIPH_AHB_CRC       6
+#define RCC_PERIPH_AHB_OTGFS    12
+#define RCC_PERIPH_AHB_ETHMAC   14
+#define RCC_PERIPH_AHB_ETHMACTX 15
+#define RCC_PERIPH_AHB_ETHMACRX 16
 
-#define RCC_APB2ENR_AFIOEN 0
-#define RCC_APB2ENR_IOPAEN 2
-#define RCC_APB2ENR_IOPBEN 3
-#define RCC_APB2ENR_IOPCEN 4
-#define RCC_APB2ENR_ADC1AEN 9
+#define RCC_AHBENR_DMA1EN RCC_PERIPH_AHB_DMA1
+#define RCC_AHBENR_DMA2EN RCC_PERIPH_AHB_DMA2
+#define RCC_AHBENR_SRAMEN RCC_PERIPH_AHB_SRAM
+#define RCC_AHBENR_FLITEN RCC_PERIPH_AHB_FLIT
+#define RCC_AHBENR_CRCEN RCC_PERIPH_AHB_CRC
+#define RCC_AHBENR_OTGFSEN RCC_PERIPH_AHB_OTGFS
+#define RCC_AHBENR_ETHMACEN RCC_PERIPH_AHB_ETHMAC
+#define RCC_AHBENR_ETHMACTXEN RCC_PERIPH_AHB_ETHMACTX
+#define RCC_AHBENR_ETHMACRXEN RCC_PERIPH_AHB_ETHMACRX
+
+#define RCC_AHBRST_OTGFSEN RCC_PERIPH_AHB_OTGFS
+#define RCC_AHBRSR_ETHMACEN RCC_PERIPH_AHB_ETHMAC
+
+#define RCC_PERIPH_APB1_TIM2 0
+#define RCC_PERIPH_APB1_TIM3 1
+#define RCC_PERIPH_APB1_TIM4 2
+#define RCC_PERIPH_APB1_TIM5 3
+#define RCC_PERIPH_APB1_TIM6 4
+#define RCC_PERIPH_APB1_TIM7 5
+#define RCC_PERIPH_APB1_WWDG 11
+#define RCC_PERIPH_APB1_SPI2 14
+#define RCC_PERIPH_APB1_SPI3 15
+#define RCC_PERIPH_APB1_USART2 17
+#define RCC_PERIPH_APB1_USART3 18
+#define RCC_PERIPH_APB1_USART4 19
+#define RCC_PERIPH_APB1_USART5 20
+#define RCC_PERIPH_APB1_I2C1   21
+#define RCC_PERIPH_APB1_I2C2   22
+#define RCC_PERIPH_APB1_USB    23
+#define RCC_PERIPH_APB1_CAN1   25
+#define RCC_PERIPH_APB1_CAN2   26
+#define RCC_PERIPH_APB1_BKP    27
+#define RCC_PERIPH_APB1_PWR    28
+#define RCC_PERIPH_APB1_DAC    29
+
+#define RCC_APB1ENR_TIM2EN RCC_PERIPH_APB1_TIM2
+#define RCC_APB1ENR_TIM3EN RCC_PERIPH_APB1_TIM3
+#define RCC_APB1ENR_TIM4EN RCC_PERIPH_APB1_TIM4
+#define RCC_APB1ENR_TIM5EN RCC_PERIPH_APB1_TIM5
+#define RCC_APB1ENR_TIM6EN RCC_PERIPH_APB1_TIM6
+#define RCC_APB1ENR_TIM7EN RCC_PERIPH_APB1_TIM7
+#define RCC_APB1ENR_WWDGEN RCC_PERIPH_APB1_WWDG
+#define RCC_APB1ENR_SPI2EN RCC_PERIPH_APB1_SPI2
+#define RCC_APB1ENR_SPI3EN RCC_PERIPH_APB1_SPI3
+#define RCC_APB1ENR_USART2EN RCC_PERIPH_APB1_USART2
+#define RCC_APB1ENR_USART3EN RCC_PERIPH_APB1_USART3
+#define RCC_APB1ENR_USART4EN RCC_PERIPH_APB1_USART4
+#define RCC_APB1ENR_USART5EN RCC_PERIPH_APB1_USART5
+#define RCC_APB1ENR_I2C1EN RCC_PERIPH_APB1_I2C1
+#define RCC_APB1ENR_I2C2EN RCC_PERIPH_APB1_I2C2
+#define RCC_APB1ENR_USBEN RCC_PERIPH_APB1_USB
+#define RCC_APB1ENR_CAN1EN RCC_PERIPH_APB1_CAN1
+#define RCC_APB1ENR_CAN2EN RCC_PERIPH_APB1_CAN2
+#define RCC_APB1ENR_BKPEN RCC_PERIPH_APB1_BKP
+#define RCC_APB1ENR_PWREN RCC_PERIPH_APB1_PWR
+#define RCC_APB1ENR_DACEN RCC_PERIPH_APB1_DAC
+
+#define RCC_PERIPH_APB2_AFIO 0
+#define RCC_PERIPH_APB2_IOPA 2
+#define RCC_PERIPH_APB2_IOPB 3
+#define RCC_PERIPH_APB2_IOPC 4
+#define RCC_PERIPH_APB2_IOPD 5
+#define RCC_PERIPH_APB2_IOPE 6
+#define RCC_PERIPH_APB2_ADC1 9
+#define RCC_PERIPH_APB2_ADC2 10
+#define RCC_PERIPH_APB2_TIM1 11
+#define RCC_PERIPH_APB2_SPI1 12
+#define RCC_PERIPH_APB2_USART1 14
+
+#define RCC_APB2ENR_AFIOEN RCC_PERIPH_APB2_AFIO
+#define RCC_APB2ENR_IOPAEN RCC_PERIPH_APB2_IOPA
+#define RCC_APB2ENR_IOPBEN RCC_PERIPH_APB2_IOPB
+#define RCC_APB2ENR_IOPCEN RCC_PERIPH_APB2_IOPC
+#define RCC_APB2ENR_IOPDEN RCC_PERIPH_APB2_IOPD
+#define RCC_APB2ENR_IOPEEN RCC_PERIPH_APB2_IOPE
+#define RCC_APB2ENR_ADC1EN RCC_PERIPH_APB2_ADC1
+#define RCC_APB2ENR_ADC2EN RCC_PERIPH_APB2_ADC2
+#define RCC_APB2ENR_TIM1EN RCC_PERIPH_APB2_TIM1
+#define RCC_APB2ENR_SPI1EN RCC_PERIPH_APB2_SPI1
+#define RCC_APB2ENR_USART1EN RCC_PERIPH_APB2_USART1
+
+/*
+ * Encoded location to one of **ENR registers and bit position inside of it
+ * **ENR registers are RCC_AHBENR, RCC_APB1ENR, RCC_APB2ENR
+ */
+typedef uint8_t periph_ena_location_t;
+
+/*
+ * indexed offseet to one of EN registers that enable peripherals, starting
+ * from RCC_AHBENR
+ */
+#define RCC_EN_IDX_AHB  0
+#define RCC_EN_IDX_APB2 1
+#define RCC_EN_IDX_APB1 2
+
+#define RCC_ENR_LOC_ENCODE(__periph_idx, __bit_pos) \
+  (uint8_t)((__bit_pos & 0x1f) | ((__periph_idx & 3) << 5))
+
+#define RCC_ENR_LOC_DECODE_REG(__loc) (RCC_AHBENR + (((__loc) >> 5) & 3))
+
+#define RCC_ENR_LOC_DECODE_BITPOS(__loc) ((__loc) & 0x1f)
+
+#define PERIPH_ENA_LOC(__periphname, __busname) \
+  [RCC_PERIPH_ ## __periphname] = RCC_ENR_LOC_ENCODE( \
+    RCC_EN_IDX_ ## __busname, \
+    RCC_PERIPH_ ## __busname ## _ ## __periphname)
+
+static periph_ena_location_t rcc_periph_ena_map[] = {
+  PERIPH_ENA_LOC(DMA1    , AHB),
+  PERIPH_ENA_LOC(DMA2    , AHB),
+  PERIPH_ENA_LOC(SRAM    , AHB),
+  PERIPH_ENA_LOC(FLIT    , AHB),
+  PERIPH_ENA_LOC(CRC     , AHB),
+  PERIPH_ENA_LOC(OTGFS   , AHB),
+  PERIPH_ENA_LOC(ETHMAC  , AHB),
+  PERIPH_ENA_LOC(ETHMACTX, AHB),
+  PERIPH_ENA_LOC(ETHMACRX, AHB),
+  PERIPH_ENA_LOC(TIM2    , APB1),
+  PERIPH_ENA_LOC(TIM3    , APB1),
+  PERIPH_ENA_LOC(TIM4    , APB1),
+  PERIPH_ENA_LOC(TIM5    , APB1),
+  PERIPH_ENA_LOC(TIM6    , APB1),
+  PERIPH_ENA_LOC(TIM7    , APB1),
+  PERIPH_ENA_LOC(WWDG    , APB1),
+  PERIPH_ENA_LOC(SPI2    , APB1),
+  PERIPH_ENA_LOC(SPI3    , APB1),
+  PERIPH_ENA_LOC(USART2  , APB1),
+  PERIPH_ENA_LOC(USART3  , APB1),
+  PERIPH_ENA_LOC(USART4  , APB1),
+  PERIPH_ENA_LOC(USART5  , APB1),
+  PERIPH_ENA_LOC(I2C1    , APB1),
+  PERIPH_ENA_LOC(I2C2    , APB1),
+  PERIPH_ENA_LOC(USB     , APB1),
+  PERIPH_ENA_LOC(CAN1    , APB1),
+  PERIPH_ENA_LOC(CAN2    , APB1),
+  PERIPH_ENA_LOC(BKP     , APB1),
+  PERIPH_ENA_LOC(PWR     , APB1),
+  PERIPH_ENA_LOC(DAC     , APB1),
+  PERIPH_ENA_LOC(AFIO    , APB2),
+  PERIPH_ENA_LOC(IOPA    , APB2),
+  PERIPH_ENA_LOC(IOPB    , APB2),
+  PERIPH_ENA_LOC(IOPC    , APB2),
+  PERIPH_ENA_LOC(IOPD    , APB2),
+  PERIPH_ENA_LOC(IOPE    , APB2),
+  PERIPH_ENA_LOC(ADC1    , APB2),
+  PERIPH_ENA_LOC(ADC2    , APB2),
+  PERIPH_ENA_LOC(TIM1    , APB2),
+  PERIPH_ENA_LOC(SPI1    , APB2),
+  PERIPH_ENA_LOC(USART1  , APB2)
+};
 
 void rcc_set_72mhz_usb(void)
 {
@@ -155,52 +306,24 @@ void rcc_set_72mhz_usb(void)
 //  while(reg32_bit_is_set(RCC_CR, RCC_CR_HSIRDY_POS));
 }
 
-void rcc_enable_usb(void)
+void rcc_periph_ena(rcc_clock_periph_t p)
 {
-  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_USBEN);
+  uint8_t loc;
+
+  if (p >= ARRAY_SIZE(rcc_periph_ena_map))
+    return;
+
+  loc = rcc_periph_ena_map[p];
+  reg32_set_bit(RCC_ENR_LOC_DECODE_REG(loc), RCC_ENR_LOC_DECODE_BITPOS(loc));
 }
 
-void rcc_enable_gpio_a(void)
+void rcc_periph_disa(rcc_clock_periph_t p)
 {
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPAEN);
-}
+  uint8_t loc;
 
-void rcc_enable_gpio_b(void)
-{
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPBEN);
-}
+  if (p >= ARRAY_SIZE(rcc_periph_ena_map))
+    return;
 
-void rcc_enable_gpio_c(void)
-{
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_IOPCEN);
-}
-
-void rcc_enable_afio(void)
-{
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_AFIOEN);
-}
-
-void rcc_enable_adc1(void)
-{
-  reg32_set_bit(RCC_APB2ENR, RCC_APB2ENR_ADC1AEN);
-}
-
-void rcc_enable_usart2(void)
-{
-  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_USART2EN);
-}
-
-void rcc_enable_tim2(void)
-{
-  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_TIM2EN);
-}
-
-void rcc_enable_i2c1(void)
-{
-  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_I2C1EN);
-}
-
-void rcc_enable_i2c2(void)
-{
-  reg32_set_bit(RCC_APB1ENR, RCC_APB1ENR_I2C2EN);
+  loc = rcc_periph_ena_map[p];
+  reg32_clear_bit(RCC_ENR_LOC_DECODE_REG(loc), RCC_ENR_LOC_DECODE_BITPOS(loc));
 }

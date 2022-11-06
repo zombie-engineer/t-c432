@@ -737,9 +737,9 @@ void usb_wakeup_isr(void)
 void usb_init(void)
 {
   systick_wait_ms(20);
-  rcc_enable_usb();
-  rcc_enable_gpio_a();
-  rcc_enable_afio();
+  rcc_periph_ena(RCC_PERIPH_USB);
+  rcc_periph_ena(RCC_PERIPH_IOPA);
+  rcc_periph_ena(RCC_PERIPH_AFIO);
   // TODO As soon as the USB is enabled, these pins are automatically connected to
   // the USB internal transceiver.
 #if 0

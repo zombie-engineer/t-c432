@@ -8,7 +8,7 @@ static int debug_pin_status = DEBUG_PIN_DISABLED;
 
 void debug_pin_setup(void)
 {
-  rcc_enable_gpio_c();
+  rcc_periph_ena(RCC_PERIPH_IOPC);
   gpioc_set_pin13();
   debug_pin_status = DEBUG_PIN_OFF;
 }
