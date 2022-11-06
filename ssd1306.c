@@ -8,9 +8,7 @@
 
 #define SSD1306_I2C_ADDR 0x78
 
-#define I2C_ASYNC 1
-
-#if defined(I2C_ASYNC)
+#if defined(CONFIG_I2C_ASYNC)
 #define DATA(__byte) \
   i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x40, __byte)
 
@@ -25,7 +23,7 @@
 
 #define CMD3(__cmdbyte, __valuebyte0, __valuebyte1) \
   i2c_write_bytes3_async(SSD1306_I2C_ADDR, 0x00, (__cmdbyte), (__valuebyte0), (__valuebyte1))
-#else /* end of I2C_ASYNC */
+#else /* end of CONFIG_I2C_ASYNC */
 #define DATA(__byte) \
   i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, __byte)
 
@@ -389,27 +387,6 @@ void ssd1306_init(void)
   CMD_SET_VCOM_DESELECT_LEVEL(1);
   CMD_CHARGE_PUMP_ENA();
   CMD_DISPL_SET_ON_OFF(DISPL_ON);
-
-#if 0
-  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0xa8, 0x3f);
-  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0xd3, 0);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xa0);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xc8);
-  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0xda, 0x12);
-  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0x81, 0x3f);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xae);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xa6);
-  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0xd5, 15<<4);
-  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0x20, 2);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0x00);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0x10);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xb0);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xa4);
-  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0xd9, 0x11);
-  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, 0x8d, 0x14);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xaf);
-#endif
 
   dbuf_init();
   dbuf_flush();

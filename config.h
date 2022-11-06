@@ -11,3 +11,7 @@
 #define CNF_DSPL_PWR_PORT A
 /* GPIO port pin */
 #define CNF_DSPL_PWR_PIN 12
+
+/* I2C runs based on interrupts */
+#define CONFIG_I2C_ASYNC 1
+
