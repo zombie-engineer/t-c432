@@ -5,6 +5,31 @@
 #include "tim.h"
 #include "pushbuttons.h"
 
+#define UI_ID_MAIN 0
+#define UI_ID_TEST1 1
+#define UI_ID_TEST2 2
+#define UI_ID_COUNT 3
+
+typedef void (*draw_fn)(void);
+
+struct ui_view {
+  int id;
+  draw_fn draw;
+};
+
+static void ui_draw_main(void);
+
+static void ui_draw_test1(void);
+static void ui_draw_test2(void);
+
+static const struct ui_view ui_views[] = {
+  { .id = UI_ID_MAIN, .draw = ui_draw_main },
+  { .id = UI_ID_TEST1, .draw = ui_draw_test1 },
+  { .id = UI_ID_TEST2, .draw = ui_draw_test2 },
+};
+
+static int ui_current_id = UI_ID_MAIN;
+
 struct bar_widget {
   int pos_x;
   int pos_y;
@@ -96,18 +121,14 @@ static void update_display_usb_stats()
 }
 #endif
 
-void ui_update(void)
+void ui_draw_main(void)
 {
-  frame_counter++;
   int y;
   float adc_normalized = 0.0f;// (float)last_adc / 4096;
   int level = adc_normalized * 64;
   int num_volt = adc_normalized * 3300;
   int first = num_volt / 1000;
   int next = num_volt - first * 1000;
-
-  dbuf_clear();
-  // update_display_usb_stats();
   draw_dynamic_bar(level);
   draw_voltmeter(2, 35, first, next);
 
@@ -119,8 +140,41 @@ void ui_update(void)
   dbuf_draw_line(64, y, 64, y + 3, 1);
   draw_tim2_cntr(10, 50);
   draw_blinker_icon(89, 6, 5, 3, 13);
-  if (pushbotton_a_is_pressed())
-    dbuf_draw_hatched_rect(89 + 5, 6, 89 + 5 + 20, 6 + 6, 1);
+  // update_display_usb_stats();
+}
+
+void ui_draw_test1(void)
+{
+  draw_tim2_cntr(10, 50);
+}
+
+void ui_draw_test2(void)
+{
+  draw_tim2_cntr(50, 30);
+}
+
+void ui_update(void)
+{
+  frame_counter++;
+  dbuf_clear();
+  ui_views[ui_current_id].draw();
   dbuf_flush();
+}
+
+void ui_callback_button_event_pressed(int button_id)
+{
+  if (button_id == 0) {
+    ui_current_id++;
+    if (ui_current_id == UI_ID_COUNT)
+      ui_current_id = 0;
+  } else if (button_id == 1) {
+    ui_current_id--;
+    if (ui_current_id == -1)
+      ui_current_id = UI_ID_COUNT - 1;
+  }
+}
+
+void ui_callback_button_event_released(int button_id)
+{
 }
 

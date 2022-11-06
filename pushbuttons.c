@@ -6,12 +6,16 @@
 
 #define BUTTON_STATE_PRESSED 0
 #define BUTTON_STATE_RELEASED 1
+
 struct button_state {
   int pin_nr;
   int state;
 };
 
 struct button_state buttons[3] = { 0 };
+
+extern void ui_callback_button_event_pressed(int button_id);
+extern void ui_callback_button_event_released(int button_id);
 
 static void pushbutton_signal(int button_idx)
 {
@@ -20,16 +24,17 @@ static void pushbutton_signal(int button_idx)
     return;
 
   b = &buttons[button_idx];
-  /*
-   * Previosly released, now became pressed, so now we should wait for
-   * falling edge event for release event
-   */
-  if (b->state == BUTTON_STATE_RELEASED) {
+
+  if (gpiob_pin_is_set(b->pin_nr)) {
+    if (b->state == BUTTON_STATE_RELEASED) {
+      ui_callback_button_event_pressed(button_idx);
+    }
     b->state = BUTTON_STATE_PRESSED;
-    exti_enable_gpio_interrupt(b->pin_nr, 1<<EXTI_TRIGGER_FLAG_FALLING);
   } else {
+    if (b->state == BUTTON_STATE_PRESSED) {
+      ui_callback_button_event_released(button_idx);
+    }
     b->state = BUTTON_STATE_RELEASED;
-    exti_enable_gpio_interrupt(b->pin_nr, 1<<EXTI_TRIGGER_FLAG_RISING);
   }
 }
 
@@ -53,8 +58,13 @@ void pushbuttons_init(void)
   gpiob_set_cr(9, GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
   gpio_odr_modify(GPIO_PORT_B, 8, 0);
   gpio_odr_modify(GPIO_PORT_B, 9, 0);
-  exti_enable_gpio_interrupt(8, 1<<EXTI_TRIGGER_FLAG_RISING);
-  exti_enable_gpio_interrupt(9, 1<<EXTI_TRIGGER_FLAG_RISING);
+
+  exti_enable_gpio_interrupt(8,
+    (1<<EXTI_TRIGGER_FLAG_RISING) | (1<<EXTI_TRIGGER_FLAG_FALLING));
+
+  exti_enable_gpio_interrupt(9,
+    (1<<EXTI_TRIGGER_FLAG_RISING) | (1<<EXTI_TRIGGER_FLAG_FALLING));
+
   exti_register_callback(PUSHBUTTON_A, pushbutton_signal_a);
   exti_register_callback(PUSHBUTTON_B, pushbutton_signal_b);
   gpio_map_to_exti(GPIO_PORT_B, 8);
@@ -65,13 +75,11 @@ void pushbuttons_init(void)
 bool pushbotton_a_is_pressed(void)
 {
   return buttons[0].state == BUTTON_STATE_PRESSED;
-  //return gpiob_pin_is_set(8);
 }
 
 bool pushbotton_b_is_pressed(void)
 {
   return buttons[1].state == BUTTON_STATE_PRESSED;
-  //return gpiob_pin_is_set(9);
 }
 
 bool pushbotton_c_is_pressed(void)
