@@ -26,6 +26,11 @@ void scheduler_select_next_current(void)
   list_add_tail(&runnable, list_task);
 }
 
+void scheduler_tick(void)
+{
+  scheduler_select_next_current();
+}
+
 void scheduler_start(void)
 {
   struct task *main_task = NULL;

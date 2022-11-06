@@ -167,7 +167,7 @@ bx r0
 .align 5
 systick_isr:
 bl save_context
-bl scheduler_select_next_current
+bl scheduler_tick
 b restore_context
 
 .globl exti_0_isr
