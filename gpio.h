@@ -9,6 +9,17 @@
 #define GPIO_PORT_F 5
 #define GPIO_PORT_G 6
 
+/* preprocessor extend macro intermediate step */
+#define __GPIO_PORT(__letter) GPIO_PORT_ ## __letter
+
+/*
+ * preprocessor convert letter A, B, C to RCC_PERIPH_IOPA, RCC_PERIPH_IOPB,
+ * etc. Additional preprocessing step is needed to convert possible config
+ * definition to actual letter. See config.h
+ */
+#define GPIO_PORT(__letter) \
+  __GPIO_PORT(__letter)
+
 #define GPIO_MODE_INPUT      0b00
 #define GPIO_MODE_OUT_10_MHZ 0b01
 #define GPIO_MODE_OUT_2_MHZ  0b10

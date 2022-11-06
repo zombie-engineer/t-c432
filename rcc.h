@@ -53,6 +53,17 @@ typedef enum {
   RCC_PERIPH_USART1,
 } rcc_clock_periph_t;
 
+/* preprocessor extend macro intermediate step */
+#define __RCC_GPIO_PORT(__letter) RCC_PERIPH_IOP ## __letter
+
+/*
+ * preprocessor convert letter A, B, C to RCC_PERIPH_IOPA, RCC_PERIPH_IOPB,
+ * etc. Additional preprocessing step is needed to convert possible config
+ * definition to actual letter. See config.h
+ */
+#define RCC_GPIO_PORT(__letter) \
+  __RCC_GPIO_PORT(__letter)
+
 /* Enable peripheral */
 void rcc_periph_ena(rcc_clock_periph_t p);
 
