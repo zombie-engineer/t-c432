@@ -4,6 +4,7 @@
 #include "gpio.h"
 #include "font.h"
 #include "config.h"
+#include "time.h"
 
 #define SSD1306_I2C_ADDR 0x78
 
@@ -340,15 +341,35 @@ void ssd1306_arg(uint16_t arg)
   CMD_SET_CONTRAST(arg >> 4);
 }
 
+#ifdef CNF_DSPL_PWR
+void ssd1306_power_init(void)
+{
+  /*
+   * Control display power with transistor. GPIO pin connected to transistor
+   * base is specified int the config. Pin is configured as PUSH/PULL output
+   * If power control is enabled, we first shut down the power for display,
+   * then put it back on to reset possible interrupted i2c state. This is
+   * needed if we reset device multiple times on debug while i2c transimission
+   * was not completed by to some logical point, then I2C re-initialization
+   * would be harder than it needs to be
+   */
+  rcc_periph_ena(RCC_GPIO_PORT(CNF_DSPL_PWR_PORT));
+
+  gpioa_set_cr(CNF_DSPL_PWR_PIN,
+    GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
+
+  gpio_odr_modify(GPIO_PORT(CNF_DSPL_PWR_PORT), CNF_DSPL_PWR_PIN, false);
+  wait_ms(10);
+  gpio_odr_modify(GPIO_PORT(CNF_DSPL_PWR_PORT), CNF_DSPL_PWR_PIN, true);
+  wait_ms(10);
+}
+#endif /* CNF_DSPL_PWR */
+
 void ssd1306_init(void)
 {
-#ifdef DISPLAY_PWR_CTRL
-  rcc_periph_ena(RCC_PERIPH_IOPA);
-  gpioa_set_cr(12, GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
-  gpio_odr_modify(GPIO_PORT_A, 12, false);
-  asm volatile ("bkpt");
-  gpio_odr_modify(GPIO_PORT_A, 12, true);
-#endif
+#ifdef CNF_DSPL_PWR
+  ssd1306_power_init();
+#endif /* CNF_DSPL_PWR */
 
   CMD_SET_MULTIPLEX_RATIO(0x3f);
   CMD_SET_DISPL_OFFSET(0);
