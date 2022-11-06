@@ -151,6 +151,18 @@ define show_i2c
   if $sr1 & (1<<7)
     printf " TxE"
   end
+  if $sr1 & (1<<8)
+    printf " BERR"
+  end
+  if $sr1 & (1<<9)
+    printf " ARLO"
+  end
+  if $sr1 & (1<<10)
+    printf " AF"
+  end
+  if $sr1 & (1<<11)
+    printf " OVR"
+  end
 
   set $sr2 = *(int *)0x40005418
   printf "\nI2C1_SR2: %08x", $sr2
