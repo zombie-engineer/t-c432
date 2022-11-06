@@ -1,8 +1,7 @@
 #include "tim.h"
 #include "reg_access.h"
+#include "memory_layout.h"
 #include "nvic.h"
-
-#define TIM2_BASE 0x40000000
 
 #define TIM2_CR1   (volatile uint32_t *)(TIM2_BASE + 0x00)
 #define TIM2_CR2   (volatile uint32_t *)(TIM2_BASE + 0x04)
