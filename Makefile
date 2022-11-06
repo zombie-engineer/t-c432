@@ -12,6 +12,7 @@ OBJS := main.o \
   main_task.o \
   ui.o \
   adc.o \
+  dma.o \
   scb.o \
   nvic.o \
   tim.o \
