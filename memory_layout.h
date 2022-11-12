@@ -16,6 +16,8 @@
 #define IOPG_BASE    0x40012000
 #define ADC1_BASE    0x40012400
 #define RCC_BASE     0x40021000
+#define DMA1_BASE    0x40020000
+#define DMA2_BASE    0x40020400
 #define FLASH_BASE   0x40022000
 #define SYSTICK_BASE 0xe000e010
 #define SCB_BASE     0xe000ed00
