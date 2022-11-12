@@ -38,10 +38,11 @@
 #define I2C_OAR2_ENDUAL 0
 #define I2C_OAR2_ADD2_7_1 1
 #define I2C_OAR2_ADD2_7_1_WIDTH 7
-#define I2C_DR   (I2C1_BASE + 0x10)
+
+#define I2C_DR (volatile uint32_t *)(I2C1_BASE + 0x10)
 #define I2C_DR_DR 0
 #define I2C_DR_DR_WIDTH 8
-#define I2C_SR1  (volatile uint32_t *)(I2C1_BASE + 0x14)
+#define I2C_SR1 (volatile uint32_t *)(I2C1_BASE + 0x14)
 #define I2C_SR1_SB 0
 #define I2C_SR1_ADDR 1
 #define I2C_SR1_BTF 2
