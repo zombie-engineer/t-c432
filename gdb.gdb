@@ -10,10 +10,202 @@ monitor reset init
 add-symbol-file firmware.elf
 end
 
+define nvic_print_iser
+  if $arg0 & (1 << 0)
+    printf " WWDG"
+  end
+  if $arg0 & (1 << 1)
+    printf " PVD"
+  end
+  if $arg0 & (1 << 2)
+    printf " TAMPER"
+  end
+  if $arg0 & (1 << 3)
+    printf " RTC"
+  end
+  if $arg0 & (1 << 4)
+    printf " FLASH"
+  end
+  if $arg0 & (1 << 5)
+    printf " RCC"
+  end
+  if $arg0 & (1 << 6)
+    printf " EXTI0"
+  end
+  if $arg0 & (1 << 7)
+    printf " EXTI1"
+  end
+  if $arg0 & (1 << 8)
+    printf " EXTI2"
+  end
+  if $arg0 & (1 << 9)
+    printf " EXTI3"
+  end
+  if $arg0 & (1 << 10)
+    printf " EXTI4"
+  end
+  if $arg0 & (1 << 11)
+    printf " DMA1_CHAN_1"
+  end
+  if $arg0 & (1 << 12)
+    printf " DMA1_CHAN_2"
+  end
+  if $arg0 & (1 << 13)
+    printf " DMA1_CHAN_3"
+  end
+  if $arg0 & (1 << 14)
+    printf " DMA1_CHAN_4"
+  end
+  if $arg0 & (1 << 15)
+    printf " DMA1_CHAN_5"
+  end
+  if $arg0 & (1 << 16)
+    printf " DMA1_CHAN_6"
+  end
+  if $arg0 & (1 << 17)
+    printf " DMA1_CHAN_7"
+  end
+  if $arg0 & (1 << 18)
+    printf " ADC1"
+  end
+  if $arg0 & (1 << 19)
+    printf " USB_HP_CAN_TX"
+  end
+  if $arg0 & (1 << 20)
+    printf " USB_LP_CAN_RX0"
+  end
+  if $arg0 & (1 << 21)
+    printf " CAN_RX1"
+  end
+  if $arg0 & (1 << 22)
+    printf " CAN_SCE"
+  end
+  if $arg0 & (1 << 23)
+    printf " EXTI9_5"
+  end
+  if $arg0 & (1 << 24)
+    printf " TIM1_BRK"
+  end
+  if $arg0 & (1 << 25)
+    printf " TIM1_UP"
+  end
+  if $arg0 & (1 << 26)
+    printf " TIM1_TRG_COM"
+  end
+  if $arg0 & (1 << 27)
+    printf " TIM1_CC"
+  end
+  if $arg0 & (1 << 28)
+    printf " TIM2"
+  end
+  if $arg0 & (1 << 29)
+    printf " TIM3"
+  end
+  if $arg0 & (1 << 30)
+    printf " TIM4"
+  end
+  if $arg0 & (1 << 31)
+    printf " I2C1_EV"
+  end
+  if $arg0 & (1 << 32)
+    printf " I2C1_ER"
+  end
+  if $arg0 & (1 << 33)
+    printf " I2C2_EV"
+  end
+  if $arg0 & (1 << 34)
+    printf " I2C2_ER"
+  end
+  if $arg0 & (1 << 35)
+    printf " SPI1"
+  end
+  if $arg0 & (1 << 36)
+    printf " SPI2"
+  end
+  if $arg0 & (1 << 37)
+    printf " USART1"
+  end
+  if $arg0 & (1 << 38)
+    printf " USART2"
+  end
+  if $arg0 & (1 << 39)
+    printf " USART3"
+  end
+  if $arg0 & (1 << 40)
+    printf " EXTI10_15"
+  end
+  if $arg0 & (1 << 41)
+    printf " RTC_ALARM"
+  end
+  if $arg0 & (1 << 42)
+    printf " USB_WAKEUP"
+  end
+  if $arg0 & (1 << 43)
+    printf " TIM8_BRK"
+  end
+  if $arg0 & (1 << 44)
+    printf " TIM8_UP"
+  end
+  if $arg0 & (1 << 45)
+    printf " TIM8_TRG_COM"
+  end
+  if $arg0 & (1 << 46)
+    printf " TIM8_CC"
+  end
+  if $arg0 & (1 << 47)
+    printf " ADC3"
+  end
+  if $arg0 & (1 << 48)
+    printf " FSMC"
+  end
+  if $arg0 & (1 << 49)
+    printf " SDIO"
+  end
+  if $arg0 & (1 << 50)
+    printf " TIM5"
+  end
+  if $arg0 & (1 << 51)
+    printf " SPI3"
+  end
+  if $arg0 & (1 << 52)
+    printf " UART4"
+  end
+  if $arg0 & (1 << 53)
+    printf " UART5"
+  end
+  if $arg0 & (1 << 54)
+    printf " TIM6"
+  end
+  if $arg0 & (1 << 55)
+    printf " TIM7"
+  end
+  if $arg0 & (1 << 56)
+    printf " DMA2_CHAN_1"
+  end
+  if $arg0 & (1 << 57)
+    printf " DMA2_CHAN_2"
+  end
+  if $arg0 & (1 << 58)
+    printf " DMA2_CHAN_3"
+  end
+  if $arg0 & (1 << 59)
+    printf " DMA2_CHAN_4_5"
+  end
+end
+
 define show_nvic
-  printf "NVIC_ISERx(set-end): %08x\n", *(int *)0xe000e100
+  set $iser = *(int *)0xe000e100
+  set $ispr = *(int *)0xe000e200
+
+  printf "NVIC_ISERx(set-end): %08x", $iser
+  nvic_print_iser $iser
+  printf "\n"
+
   printf "NVIC_ICERx(clr-ena): %08x\n", *(int *)0xe000e180
-  printf "NVIC_ISPRx(set-pnd): %08x\n", *(int *)0xe000e200
+
+  printf "NVIC_ISPRx(set-pnd): %08x", $ispr
+  nvic_print_iser $ispr
+  printf "\n"
   printf "NVIC_ICPRx(clr-pnd): %08x\n", *(int *)0xe000e280
   printf "NVIC_IABR0(active ): %08x\n", *(int *)0xe000e300
 end
