@@ -285,7 +285,7 @@ define show_usbr
   if $istr & (1<<15)
     printf " CTR"
   end
-  
+
   set $epxr = *(int *)0x40005c00
   printf "\nUSB_EP0R: %08x:", $epxr
   epxr_decode $epxr
@@ -370,8 +370,54 @@ define show_i2c
   printf "\n"
 end
 
+define print_dma_channel
+  set $dmanum = $arg0
+  set $chnum = $arg1
+  set $ccr = *(int *)(0x40020000 + $chnum * 0x14 + 8)
+  set $cntr = *(int *)(0x40020000 + $chnum * 0x14 + 0x0c)
+  set $pr = *(int *)(0x40020000 + $chnum * 0x14 + 0x10)
+  set $mr = *(int *)(0x40020000 + $chnum * 0x14 + 0x14)
+  printf "DMA%d.%d CCR:%04x, CNT:%04x,%08x", $dmanum + 1, $chnum + 1, $ccr, $cntr, $pr
+  if ($ccr & (1<<6))
+    printf "++"
+  end
+  if ($ccr & (1<<4))
+    printf "<-"
+  else
+    printf "->"
+  end
+  printf "%08x", $mr
+  if ($ccr & (1<<7))
+    printf "++"
+  end
+  if ($ccr & (1<<0))
+    printf "(ena)"
+  else
+    printf "(disa)"
+  end
+  printf "\n"
+end
+
+define show_dma
+  set $isr = *(int *)0x40020000
+  printf "DMA_ISR %08x\n", $isr
+  print_dma_channel 0 0
+  print_dma_channel 0 1
+  print_dma_channel 0 2
+  print_dma_channel 0 3
+  print_dma_channel 0 4
+  print_dma_channel 0 5
+  print_dma_channel 0 6
+end
+
 reup
 # b pushbutton_signal
+tb dbuf_flush
+  commands
+  b dma_transfer_setup
+  b dma_tx_cb
+end
+# b ssd1306_init
 c
 show_i2c
 show_nvic

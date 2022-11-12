@@ -54,6 +54,10 @@ typedef enum {
 
 int dma_get_channel_id(dma_periph_t p);
 
-void dma_transfer(int dma_ch, reg32_t paddr, const uint8_t *maddr,
-    int size);
+void dma_transfer_setup(int dma_ch, reg32_t paddr, const uint8_t *maddr,
+  int size);
 
+void dma_transfer_disable(int ch);
+
+typedef void(*dma_isr_cb)(void);
+void dma_set_isr_cb(dma_num_t dma, int ch, dma_isr_cb cb);

@@ -5,7 +5,8 @@
 #include "rcc.h"
 #include "common_util.h"
 
-#define NUM_DMA_CHANNELS 8
+#define NUM_DMA1_CHANNELS 7
+#define NUM_DMA2_CHANNELS 5
 
 /* DMA1 and DMA2 base addresses are this far from each other */
 #define DMA_REGSPACE_SIZE 0x400
@@ -49,23 +50,32 @@
 #define DMA_CCR_PL_WIDTH 2
 #define DMA_CCR_PL_MEM2MEM 14
 
+
+static dma_isr_cb dma1_isr_cbs[NUM_DMA1_CHANNELS] = { 0 };
+static dma_isr_cb dma2_isr_cbs[NUM_DMA2_CHANNELS] = { 0 };
+
 void dma_enable_interrupt(dma_num_t dma, int ch)
 {
   if (dma == DMA_NUM_1) {
-    nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_DMA1_CHAN_1 + ch - 1);
+    nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_DMA1_CHAN_1 + ch);
   } else if (dma == DMA_NUM_2) {
-    nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_DMA2_CHAN_1 + ch - 1);
+    nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_DMA2_CHAN_1 + ch);
   }
 }
 
-void dma_transfer(int dma_ch, reg32_t paddr, const uint8_t *maddr,
+void dma_transfer_disable(int ch)
+{
+  reg32_clear_bit(DMA_CCR(0, ch), DMA_CCR_EN);
+}
+
+void dma_transfer_setup(int ch, reg32_t paddr, const uint8_t *maddr,
   int size)
 {
   uint32_t v;
 
-  reg_write(DMA_CPAR(0, dma_ch - 1), (uint32_t)paddr);
-  reg_write(DMA_CMAR(0, dma_ch - 1), (uint32_t)maddr);
-  reg_write(DMA_CNDTR(0, dma_ch - 1), size);
+  reg_write(DMA_CPAR(0, ch), (uint32_t)paddr);
+  reg_write(DMA_CMAR(0, ch), (uint32_t)maddr);
+  reg_write(DMA_CNDTR(0, ch), size);
   /* transfer complete interrupt enable */
   u32_set_bit(&v, DMA_CCR_TCIE);
   /* transfer error interrupt enable */
@@ -74,8 +84,8 @@ void dma_transfer(int dma_ch, reg32_t paddr, const uint8_t *maddr,
   u32_set_bit(&v, DMA_CCR_DIR);
   /* Memory increment mode */
   u32_set_bit(&v, DMA_CCR_MINC);
-  reg_write(DMA_CCR(0, dma_ch - 1), v);
-  reg32_set_bit(DMA_CCR(0, dma_ch - 1), DMA_CCR_EN);
+  reg_write(DMA_CCR(0, ch), v);
+  reg32_set_bit(DMA_CCR(0, ch), DMA_CCR_EN);
 }
 
 int dma_get_channel_id(dma_periph_t p)
@@ -126,13 +136,39 @@ int dma_get_channel_id(dma_periph_t p)
   return map[p];
 }
 
-void dma_isr(int dma, int channel)
+void dma_set_isr_cb(dma_num_t dma, int ch, dma_isr_cb cb)
 {
-  asm volatile("bkpt");
+  if (dma = DMA_NUM_1 && ch < NUM_DMA1_CHANNELS) {
+    dma1_isr_cbs[ch] = cb;
+  } else if (dma == DMA_NUM_2 && ch < NUM_DMA2_CHANNELS) {
+    dma2_isr_cbs[ch] = cb;
+  }
+}
+
+void dma_isr(int dma_idx, int ch_idx)
+{
+  dma_isr_cb cb = NULL;
+
+  if (dma_idx == 0 && ch_idx < NUM_DMA1_CHANNELS) {
+    cb = dma1_isr_cbs[ch_idx];
+
+  } else if (dma_idx == 1 && ch_idx < NUM_DMA2_CHANNELS) {
+    cb = dma2_isr_cbs[ch_idx];
+  } else {
+    asm volatile("bkpt");
+    return;
+  }
+
+  if (cb)
+    cb();
+
+  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4);
+  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4 + 1);
+  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4 + 2);
+  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4 + 3);
 }
 
 void dma_init(void)
 {
-  asm volatile("bkpt");
   rcc_periph_ena(RCC_PERIPH_DMA1);
 }

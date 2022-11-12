@@ -271,7 +271,8 @@ ISR_END
 
 .macro DMA_ISR dma_id, channel_id
 ISR_START dma\()\dma_id\()_ch\()\channel_id
-mov r0, #\channel_id
+mov r0, #(\dma_id - 1)
+mov r1, #(\channel_id - 1)
 bl dma_isr
 ISR_END
 .endm

@@ -20,6 +20,7 @@
 #include "main_task.h"
 #include "pushbuttons.h"
 #include "compiler.h"
+#include "dma.h"
 
 #define F_CLK 36000000
 
@@ -68,7 +69,7 @@ static void i2c_init(void)
   gpiob_set_cr(7, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_OPEN_DRAIN);
   gpio_remap_i2c1(GPIO_REMAP_I2C1_PB6_PB7);
   i2c_clock_setup();
-  i2c_init_isr();
+  i2c_init_isr(true);
 }
 
 void test_task(void *arg)

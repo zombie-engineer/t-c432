@@ -3,22 +3,29 @@
 #include "reg_access.h"
 #include "nvic.h"
 #include "svc.h"
+#include "dma.h"
 
 #define PCLK1_MHZ 36
 
 // #define I2C_STANDARD_MODE
 #define I2C_FAST_MODE
 
+#define I2C_TRANSFER_DMA (1<<0)
 /* i2c request */
 struct i2c_rq {
   uint32_t size;
   const uint8_t *data;
   uint8_t addr;
   uint8_t small_data[5];
+  int flags;
 };
 
 /* first only maintain 1 request */
 struct i2c_rq current_i2c_rq;
+
+static bool use_dma_transfer = false;
+static int dma_ch_tx = 0;
+static int dma_ch_rx = 0;
 
 typedef enum {
   I2C_ASYNC_STATE_IDLE,
@@ -116,22 +123,21 @@ void i2c_clock_setup(void)
   reg32_set_bit(I2C_CR1, I2C_CR1_PE);
 }
 
-void i2c_start_cond_async(void)
-{
-  // reg32_set_bit(I2C_CR1, I2C_CR1_ACK);
-  reg32_set_bit(I2C_CR1, I2C_CR1_START);
-  i2c_async_state = I2C_ASYNC_STATE_WAIT_EV5;
-  reg32_set_bit(I2C_CR2, I2C_CR2_ITEVTEN);
-  reg32_set_bit(I2C_CR2, I2C_CR2_ITBUFEN);
-  while(i2c_async_state !=I2C_ASYNC_STATE_IDLE)
-    asm volatile ("wfe");
-}
-
-void i2c_write_async(uint8_t i2c_addr, const uint8_t *data, int count)
+void i2c_write_async(uint8_t i2c_addr, const uint8_t *data, int count, bool dma)
 {
   current_i2c_rq.size = count;
   current_i2c_rq.addr = i2c_addr;
   current_i2c_rq.data = data;
+  if (dma) {
+    current_i2c_rq.flags |= I2C_TRANSFER_DMA;
+    reg32_set_bit(I2C_CR2, I2C_CR2_DMAEN);
+    reg32_clear_bit(I2C_CR2, I2C_CR2_ITBUFEN);
+  }
+  else {
+    current_i2c_rq.flags = 0;
+    reg32_set_bit(I2C_CR2, I2C_CR2_ITBUFEN);
+    reg32_clear_bit(I2C_CR2, I2C_CR2_DMAEN);
+  }
 
   reg32_set_bit(I2C_CR1, I2C_CR1_ACK);
   reg32_set_bit(I2C_CR1, I2C_CR1_START);
@@ -162,13 +168,36 @@ void i2c_write_sync(uint8_t i2c_addr, const uint8_t *data, int count)
   reg32_set_bit(I2C_CR1, I2C_CR1_STOP);
 }
 
-void i2c_init_isr(void)
+static void dma_tx_cb(void)
+{
+  reg32_clear_bit(I2C_CR2, I2C_CR2_DMAEN);
+  dma_transfer_disable(dma_ch_tx);
+  if (i2c_async_state != I2C_ASYNC_STATE_WAIT_EV8_2)
+    asm volatile ("bkpt");
+}
+
+void i2c_init_isr(bool use_dma)
 {
   nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_I2C1_EV);
   nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_I2C1_ER);
   reg32_set_bit(I2C_CR2, I2C_CR2_ITERREN);
   reg32_set_bit(I2C_CR2, I2C_CR2_ITEVTEN);
-  reg32_set_bit(I2C_CR2, I2C_CR2_ITBUFEN);
+  use_dma_transfer = use_dma;
+  if (use_dma) {
+    dma_init();
+    dma_ch_tx = dma_get_channel_id(DMA_PERIPH_I2C1_TX);
+    if (dma_ch_tx)
+      dma_ch_tx -= 1;
+    dma_enable_interrupt(DMA_NUM_1, dma_ch_tx);
+    dma_set_isr_cb(DMA_NUM_1, dma_ch_tx, dma_tx_cb);
+
+    dma_ch_rx = dma_get_channel_id(DMA_PERIPH_I2C1_RX);
+    if (dma_ch_rx)
+      dma_ch_rx -= 1;
+
+  } else {
+    reg32_set_bit(I2C_CR2, I2C_CR2_ITBUFEN);
+  }
 }
 
 void i2c_isr_disable(void)
@@ -188,44 +217,76 @@ void i2c_handle_event(void)
   volatile uint32_t sr1 = reg_read(I2C_SR1);
 
   switch (i2c_async_state) {
+    /*
+     * SB=1 (Start bit). Start condition completed, now we need to send address
+     * DMA:
+     * According to RM0008 we need to setup DMA registers for future data
+     * stage, that will happen right after address stage. After we write
+     * address to the I2C_DR register, address will be transmitted and after
+     * that TxE bit in I2C_SR1 register will be triggered. DMA requests are
+     * mapped to rising TxE event.
+     */
     case I2C_ASYNC_STATE_WAIT_EV5:
     {
       if (!u32_bit_is_set(sr1, I2C_SR1_SB))
         svc_call(SVC_PANIC);
 
+      if (current_i2c_rq.flags & I2C_TRANSFER_DMA) {
+        dma_transfer_setup(
+          dma_ch_tx,
+          I2C_DR,
+          current_i2c_rq.data,
+          current_i2c_rq.size);
+      }
+
       reg_write(I2C_DR, current_i2c_rq.addr);
       i2c_async_state = I2C_ASYNC_STATE_WAIT_EV6;
       break;
     }
+    /* ADDR=1, cleared by reading SR1, then SR2 */
     case I2C_ASYNC_STATE_WAIT_EV6:
     {
       if (!u32_bit_is_set(sr1, I2C_SR1_ADDR) ||
           !reg32_bit_is_set(I2C_SR2, I2C_SR2_BUSY))
         svc_call(SVC_PANIC);
 
-      i2c_async_state = I2C_ASYNC_STATE_WAIT_EV8_1;
+      if (current_i2c_rq.flags & I2C_TRANSFER_DMA)
+        i2c_async_state = I2C_ASYNC_STATE_WAIT_EV8_2;
+      else
+        i2c_async_state = I2C_ASYNC_STATE_WAIT_EV8_1;
       break;
     }
+    /*
+     * Address sent, we received ACK from slave, now we send out first data
+     * byte.Now TXE should be enabled
+     */
     case I2C_ASYNC_STATE_WAIT_EV8_1:
     {
       if (!u32_bit_is_set(sr1, I2C_SR1_TXE))
         svc_call(SVC_PANIC);
 
-      reg_write(I2C_DR, *current_i2c_rq.data);
-      current_i2c_rq.size--;
-      current_i2c_rq.data++;
-      i2c_async_state = I2C_ASYNC_STATE_WAIT_EV8;
+      if (current_i2c_rq.flags & I2C_TRANSFER_DMA) {
+        asm volatile ("bkpt");
+      } else {
+        reg_write(I2C_DR, *current_i2c_rq.data);
+        current_i2c_rq.data++;
+        current_i2c_rq.size--;
+        i2c_async_state = I2C_ASYNC_STATE_WAIT_EV8;
+      }
       break;
     }
     case I2C_ASYNC_STATE_WAIT_EV8:
     {
-      if (!u32_bit_is_set(sr1, I2C_SR1_TXE)
-         )//|| u32_bit_is_set(sr1, I2C_SR1_BTF))
+      if (!u32_bit_is_set(sr1, I2C_SR1_TXE))
         svc_call(SVC_PANIC);
 
-      reg_write(I2C_DR, *current_i2c_rq.data);
-      current_i2c_rq.size--;
-      current_i2c_rq.data++;
+      if (current_i2c_rq.flags & I2C_TRANSFER_DMA) {
+        asm volatile ("bkpt");
+      } else {
+        reg_write(I2C_DR, *current_i2c_rq.data);
+        current_i2c_rq.size--;
+        current_i2c_rq.data++;
+      }
 
       if (current_i2c_rq.size > 0) {
         i2c_async_state = I2C_ASYNC_STATE_WAIT_EV8;
@@ -236,6 +297,7 @@ void i2c_handle_event(void)
     }
     case I2C_ASYNC_STATE_WAIT_EV8_2:
     {
+      // asm volatile ("bkpt");
       if (!u32_bit_is_set(sr1, I2C_SR1_TXE)
         || !u32_bit_is_set(sr1, I2C_SR1_BTF))
         svc_call(SVC_PANIC);

@@ -21,7 +21,7 @@ static inline int i2c_write2(uint8_t b0, uint8_t b1)
     b0, b1
   };
 
-  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf));
+  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf), false);
 }
 
 static inline int i2c_write3(uint8_t b0, uint8_t b1, uint8_t b2)
@@ -30,7 +30,7 @@ static inline int i2c_write3(uint8_t b0, uint8_t b1, uint8_t b2)
     b0, b1, b2
   };
 
-  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf));
+  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf), false);
 }
 
 static inline int i2c_write4(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3)
@@ -39,7 +39,7 @@ static inline int i2c_write4(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3)
     b0, b1, b2, b3
   };
 
-  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf));
+  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf), false);
 }
 
 #define START_DATA_BYTE 0x40
@@ -309,16 +309,17 @@ void dbuf_flush(void)
    * This is then not so good for cacheing, so TODO: investigate how this
    * affects cacheing
    */
-  uint8_t *p;
-  uint8_t stored_byte;
   CMD_SET_COL(0);
 
   for (page = 0; page < NUM_PAGES; ++page) {
+    uint8_t *p;
+    uint8_t stored_byte;
+
     CMD_SET_PAGE_START_ADDRESS(page);
     p = &DBYTE(0, page) - 1;
     stored_byte = *p;
     *p = START_DATA_BYTE;
-    i2c_write_async(SSD1306_I2C_ADDR, p, NUM_COLUMNS + 1);
+    i2c_write_op(SSD1306_I2C_ADDR, p, NUM_COLUMNS + 1, true);
     *p = stored_byte;
   }
 }
@@ -338,7 +339,7 @@ void ssd1306_horizontal_scroll(int start_page, int end_page, int duration)
     0xff
   };
 
-  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf));
+  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf), false);
   CMD(0x2f);
 }
 
@@ -354,7 +355,7 @@ void ssd1306_vertical_scroll(int start_page, int end_page, int duration)
     0 
   };
 
-  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf));
+  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf), false);
   CMD(0x2f);
 }
 
