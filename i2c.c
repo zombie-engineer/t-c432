@@ -12,10 +12,9 @@
 /* i2c request */
 struct i2c_rq {
   uint32_t size;
-  uint8_t *data;
+  const uint8_t *data;
   uint8_t addr;
-  uint8_t reg;
-  uint8_t small_data[4];
+  uint8_t small_data[5];
 };
 
 /* first only maintain 1 request */
@@ -117,45 +116,6 @@ void i2c_clock_setup(void)
   reg32_set_bit(I2C_CR1, I2C_CR1_PE);
 }
 
-void i2c_start(void)
-{
-  reg32_set_bit(I2C_CR1, I2C_CR1_ACK);
-  reg32_set_bit(I2C_CR1, I2C_CR1_START);
-  while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_SB));
-}
-
-void i2c_write_addr(uint8_t addr)
-{
-  reg_write(I2C_DR, addr);
-  while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_ADDR));
-  volatile uint32_t v = reg_read(I2C_SR1) | reg_read(I2C_SR2);
-}
-
-void i2c_write_addr_mode_recv(uint8_t addr)
-{
-}
-
-void i2c_write_byte(uint8_t v)
-{
-  while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_TXE));
-  reg_write(I2C_DR, v);
-}
-
-void i2c_wait_stop(void)
-{
-  while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_BTF));
-  reg32_set_bit(I2C_CR1, I2C_CR1_STOP);
-}
-
-void i2c_write_bytes1(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data)
-{
-  i2c_start();
-  i2c_write_addr(i2c_addr);
-  i2c_write_byte(reg_addr);
-  i2c_write_byte(data);
-  i2c_wait_stop();
-}
-
 void i2c_start_cond_async(void)
 {
   // reg32_set_bit(I2C_CR1, I2C_CR1_ACK);
@@ -167,64 +127,10 @@ void i2c_start_cond_async(void)
     asm volatile ("wfe");
 }
 
-void i2c_write_bytes2_async(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data0, uint8_t data1)
-{
-  current_i2c_rq.size = 2;
-  current_i2c_rq.addr = i2c_addr;
-  current_i2c_rq.reg = reg_addr;
-  current_i2c_rq.small_data[0] = data0;
-  current_i2c_rq.small_data[1] = data1;
-  current_i2c_rq.data = current_i2c_rq.small_data;
-  i2c_start_cond_async();
-}
-
-void i2c_write_bytes3_async(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data0, uint8_t data1, uint8_t data2)
-{
-  current_i2c_rq.size = 3;
-  current_i2c_rq.addr = i2c_addr;
-  current_i2c_rq.reg = reg_addr;
-  current_i2c_rq.small_data[0] = data0;
-  current_i2c_rq.small_data[1] = data1;
-  current_i2c_rq.small_data[2] = data2;
-  current_i2c_rq.data = current_i2c_rq.small_data;
-  reg32_set_bit(I2C_CR1, I2C_CR1_ACK);
-  reg32_set_bit(I2C_CR1, I2C_CR1_START);
-  i2c_async_state = I2C_ASYNC_STATE_WAIT_EV5;
-  while(i2c_async_state !=I2C_ASYNC_STATE_IDLE)
-    asm volatile ("wfe");
-}
-
-void i2c_write_bytes1_async(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data)
-{
-  current_i2c_rq.size = 1;
-  current_i2c_rq.addr = i2c_addr;
-  current_i2c_rq.reg = reg_addr;
-  current_i2c_rq.small_data[0] = data;
-  current_i2c_rq.data = current_i2c_rq.small_data;
-
-  reg32_set_bit(I2C_CR1, I2C_CR1_ACK);
-  reg32_set_bit(I2C_CR1, I2C_CR1_START);
-  i2c_async_state = I2C_ASYNC_STATE_WAIT_EV5;
-  while(i2c_async_state !=I2C_ASYNC_STATE_IDLE)
-    asm volatile ("wfe");
-}
-
-void i2c_write_bytes_x(uint8_t i2c_addr, uint8_t cmdbyte, uint8_t *data, int count)
-{
-  i2c_start();
-  i2c_write_addr(i2c_addr);
-  i2c_write_byte(cmdbyte);
-  for (int i = 0; i < count; ++i) {
-    i2c_write_byte(data[i]);
-  }
-  i2c_wait_stop();
-}
-
-void i2c_write_bytes_x_async(uint8_t i2c_addr, uint8_t cmdbyte, uint8_t *data, int count)
+void i2c_write_async(uint8_t i2c_addr, const uint8_t *data, int count)
 {
   current_i2c_rq.size = count;
   current_i2c_rq.addr = i2c_addr;
-  current_i2c_rq.reg = cmdbyte;
   current_i2c_rq.data = data;
 
   reg32_set_bit(I2C_CR1, I2C_CR1_ACK);
@@ -234,50 +140,26 @@ void i2c_write_bytes_x_async(uint8_t i2c_addr, uint8_t cmdbyte, uint8_t *data, i
     asm volatile ("wfe");
 }
 
-void i2c_read_bytes1(uint8_t i2c_addr, uint8_t reg_addr, uint8_t *data)
+void i2c_write_sync(uint8_t i2c_addr, const uint8_t *data, int count)
 {
-  /* Start / ACK */
+  /* Start condition */
   reg32_set_bit(I2C_CR1, I2C_CR1_ACK);
   reg32_set_bit(I2C_CR1, I2C_CR1_START);
   while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_SB));
-  reg_write(I2C_DR, i2c_addr | 1);
+
+  /* Address */
+  reg_write(I2C_DR, i2c_addr);
   while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_ADDR));
-  reg32_clear_bit(I2C_CR1, I2C_CR1_ACK);
   volatile uint32_t v = reg_read(I2C_SR1) | reg_read(I2C_SR2);
-  while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_RXNE));
-  *data = reg_read(I2C_DR);
-  reg32_set_bit(I2C_CR1, I2C_CR1_STOP);
-}
 
-void i2c_write_bytes2(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data0, uint8_t data1)
-{
-  i2c_start();
-  i2c_write_addr(i2c_addr);
-  i2c_write_byte(reg_addr);
-  i2c_write_byte(data0);
-  i2c_write_byte(data1);
-  i2c_wait_stop();
-}
-
-void i2c_write_bytes(uint8_t i2c_addr, uint8_t *data, int count)
-{
-  i2c_start();
-  i2c_write_addr(i2c_addr);
+  /* Bytes */
   for (int i = 0; i < count; ++i) {
-    i2c_write_byte(data[i]);
+    while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_TXE));
+    reg_write(I2C_DR, v);
   }
-  i2c_wait_stop();
-}
-
-void i2c_write_bytes3(uint8_t i2c_addr, uint8_t reg_addr, uint8_t data0, uint8_t data1, uint8_t data2)
-{
-  i2c_start();
-  i2c_write_addr(i2c_addr);
-  i2c_write_byte(reg_addr);
-  i2c_write_byte(data0);
-  i2c_write_byte(data1);
-  i2c_write_byte(data2);
-  i2c_wait_stop();
+  /* Stop condition */
+  while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_BTF));
+  reg32_set_bit(I2C_CR1, I2C_CR1_STOP);
 }
 
 void i2c_init_isr(void)
@@ -329,7 +211,9 @@ void i2c_handle_event(void)
       if (!u32_bit_is_set(sr1, I2C_SR1_TXE))
         svc_call(SVC_PANIC);
 
-      reg_write(I2C_DR, current_i2c_rq.reg);
+      reg_write(I2C_DR, *current_i2c_rq.data);
+      current_i2c_rq.size--;
+      current_i2c_rq.data++;
       i2c_async_state = I2C_ASYNC_STATE_WAIT_EV8;
       break;
     }

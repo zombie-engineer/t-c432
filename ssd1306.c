@@ -5,40 +5,52 @@
 #include "font.h"
 #include "config.h"
 #include "time.h"
+#include "string.h"
 
 #define SSD1306_I2C_ADDR 0x78
 
-#if defined(CONFIG_I2C_ASYNC)
-#define DATA(__byte) \
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x40, __byte)
-
-#define DATA2(__byte0, __byte1) \
-  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x40, __byte0, __byte1)
-
-#define CMD(__cmdbyte) \
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, (__cmdbyte))
-
-#define CMD2(__cmdbyte, __valuebyte) \
-  i2c_write_bytes2_async(SSD1306_I2C_ADDR, 0x00, (__cmdbyte), (__valuebyte))
-
-#define CMD3(__cmdbyte, __valuebyte0, __valuebyte1) \
-  i2c_write_bytes3_async(SSD1306_I2C_ADDR, 0x00, (__cmdbyte), (__valuebyte0), (__valuebyte1))
-#else /* end of CONFIG_I2C_ASYNC */
-#define DATA(__byte) \
-  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x40, __byte)
-
-#define DATA2(__byte0, __byte1) \
-  i2c_write_bytes2(SSD1306_I2C_ADDR, 0x40, __byte0, __byte1)
-
-#define CMD(__cmdbyte) \
-  i2c_write_bytes1(SSD1306_I2C_ADDR, 0x00, (__cmdbyte))
-
-#define CMD2(__cmdbyte, __valuebyte) \
-  i2c_write_bytes2(SSD1306_I2C_ADDR, 0x00, (__cmdbyte), (__valuebyte))
-
-#define CMD3(__cmdbyte, __valuebyte0, __valuebyte1) \
-  i2c_write_bytes3(SSD1306_I2C_ADDR, 0x00, (__cmdbyte), (__valuebyte0), (__valuebyte1))
+#ifdef CONFIG_I2C_ASYNC
+#define i2c_write_op i2c_write_async
+#else
+#define i2c_write_op i2c_write_sync
 #endif
+
+static inline int i2c_write2(uint8_t b0, uint8_t b1)
+{
+  const uint8_t buf[] = {
+    b0, b1
+  };
+
+  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf));
+}
+
+static inline int i2c_write3(uint8_t b0, uint8_t b1, uint8_t b2)
+{
+  const uint8_t buf[] = {
+    b0, b1, b2
+  };
+
+  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf));
+}
+
+static inline int i2c_write4(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3)
+{
+  const uint8_t buf[] = {
+    b0, b1, b2, b3
+  };
+
+  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf));
+}
+
+#define START_DATA_BYTE 0x40
+#define CMD(__cmdbyte) \
+  i2c_write2(0x00, (__cmdbyte))
+
+#define CMD2(__cmdbyte, __valuebyte) \
+  i2c_write3(0x00, (__cmdbyte), (__valuebyte))
+
+#define CMD3(__cmdbyte, __valuebyte0, __valuebyte1) \
+  i2c_write4(0x00, (__cmdbyte), (__valuebyte0), (__valuebyte1))
 
 #define DISPL_OFF 0
 #define DISPL_ON 1
@@ -135,10 +147,10 @@
 #define NUM_PAGES (SIZE_Y / ROWS_PER_PAGE)
 #define NUM_COLUMNS SIZE_X
 
-static uint8_t dbuf[SIZE_X * SIZE_Y / 8];
+#define REG_BYTE_SZ 1
+static uint8_t dbuf[REG_BYTE_SZ + SIZE_X * SIZE_Y / 8];
 
-
-#define DBYTE(__col, __page) (dbuf[__col + __page * SIZE_X])
+#define DBYTE(__col, __page) (dbuf[__col + __page * SIZE_X + REG_BYTE_SZ])
 
 void dbuf_clear(void)
 {
@@ -277,7 +289,7 @@ int dbuf_get_pixel(int x, int y)
 {
   int page_idx = y / SIZE_Y;
   int bitpos = y % SIZE_Y;
-  int byte_idx = page_idx * SIZE_X + x;
+  int byte_idx = page_idx * SIZE_X + x + REG_BYTE_SZ;
   uint8_t b = dbuf[byte_idx];
   return (b >> bitpos) & 1;
 }
@@ -286,16 +298,28 @@ void dbuf_flush(void)
 {
   int page;
   int col;
-
+  /*
+   * p and stored_byte are used to put 'reg' and 'data_bytes' into a single
+   * buffer, so that it might be used in a single i2c byte sequence without
+   * 'special' treatment for data/command byte.
+   * Instead of sending out NUM_COLUMNS (128) bytes, we send 129 with first the
+   * 0x40 bytes that indicate data start.
+   *
+   * This also simplifies things for DMA
+   * This is then not so good for cacheing, so TODO: investigate how this
+   * affects cacheing
+   */
+  uint8_t *p;
+  uint8_t stored_byte;
   CMD_SET_COL(0);
-#if 0
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0x00);
-  i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0x10);
-#endif
+
   for (page = 0; page < NUM_PAGES; ++page) {
     CMD_SET_PAGE_START_ADDRESS(page);
-    // i2c_write_bytes1_async(SSD1306_I2C_ADDR, 0x00, 0xb0 | page);
-    i2c_write_bytes_x_async(SSD1306_I2C_ADDR, 0x40, &DBYTE(0, page), NUM_COLUMNS);
+    p = &DBYTE(0, page) - 1;
+    stored_byte = *p;
+    *p = START_DATA_BYTE;
+    i2c_write_async(SSD1306_I2C_ADDR, p, NUM_COLUMNS + 1);
+    *p = stored_byte;
   }
 }
 
@@ -314,7 +338,7 @@ void ssd1306_horizontal_scroll(int start_page, int end_page, int duration)
     0xff
   };
 
-  i2c_write_bytes(SSD1306_I2C_ADDR, buf, 8);
+  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf));
   CMD(0x2f);
 }
 
@@ -330,7 +354,7 @@ void ssd1306_vertical_scroll(int start_page, int end_page, int duration)
     0 
   };
 
-  i2c_write_bytes(SSD1306_I2C_ADDR, buf, 7);
+  i2c_write_op(SSD1306_I2C_ADDR, buf, sizeof(buf));
   CMD(0x2f);
 }
 
