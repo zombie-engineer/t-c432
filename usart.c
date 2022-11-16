@@ -16,7 +16,7 @@ void uart2_setup(void)
 
   gpio_setup(GPIO_PORT_A, 2, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
   gpio_setup(GPIO_PORT_A, 3, GPIO_MODE_INPUT     , GPIO_CNF_IN_PULLUP_PULLDOWN);
-  gpioa_set_odr(3);
+  gpio_odr_modify(GPIO_PORT_A, 3, true);
   reg_write(USART_CR1, 0);
   reg_write(USART_CR1, 1<<13);
   reg_write(USART_BRR, 5 | (4 << 4));

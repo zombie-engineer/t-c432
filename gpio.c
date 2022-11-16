@@ -94,11 +94,6 @@ void gpioc_set_pin13(void)
   gpioc_bit_clear(13);
 }
 
-void gpioa_set_odr(int bit)
-{
-  reg32_set_bit(GPIOA_ODR, bit);
-}
-
 void gpio_remap_i2c1(int mapping)
 {
   reg32_modify_bit(AFIO_MAPR, 1, mapping);
