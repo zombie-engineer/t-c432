@@ -35,7 +35,7 @@
 #define GPIO_CNF_OUT_ALT_PUSH_PULL  0b10
 #define GPIO_CNF_OUT_ALT_OPEN_DRAIN 0b11
 
-void gpioa_set_cr(int pin_nr, int mode, int cnf);
+void gpio_setup(int port, int pin, int mode, int cnf);
 
 void gpioc_set_pin13(void);
 

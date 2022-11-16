@@ -378,7 +378,7 @@ void ssd1306_power_init(void)
    */
   rcc_periph_ena(RCC_GPIO_PORT(CNF_DSPL_PWR_PORT));
 
-  gpioa_set_cr(CNF_DSPL_PWR_PIN,
+  gpio_setup(GPIO_PORT(CNF_DSPL_PWR_PORT), CNF_DSPL_PWR_PIN,
     GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
 
   gpio_odr_modify(GPIO_PORT(CNF_DSPL_PWR_PORT), CNF_DSPL_PWR_PIN, false);

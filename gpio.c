@@ -69,10 +69,18 @@ static void gpioc_set_cr(int pin_nr, int mode, int cnf)
   gpiox_set_cr(GPIOC_CRL, pin_nr, mode, cnf);
 }
 
-void gpioa_set_cr(int pin_nr, int mode, int cnf)
+void gpio_setup(int port, int pin, int mode, int cnf)
 {
-  gpiox_set_cr(GPIOA_CRL, pin_nr, mode, cnf);
+  volatile uint32_t *r = GPIOA_CRL;
+
+  if (port > GPIO_PORT_CNT)
+    svc_call(SVC_PANIC);
+
+  r += GPIO_WORDS_PER_PORT * port;
+
+  gpiox_set_cr(r, pin, mode, cnf);
 }
+
 
 void gpiob_set_cr(int pin_nr, int mode, int cnf)
 {

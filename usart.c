@@ -14,8 +14,8 @@ void uart2_setup(void)
   rcc_periph_ena(RCC_PERIPH_IOPA);
   rcc_periph_ena(RCC_PERIPH_USART2);
 
-  gpioa_set_cr(2, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
-  gpioa_set_cr(3, GPIO_MODE_INPUT     , GPIO_CNF_IN_PULLUP_PULLDOWN);
+  gpio_setup(GPIO_PORT_A, 2, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
+  gpio_setup(GPIO_PORT_A, 3, GPIO_MODE_INPUT     , GPIO_CNF_IN_PULLUP_PULLDOWN);
   gpioa_set_odr(3);
   reg_write(USART_CR1, 0);
   reg_write(USART_CR1, 1<<13);
