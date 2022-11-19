@@ -37,6 +37,8 @@
 
 void gpio_setup(int port, int pin, int mode, int cnf);
 
+void gpio_odr_modify(int port, int pin_nr, int set_clear);
+
 void gpioc_set_pin13(void);
 
 void gpioc_bit_clear(int pin_nr);
