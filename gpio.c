@@ -82,11 +82,6 @@ void gpio_setup(int port, int pin, int mode, int cnf)
 }
 
 
-void gpiob_set_cr(int pin_nr, int mode, int cnf)
-{
-  gpiox_set_cr(GPIOB_CRL, pin_nr, mode, cnf);
-}
-
 void gpioc_set_pin13(void)
 {
   gpioc_set_cr(13, 1, 1);
@@ -99,9 +94,15 @@ void gpio_remap_i2c1(int mapping)
   reg32_modify_bit(AFIO_MAPR, 1, mapping);
 }
 
-bool gpiob_pin_is_set(int pin_nr)
+bool gpio_pin_is_set(int port, int pin)
 {
-  return reg32_bit_is_set(GPIOB_IDR, pin_nr);
+  volatile uint32_t *r = GPIOA_IDR;
+
+  if (port > GPIO_PORT_CNT)
+    svc_call(SVC_PANIC);
+
+  r += GPIO_WORDS_PER_PORT * port;
+  return reg32_bit_is_set(r, pin);
 }
 
 void gpio_map_to_exti(int port, int pin_nr)

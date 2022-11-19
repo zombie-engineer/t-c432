@@ -39,18 +39,16 @@ void gpio_setup(int port, int pin, int mode, int cnf);
 
 void gpio_odr_modify(int port, int pin_nr, int set_clear);
 
+bool gpio_pin_is_set(int port, int pin);
+
 void gpioc_set_pin13(void);
 
 void gpioc_bit_clear(int pin_nr);
 
 void gpioc_bit_set(int pin_nr);
 
-void gpiob_set_cr(int pin_nr, int mode, int cnf);
-
 #define GPIO_REMAP_I2C1_PB6_PB7 0
 #define GPIO_REMAP_I2C1_PB8_PB9 1
 void gpio_remap_i2c1(int mapping);
-
-bool gpiob_pin_is_set(int pin_nr);
 
 void gpio_map_to_exti(int port, int pin_nr);

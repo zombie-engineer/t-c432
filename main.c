@@ -21,6 +21,7 @@
 #include "pushbuttons.h"
 #include "compiler.h"
 #include "dma.h"
+#include "stm32f103_pin_config.h"
 
 #define F_CLK 36000000
 
@@ -64,9 +65,11 @@ static void i2c_init(void)
 {
   rcc_periph_ena(RCC_PERIPH_I2C1);
   /* B6 - SDA Alternate function open drain */
-  gpiob_set_cr(6, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_OPEN_DRAIN);
+  gpio_setup(I2C1_SDA_PORT, I2C1_SDA_PIN_6, GPIO_MODE_OUT_50_MHZ,
+    GPIO_CNF_OUT_ALT_OPEN_DRAIN);
   /* B7 - SCL Alternate function open drain */
-  gpiob_set_cr(7, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_OPEN_DRAIN);
+  gpio_setup(I2C1_SCL_PORT, I2C1_SCL_PIN_7, GPIO_MODE_OUT_50_MHZ,
+    GPIO_CNF_OUT_ALT_OPEN_DRAIN);
   gpio_remap_i2c1(GPIO_REMAP_I2C1_PB6_PB7);
   i2c_clock_setup();
   i2c_init_isr(true);
