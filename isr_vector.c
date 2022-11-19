@@ -24,7 +24,7 @@ extern void exti_2_isr(void);
 extern void exti_3_isr(void);
 extern void exti_4_isr(void);
 extern void exti_9_5_isr(void);
-extern void exti_10_15_isr(void);
+extern void exti_15_10_isr(void);
 extern void dma1_ch1_isr(void);
 extern void dma1_ch2_isr(void);
 extern void dma1_ch3_isr(void);
@@ -80,7 +80,7 @@ int isr_vector[] = {
   ISR(16 + NVIC_INTERRUPT_NUMBER_TIM2, tim2_isr, 1),
   ISR(16 + NVIC_INTERRUPT_NUMBER_USB_WAKEUP, usb_wakeup_isr, 1),
   ISR(16 + NVIC_INTERRUPT_NUMBER_EXTI9_5, exti_9_5_isr, 1),
-  ISR(16 + NVIC_INTERRUPT_NUMBER_EXTI10_15, exti_10_15_isr, 1),
+  ISR(16 + NVIC_INTERRUPT_NUMBER_EXTI15_10, exti_15_10_isr, 1),
   ISR(16 + NVIC_INTERRUPT_NUMBER_I2C1_EV, i2c1_ev_isr, 1),
   ISR(16 + NVIC_INTERRUPT_NUMBER_I2C1_ER, i2c1_er_isr, 1),
 

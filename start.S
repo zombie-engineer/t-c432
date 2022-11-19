@@ -229,9 +229,9 @@ beq 1b
 bl exti_isr
 b restore_context
 
-.globl exti_10_15_isr
+.globl exti_15_10_isr
 .align 5
-exti_10_15_isr:
+exti_15_10_isr:
 bl save_context
 ldr r0, =0x40010414
 ldr r1, [r0]
