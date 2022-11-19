@@ -41,8 +41,6 @@ void gpio_odr_modify(int port, int pin_nr, int set_clear);
 
 bool gpio_pin_is_set(int port, int pin);
 
-void gpioc_set_pin13(void);
-
 void gpio_bit_set(int port, int pin);
 
 void gpio_bit_clear(int port, int pin);

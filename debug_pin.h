@@ -10,7 +10,9 @@ static int debug_pin_status = DEBUG_PIN_DISABLED;
 void debug_pin_setup(void)
 {
   rcc_periph_ena(RCC_PERIPH_IOPC);
-  gpioc_set_pin13();
+  gpio_setup(GPIO_PORT_C, 13, GPIO_MODE_OUT_10_MHZ,
+    GPIO_CNF_OUT_GP_OPEN_DRAIN);
+  gpio_bit_set(GPIO_PORT_C, 13);
   debug_pin_status = DEBUG_PIN_OFF;
 }
 

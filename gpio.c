@@ -93,14 +93,6 @@ void gpio_setup(int port, int pin, int mode, int cnf)
   gpiox_set_cr(r, pin, mode, cnf);
 }
 
-
-void gpioc_set_pin13(void)
-{
-  gpioc_set_cr(13, 1, 1);
-  gpio_bit_set(GPIO_PORT_C, 13);
-  gpio_bit_clear(GPIO_PORT_C, 13);
-}
-
 void gpio_remap_i2c1(int mapping)
 {
   reg32_modify_bit(AFIO_MAPR, 1, mapping);
