@@ -21,3 +21,7 @@
 #define CNF_BUTTON_KEY_LEFT_PIN 8
 #define CNF_BUTTON_KEY_MID_PIN 9
 #define CNF_BUTTON_KEY_RIGHT_PIN 10
+
+/* Debug pin */
+#define CNF_DEBUG_PIN_PIN 13
+#define CNF_DEBUG_PIN_PORT C

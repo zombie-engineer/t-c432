@@ -1,4 +1,5 @@
 #pragma once
+#include "config.h"
 
 #define DEBUG_PIN_DISABLED 0
 #define DEBUG_PIN_ON 1
@@ -18,7 +19,7 @@ void debug_pin_on(void)
   if (debug_pin_status == DEBUG_PIN_DISABLED)
     return;
 
-  gpioc_bit_set(13);
+  gpio_bit_set(GPIO_PORT(CNF_DEBUG_PIN_PORT), CNF_DEBUG_PIN_PIN);
   debug_pin_status = DEBUG_PIN_ON;
 }
 
@@ -27,7 +28,7 @@ void debug_pin_off(void)
   if (debug_pin_status == DEBUG_PIN_DISABLED)
     return;
 
-  gpioc_bit_clear(13);
+  gpio_bit_set(GPIO_PORT(CNF_DEBUG_PIN_PORT), CNF_DEBUG_PIN_PIN);
   debug_pin_status = DEBUG_PIN_OFF;
 }
 

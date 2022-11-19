@@ -38,14 +38,26 @@
 #define GPIOC_BRR  (volatile uint32_t *)(IOPC_BASE + 0x14)
 #define GPIOC_LCKR (volatile uint32_t *)(IOPC_BASE + 0x14)
 
-void gpioc_bit_set(int pin_nr)
+void gpio_bit_set(int port, int pin)
 {
-  reg_write(GPIOC_BSRR, 1<<pin_nr);
+  volatile uint32_t *r = GPIOA_BSRR;
+
+  if (port > GPIO_PORT_CNT)
+    svc_call(SVC_PANIC);
+
+  r += GPIO_WORDS_PER_PORT * port;
+  reg_write(r, 1 << pin);
 }
 
-void gpioc_bit_clear(int pin_nr)
+void gpio_bit_clear(int port, int pin)
 {
-  reg_write(GPIOC_BSRR, 1 << (pin_nr + 16));
+  volatile uint32_t *r = GPIOA_BSRR;
+
+  if (port > GPIO_PORT_CNT)
+    svc_call(SVC_PANIC);
+
+  r += GPIO_WORDS_PER_PORT * port;
+  reg_write(r, 1 << (pin + 16));
 }
 
 static void gpiox_set_cr(volatile uint32_t *basereg, int pin_nr, int mode, int cnf)
@@ -85,8 +97,8 @@ void gpio_setup(int port, int pin, int mode, int cnf)
 void gpioc_set_pin13(void)
 {
   gpioc_set_cr(13, 1, 1);
-  gpioc_bit_set(13);
-  gpioc_bit_clear(13);
+  gpio_bit_set(GPIO_PORT_C, 13);
+  gpio_bit_clear(GPIO_PORT_C, 13);
 }
 
 void gpio_remap_i2c1(int mapping)
