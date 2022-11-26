@@ -4,10 +4,10 @@ displ/8i $pc
 x/8i $pc
 
 define reup
-delete
-monitor program /home/user_user/stm32project/firmware.bin 0x08000000 verify
-monitor reset init
-add-symbol-file firmware.elf
+  delete
+  monitor program /home/user_user/stm32project/firmware.bin 0x08000000 verify
+  monitor reset init
+  add-symbol-file firmware.elf
 end
 
 define nvic_print_iser
@@ -411,13 +411,14 @@ define show_dma
 end
 
 reup
-# b pushbutton_signal
+
 tb dbuf_flush
   commands
   b dma_transfer_setup
   b dma_tx_cb
 end
-# b ssd1306_init
+
+b ssd1306_init
 c
 show_i2c
 show_nvic

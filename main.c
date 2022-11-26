@@ -130,9 +130,11 @@ void main(void)
   scheduler_enqueue_runnable(t);
   scheduler_start();
 
+#if 0
   timer_setup();
   usb_init();
 //  uart2_setup();
 //  adc_setup();
   while(1);
+#endif
 }
