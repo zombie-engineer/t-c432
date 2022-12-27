@@ -412,14 +412,15 @@ end
 
 reup
 
-tb dbuf_flush
-  commands
-  b dma_transfer_setup
-  b dma_tx_cb
-end
-
-b ssd1306_init
+#  tb dbuf_flush
+#    commands
+#    b dma_transfer_setup
+#    b dma_tx_cb
+#  end
+#  
+#  b ssd1306_init
 c
+b pushbutton_signal
 show_i2c
 show_nvic
 show_usbr
