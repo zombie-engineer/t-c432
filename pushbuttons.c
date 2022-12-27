@@ -51,6 +51,11 @@ static void pushbutton_signal_b(void)
   pushbutton_signal(1);
 }
 
+static void pushbutton_signal_c(void)
+{
+  pushbutton_signal(2);
+}
+
 void pushbutton_init_single(struct button_info *b)
 {
   gpio_setup(b->port, b->pin, GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
@@ -78,8 +83,12 @@ void pushbuttons_init(void)
   buttons[1].port = GPIO_PORT(CNF_BUTTON_KEY_RIGHT_PORT);
   buttons[1].state = BUTTON_STATE_RELEASED;
   buttons[1].cb = pushbutton_signal_b;
+  buttons[2].pin = CNF_BUTTON_KEY_MID_PIN;
+  buttons[2].port = GPIO_PORT(CNF_BUTTON_KEY_MID_PORT);
+  buttons[2].state = BUTTON_STATE_RELEASED;
+  buttons[2].cb = pushbutton_signal_c;
 
-  for (int i = 0; i < 2; ++i) {
+  for (int i = 0; i < 3; ++i) {
     pushbutton_init_single(&buttons[i]);
   }
 }
