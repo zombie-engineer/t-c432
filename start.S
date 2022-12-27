@@ -269,6 +269,10 @@ mov r0, #1
 bl i2c1_isr
 ISR_END
 
+ISR_START tim2
+bl __tim2_isr
+ISR_END
+
 .macro DMA_ISR dma_id, channel_id
 ISR_START dma\()\dma_id\()_ch\()\channel_id
 mov r0, #(\dma_id - 1)

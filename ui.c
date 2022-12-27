@@ -63,7 +63,8 @@ void bar_widget_draw(const struct bar_widget *b)
 void draw_tim2_cntr(int x, int y)
 {
   char counterbuf[32];
-  itoa(tim2_read_counter_value(), counterbuf, 10);
+  int val = tim2_read_counter_value() >> 4;
+  itoa(val, counterbuf, 10);
   x = dbuf_draw_text(x, y, "TIM2_TCNT:", &font_1);
   dbuf_draw_text(x, y, counterbuf, &font_2);
 }

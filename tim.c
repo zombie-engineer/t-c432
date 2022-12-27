@@ -77,6 +77,13 @@ int tim2_setup(bool one_pulse, uint16_t prescaler, uint16_t counter_value,
   return 0;
 }
 
+void timer_setup(void)
+{
+  /* SYSCLK = 72MHz */
+  rcc_periph_ena(RCC_PERIPH_TIM2);
+  tim2_setup(true, CALC_PSC(0.1, F_CLK, 0xffff), 0xffff, true, true);
+}
+
 uint16_t tim2_read_counter_value(void)
 {
   return reg_read(TIM2_TCNT);
@@ -86,7 +93,7 @@ void __attribute__((weak)) tim2_isr_cb(void)
 {
 }
 
-void tim2_isr(void)
+void __tim2_isr(void)
 {
   reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_TIM2);
   reg_write(TIM2_SR, 0);

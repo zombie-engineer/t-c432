@@ -39,13 +39,6 @@ int dig = 0;
 char buf[32];
 int tick = 0;
 
-void timer_setup(void)
-{
-  /* SYSCLK = 72MHz */
-  rcc_periph_ena(RCC_PERIPH_TIM2);
-  tim2_setup(true, CALC_PSC(0.1, F_CLK, 0xffff), 0xffff, true, true);
-}
-
 void tim2_isr_cb()
 {
   debug_pin_toggle();
@@ -131,7 +124,6 @@ void main(void)
   scheduler_start();
 
 #if 0
-  timer_setup();
   usb_init();
 //  uart2_setup();
 //  adc_setup();
