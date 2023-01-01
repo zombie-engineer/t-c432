@@ -419,8 +419,12 @@ reup
 #  end
 #  
 #  b ssd1306_init
+# b ui_init
+# b ui_callback_button_event_pressed
+b main_widget_draw
+b dbuf_draw_line
 c
-b pushbutton_signal
 show_i2c
 show_nvic
 show_usbr
+

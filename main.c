@@ -52,11 +52,12 @@ static void i2c_init(void)
   i2c_init_isr(true);
 }
 
-void test_task(void *arg)
+void ui_task(void *arg)
 {
-  pushbuttons_init();
   i2c_init();
   ssd1306_init();
+  ui_init();
+  pushbuttons_init();
 
   while(1) {
     ui_update();
@@ -98,7 +99,7 @@ void main(void)
   scheduler_init();
   scheduler_enqueue_runnable(t);
 
-  t = task_create("test_task", test_task, scheduler_exit_task);
+  t = task_create("ui_task", ui_task, scheduler_exit_task);
   if (!t) {
     BRK;
     while(1);

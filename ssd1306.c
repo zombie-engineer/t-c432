@@ -273,6 +273,24 @@ void dbuf_draw_char(int *x, int y, char ch, const struct font_descriptor *f)
   *x += g->x_advance;
 }
 
+bool dbuf_get_char_size(char ch, const struct font_descriptor *f,
+  int *width, int *height, int *x_advance)
+{
+  const struct font_glyph *g;
+
+  if (!f || !width || !height || !x_advance)
+    return false;
+
+  g = font_get_glyph(f, ch);
+  if (!g)
+    return false;
+
+  *width = g->width;
+  *height = g->height;
+  *x_advance = g->x_advance;
+  return true;
+}
+
 int dbuf_draw_text(int x, int y, const char *text, const struct font_descriptor *f)
 {
   const char *p = text;
@@ -283,6 +301,45 @@ int dbuf_draw_text(int x, int y, const char *text, const struct font_descriptor 
     dbuf_draw_char(&x, y, c, f);
   }
   return x;
+}
+
+bool dbuf_get_text_size(const char *text, const struct font_descriptor *f,
+  int *size_x, int *size_y, bool with_spacing)
+{
+  int result_x = 0;
+  int result_y = 0;
+  int advance;
+  int char_width;
+  const char *p = text;
+
+  if (!text || !f || !size_x || !size_y)
+    return false;
+
+  while(1) {
+    int h;
+    char c = *p++;
+    if (!c)
+      break;
+
+    if (!dbuf_get_char_size(c, f, &char_width, &h, &advance))
+      return false;
+
+    if (result_y < h)
+      result_y = h;
+
+    result_x += advance;
+  }
+
+  if (!with_spacing) {
+    result_x -= advance;
+    result_x += char_width;
+  } else {
+    result_y = f->y_advance;
+  }
+
+  *size_x = result_x;
+  *size_y = result_y;
+  return true;
 }
 
 int dbuf_get_pixel(int x, int y)
@@ -415,4 +472,15 @@ void ssd1306_init(void)
 
   dbuf_init();
   dbuf_flush();
+}
+
+bool dbuf_get_frame_size(int *size_x, int *size_y)
+{
+  if (!size_x || !size_y)
+    return false;
+
+  *size_x = SIZE_X;
+  *size_y = SIZE_Y;
+
+  return true;
 }

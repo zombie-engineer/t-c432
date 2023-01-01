@@ -15,7 +15,7 @@ struct button_info {
   exti_interrupt_callback cb;
 };
 
-struct button_info buttons[3] = { 0 };
+struct button_info buttons[PUSHBUTTON_ID_COUNT] = { 0 };
 
 extern void ui_callback_button_event_pressed(int button_id);
 extern void ui_callback_button_event_released(int button_id);
@@ -41,19 +41,19 @@ static void pushbutton_signal(int button_idx)
   }
 }
 
-static void pushbutton_signal_a(void)
+static void pushbutton_int_left(void)
 {
-  pushbutton_signal(0);
+  pushbutton_signal(PUSHBUTTON_ID_LEFT);
 }
 
-static void pushbutton_signal_b(void)
+static void pushbutton_int_right(void)
 {
-  pushbutton_signal(1);
+  pushbutton_signal(PUSHBUTTON_ID_RIGHT);
 }
 
-static void pushbutton_signal_c(void)
+static void pushbutton_int_mid(void)
 {
-  pushbutton_signal(2);
+  pushbutton_signal(PUSHBUTTON_ID_MID);
 }
 
 void pushbutton_init_single(struct button_info *b)
@@ -75,36 +75,30 @@ void pushbutton_init_single(struct button_info *b)
 
 void pushbuttons_init(void)
 {
-  buttons[0].pin = CNF_BUTTON_KEY_LEFT_PIN;
-  buttons[0].port = GPIO_PORT(CNF_BUTTON_KEY_LEFT_PORT);
-  buttons[0].state = BUTTON_STATE_RELEASED;
-  buttons[0].cb = pushbutton_signal_a;
-  buttons[1].pin = CNF_BUTTON_KEY_RIGHT_PIN;
-  buttons[1].port = GPIO_PORT(CNF_BUTTON_KEY_RIGHT_PORT);
-  buttons[1].state = BUTTON_STATE_RELEASED;
-  buttons[1].cb = pushbutton_signal_b;
-  buttons[2].pin = CNF_BUTTON_KEY_MID_PIN;
-  buttons[2].port = GPIO_PORT(CNF_BUTTON_KEY_MID_PORT);
-  buttons[2].state = BUTTON_STATE_RELEASED;
-  buttons[2].cb = pushbutton_signal_c;
+  buttons[PUSHBUTTON_ID_LEFT].pin = CNF_BUTTON_KEY_LEFT_PIN;
+  buttons[PUSHBUTTON_ID_LEFT].port = GPIO_PORT(CNF_BUTTON_KEY_LEFT_PORT);
+  buttons[PUSHBUTTON_ID_LEFT].state = BUTTON_STATE_RELEASED;
+  buttons[PUSHBUTTON_ID_LEFT].cb = pushbutton_int_left;
+
+  buttons[PUSHBUTTON_ID_RIGHT].pin = CNF_BUTTON_KEY_RIGHT_PIN;
+  buttons[PUSHBUTTON_ID_RIGHT].port = GPIO_PORT(CNF_BUTTON_KEY_RIGHT_PORT);
+  buttons[PUSHBUTTON_ID_RIGHT].state = BUTTON_STATE_RELEASED;
+  buttons[PUSHBUTTON_ID_RIGHT].cb = pushbutton_int_right;
+
+  buttons[PUSHBUTTON_ID_MID].pin = CNF_BUTTON_KEY_MID_PIN;
+  buttons[PUSHBUTTON_ID_MID].port = GPIO_PORT(CNF_BUTTON_KEY_MID_PORT);
+  buttons[PUSHBUTTON_ID_MID].state = BUTTON_STATE_RELEASED;
+  buttons[PUSHBUTTON_ID_MID].cb = pushbutton_int_mid;
 
   for (int i = 0; i < 3; ++i) {
     pushbutton_init_single(&buttons[i]);
   }
 }
 
-bool pushbotton_a_is_pressed(void)
+bool pushbotton_is_pressed(int id)
 {
-  return buttons[0].state == BUTTON_STATE_PRESSED;
-}
+  if (id >= PUSHBUTTON_ID_COUNT)
+    return false;
 
-bool pushbotton_b_is_pressed(void)
-{
-  return buttons[1].state == BUTTON_STATE_PRESSED;
+  return buttons[id].state == BUTTON_STATE_PRESSED;
 }
-
-bool pushbotton_c_is_pressed(void)
-{
-  return false;
-}
-

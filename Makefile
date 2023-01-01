@@ -2,8 +2,11 @@ CROSSDIR := /home/user_user/Downloads/arm-gnu-toolchain-12.2.mpacbti-bet1-x86_64
 LIBGCC := $(CROSSDIR)/lib/gcc/arm-none-eabi/12.2.0/thumb/v7-m/nofp/libgcc.a
 LIBC := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libc.a
 $(info $(LIBC))
+INCLUDES := -I.
 
 OBJS := main.o \
+  ui/main_widget.o \
+  ui/bar_widget.o \
   exti.o \
   pushbuttons.o \
   svc.o \
@@ -39,7 +42,7 @@ firmware.elf: $(OBJS) link.ld
 	arm-none-eabi-as $< -o $@
 
 %.o : %.c
-	arm-none-eabi-gcc -c -g $< -o $@ -mthumb -mcpu=cortex-m3
+	arm-none-eabi-gcc -c $(INCLUDES) -g $< -o $@ -mthumb -mcpu=cortex-m3
 
 d:
 	arm-none-eabi-gdb -q -x gdb.gdb firmware.elf
