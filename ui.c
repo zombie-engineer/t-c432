@@ -10,22 +10,46 @@
 #define UI_ID_TEST2 2
 #define UI_ID_COUNT 3
 
+#define BUTTON_ID_LEFT  0
+#define BUTTON_ID_MID   1
+#define BUTTON_ID_RIGHT 2
+typedef enum {
+  UI_EVENT_BUTTON_PRESSED,
+  UI_EVENT_BUTTON_RELEASED,
+} ui_event_type;
+
 typedef void (*draw_fn)(void);
+typedef void (*handle_event_fn)(ui_event_type ev, int param);
 
 struct ui_view {
   int id;
   draw_fn draw;
+  handle_event_fn handle_event;
 };
 
 static void ui_draw_main(void);
-
 static void ui_draw_test1(void);
 static void ui_draw_test2(void);
+static void ui_handle_event_main(ui_event_type event, int param);
+static void ui_handle_event_test1(ui_event_type event, int param);
+static void ui_handle_event_test2(ui_event_type event, int param);
 
 static const struct ui_view ui_views[] = {
-  { .id = UI_ID_MAIN, .draw = ui_draw_main },
-  { .id = UI_ID_TEST1, .draw = ui_draw_test1 },
-  { .id = UI_ID_TEST2, .draw = ui_draw_test2 },
+  {
+    .id = UI_ID_MAIN,
+    .draw = ui_draw_main,
+    .handle_event = ui_handle_event_main
+  },
+  { 
+    .id = UI_ID_TEST1,
+    .draw = ui_draw_test1,
+    .handle_event = ui_handle_event_test1
+  },
+  {
+    .id = UI_ID_TEST2,
+    .draw = ui_draw_test2,
+    .handle_event = ui_handle_event_test1
+  }
 };
 
 static int ui_current_id = UI_ID_MAIN;
@@ -162,20 +186,135 @@ void ui_update(void)
   dbuf_flush();
 }
 
+static inline void set_next_screen(void)
+{
+  ui_current_id++;
+  if (ui_current_id == UI_ID_COUNT)
+    ui_current_id = 0;
+}
+
+static inline void set_prev_screen(void)
+{
+  ui_current_id--;
+  if (ui_current_id == -1)
+    ui_current_id = UI_ID_COUNT - 1;
+}
+
+static void on_button_pressed_main(int button_id)
+{
+  switch(button_id)
+  {
+    case BUTTON_ID_LEFT:
+      set_prev_screen();
+      break;
+    case BUTTON_ID_MID:
+      break;
+    case BUTTON_ID_RIGHT:
+      set_next_screen();
+      break;
+    default:
+      break;
+  }
+}
+
+static void on_button_pressed_test1(int button_id)
+{
+  switch(button_id)
+  {
+    case BUTTON_ID_LEFT:
+      set_prev_screen();
+      break;
+    case BUTTON_ID_MID:
+      break;
+    case BUTTON_ID_RIGHT:
+      set_next_screen();
+      break;
+    default:
+      break;
+  }
+}
+
+static void on_button_released_test1(int button_id)
+{
+}
+
+static void on_button_pressed_test2(int button_id)
+{
+  switch(button_id)
+  {
+    case BUTTON_ID_LEFT:
+      set_prev_screen();
+      break;
+    case BUTTON_ID_MID:
+      break;
+    case BUTTON_ID_RIGHT:
+      set_next_screen();
+      break;
+    default:
+      break;
+  }
+}
+
+static void on_button_released_test2(int button_id)
+{
+}
+
+static void on_button_released_main(int param)
+{
+}
+
+static void ui_handle_event_main(ui_event_type event, int param)
+{
+  switch (event)
+  {
+    case UI_EVENT_BUTTON_PRESSED:
+      on_button_pressed_main(param);
+      break;
+    case UI_EVENT_BUTTON_RELEASED:
+      on_button_released_main(param);
+      break;
+    default:
+      break;
+  }
+}
+
+static void ui_handle_event_test1(ui_event_type event, int param)
+{
+  switch (event)
+  {
+    case UI_EVENT_BUTTON_PRESSED:
+      on_button_pressed_test1(param);
+      break;
+    case UI_EVENT_BUTTON_RELEASED:
+      on_button_released_test1(param);
+      break;
+    default:
+      break;
+  }
+}
+
+static void ui_handle_event_test2(ui_event_type event, int param)
+{
+  switch (event)
+  {
+    case UI_EVENT_BUTTON_PRESSED:
+      on_button_pressed_test2(param);
+      break;
+    case UI_EVENT_BUTTON_RELEASED:
+      on_button_released_test2(param);
+      break;
+    default:
+      break;
+  }
+}
+
 void ui_callback_button_event_pressed(int button_id)
 {
-  if (button_id == 0) {
-    ui_current_id++;
-    if (ui_current_id == UI_ID_COUNT)
-      ui_current_id = 0;
-  } else if (button_id == 1) {
-    ui_current_id--;
-    if (ui_current_id == -1)
-      ui_current_id = UI_ID_COUNT - 1;
-  }
+  ui_views[ui_current_id].handle_event(UI_EVENT_BUTTON_PRESSED, button_id);
 }
 
 void ui_callback_button_event_released(int button_id)
 {
+  ui_views[ui_current_id].handle_event(UI_EVENT_BUTTON_RELEASED, button_id);
 }
 
