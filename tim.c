@@ -1,7 +1,9 @@
 #include "tim.h"
 #include "reg_access.h"
 #include "memory_layout.h"
+#include "rcc.h"
 #include "nvic.h"
+#include "config.h"
 
 #define TIM2_CR1   (volatile uint32_t *)(TIM2_BASE + 0x00)
 #define TIM2_CR2   (volatile uint32_t *)(TIM2_BASE + 0x04)
@@ -81,7 +83,7 @@ void timer_setup(void)
 {
   /* SYSCLK = 72MHz */
   rcc_periph_ena(RCC_PERIPH_TIM2);
-  tim2_setup(true, CALC_PSC(0.1, F_CLK, 0xffff), 0xffff, true, true);
+  tim2_setup(true, CALC_PSC(0.1, F_CPU, 0xffff), 0xffff, true, true);
 }
 
 uint16_t tim2_read_counter_value(void)

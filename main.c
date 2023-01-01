@@ -23,22 +23,6 @@
 #include "dma.h"
 #include "stm32f103_pin_config.h"
 
-#define F_CLK 36000000
-
-#if 0
-uint16_t tim_calc_psc(float timeout, uint32_t f_clk, uint16_t auto_reload_value)
-{
-  return ;
-}
-#endif
-
-
-int x = 0;
-
-int dig = 0;
-char buf[32];
-int tick = 0;
-
 void tim2_isr_cb()
 {
   debug_pin_toggle();
