@@ -35,4 +35,9 @@ uint32_t scb_get_shcsr(void);
 
 uint32_t scb_get_cfsr(void);
 
+uint32_t scb_get_ccr(void);
+uint32_t scb_thread_entry_ena(void);
+
+uint32_t scb_get_icsr(void);
+
 bool scb_memfault_is_access_violation(void);

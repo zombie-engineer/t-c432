@@ -58,6 +58,20 @@
 #define SCB_AIRCR_VECTKEY_READ_VALUE 0xfa05
 #define SCB_AIRCR_VECTKEY_WRITE_VALUE 0x05fa
 
+#define SCB_CCR (volatile uint32_t *)(SCB_BASE + 0x14)
+#define SCB_CCR_NONBASETHRDENA 0
+#define SCB_CCR_NONBASETHRDENA_WIDTH 1
+#define SCB_CCR_USERSETMPEND 1
+#define SCB_CCR_USERSETMPEND_WIDTH 1
+#define SCB_CCR_UNALIGN_TRP 3
+#define SCB_CCR_UNALIGN_TRP_WIDTH 1
+#define SCB_CCR_DIV_0_TRP 4
+#define SCB_CCR_DIV_0_TRP_WIDTH 1
+#define SCB_CCR_BFHFNMIGN 8
+#define SCB_CCR_BFHFNMIGN_WIDTH 1
+#define SCB_CCR_STKALIGN 9
+#define SCB_CCR_STKALIGN_WIDTH 1
+
 #define SCB_SHPR1 (volatile uint32_t *)(SCB_BASE + 0x18)
 
 #define SCB_SHCSR (volatile uint32_t *)(SCB_BASE + 0x24)
@@ -176,7 +190,22 @@ uint32_t scb_get_cfsr(void)
   return reg_read(SCB_CFSR);
 }
 
+uint32_t scb_get_icsr(void)
+{
+  return reg_read(SCB_ICSR);
+}
+
+uint32_t scb_get_ccr(void)
+{
+  return reg_read(SCB_CCR);
+}
+
 bool scb_memfault_is_access_violation(void)
 {
   return reg32_bit_is_set(SCB_CFSR, SCB_CFSR_IACCVIOL);
+}
+
+uint32_t scb_thread_entry_ena(void)
+{
+  reg32_set_bit(SCB_CCR, SCB_CCR_NONBASETHRDENA);
 }
