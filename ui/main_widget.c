@@ -1,5 +1,6 @@
 #include "main_widget.h"
 #include "bar_widget.h"
+#include "arrow_button_widget.h"
 #include <tim.h>
 #include <ssd1306.h>
 #include <font.h>
@@ -8,6 +9,10 @@
 
 struct main_widget_priv {
   struct widget vert_bar;
+  struct widget arrow_button_left;
+  struct widget arrow_button_right;
+  int screen_size_x;
+  int screen_size_y;
 };
 
 static struct main_widget_priv main_widget_priv;
@@ -47,58 +52,60 @@ static void draw_blinker_icon(int x, int y, int sz, int num_frames, int interval
   }
 }
 
-static inline void draw_arrow_prev(int x, int y, bool white)
+static void on_left_clicked()
 {
-  dbuf_draw_pixel(x + 2, y - 0, white);
-  dbuf_draw_pixel(x + 1, y - 1, white);
-  dbuf_draw_pixel(x + 0, y - 2, white);
-  dbuf_draw_pixel(x + 1, y - 3, white);
-  dbuf_draw_pixel(x + 2, y - 4, white);
+  struct widget *b = &main_widget_priv.vert_bar;
+  // set_prev_screen();
+  b->pos_x--;
 }
 
-static inline void draw_arrow_next(int x, int y, bool white)
+static void on_mid_clicked()
 {
-  dbuf_draw_pixel(x + 0, y - 0, white);
-  dbuf_draw_pixel(x + 1, y - 1, white);
-  dbuf_draw_pixel(x + 2, y - 2, white);
-  dbuf_draw_pixel(x + 1, y - 3, white);
-  dbuf_draw_pixel(x + 0, y - 4, white);
+}
+
+static void on_right_clicked()
+{
+  struct widget *b = &main_widget_priv.vert_bar;
+  b->pos_x++;
+}
+
+void main_on_tick(struct widget *w, int tick_ms)
+{
+  struct main_widget_priv *p = &main_widget_priv;
+  p->arrow_button_left.on_tick(&p->arrow_button_left, tick_ms);
+  p->arrow_button_right.on_tick(&p->arrow_button_right, tick_ms);
 }
 
 void main_widget_draw(struct widget *w)
 {
-  struct main_widget_priv *p = w->data;
-  const char *str = "main";
+  struct main_widget_priv *p = w->priv;
+  const char *title_str = "main";
   int text_size_x;
   int text_size_y;
-  int screen_size_x;
-  int screen_size_y;
   int text_pos_x;
   int text_pos_y;
   int y0, y1, y2;
   int x0, x1;
 
-  if (!dbuf_get_text_size(str, &font_1, &text_size_x, &text_size_y, false))
+  if (!dbuf_get_text_size(title_str, &font_1, &text_size_x, &text_size_y, false))
     return;
 
-  if (!dbuf_get_frame_size(&screen_size_x, &screen_size_y))
-    return;
+  text_pos_x = main_widget_priv.screen_size_x / 2 - text_size_x / 2;
+  text_pos_y = main_widget_priv.screen_size_y - text_size_y;
+  dbuf_draw_text(text_pos_x, text_pos_y, title_str, &font_1);
 
-  text_pos_x = screen_size_x / 2 - text_size_x / 2;
-  text_pos_y = screen_size_y - text_size_y;
-  dbuf_draw_text(text_pos_x, text_pos_y, "main", &font_1);
-
-  y0 = screen_size_y - 3;
+  y0 = main_widget_priv.screen_size_y - 3;
   y1 = y0 - 1;
   y2 = y1 - 1;
 
   /* < */
-  dbuf_draw_filled_rect(2, screen_size_y - 3 + 2, 7, screen_size_y - 3 + 2 - 7, 1);
-  draw_arrow_prev(3, screen_size_y - 3, 0);
+  main_widget_priv.arrow_button_left.draw(
+    &main_widget_priv.arrow_button_left);
 
-  /* > */
-  draw_arrow_next(screen_size_x - 4, screen_size_y - 3, 1);
+  main_widget_priv.arrow_button_right.draw(
+    &main_widget_priv.arrow_button_right);
 
+  return;
   p->vert_bar.draw(&p->vert_bar);
 
   return;
@@ -123,17 +130,16 @@ void main_widget_draw(struct widget *w)
 
 static void main_widget_on_button_pressed(struct widget *w, int button_id)
 {
-  struct widget *b = &main_widget_priv.vert_bar;
   switch(button_id)
   {
     case PUSHBUTTON_ID_LEFT:
-      // set_prev_screen();
-      b->pos_x--;
+      on_left_clicked();
       break;
     case PUSHBUTTON_ID_MID:
+      on_mid_clicked();
       break;
     case PUSHBUTTON_ID_RIGHT:
-      b->pos_x++;
+      on_right_clicked();
       // set_next_screen();
       break;
     default:
@@ -164,12 +170,35 @@ static void main_widget_handle_event(struct widget *w, ui_event_type event,
 int main_widget_init(struct widget *w)
 {
   struct widget *b = &main_widget_priv.vert_bar;
+  struct widget *larrow = &main_widget_priv.arrow_button_left;
+  struct widget *rarrow = &main_widget_priv.arrow_button_right;
+
+  if (!dbuf_get_frame_size(
+    &main_widget_priv.screen_size_x,
+    &main_widget_priv.screen_size_y))
+  {
+    return -1;
+  }
+
   bar_widget_init(b);
   b->pos_x = 110;
   b->pos_y = 0;
   b->size_x = 10;
   b->size_y = 48,
-  w->data = &main_widget_priv;
+
+  arrow_button_widget_init(larrow, ARROW_BUTTON_TYPE_LEFT);
+  larrow->pos_x = 3;
+  larrow->pos_y = main_widget_priv.screen_size_y - 3;
+  larrow->size_x = 3;
+  larrow->size_y = 5;
+
+  arrow_button_widget_init(rarrow, ARROW_BUTTON_TYPE_RIGHT);
+  rarrow->pos_x = main_widget_priv.screen_size_x - 4;
+  rarrow->pos_y = main_widget_priv.screen_size_y - 3;
+  rarrow->size_x = 3;
+  rarrow->size_y = 5;
+
+  w->priv = &main_widget_priv;
   w->draw = main_widget_draw;
   w->handle_event = main_widget_handle_event;
   w->pos_x = 0;
