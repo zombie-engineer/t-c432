@@ -9,14 +9,16 @@ extern struct scheduler_stats sched_stats;
 
 void scheduler_init(void);
 
-void scheduler_start(void);
+void scheduler_start(struct task *main_task);
 
 void scheduler_enqueue_runnable(struct task *t);
 
 void scheduler_exit_task(void);
 
-void scheduler_select_next_current(void);
-
 void scheduler_jump_to_main(void);
 
+void scheduler_task_wait_ms(uint32_t ms);
+
 void scheduler_wait_ms(uint32_t ms);
+
+void scheduler_task_sleep();

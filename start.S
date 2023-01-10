@@ -65,7 +65,10 @@ svcall_isr:
 # svc encoding is (SVC opcode << 8) | (imm & 0xf)
 # imm byte goes first, so we can just read 1 byte at offset pc - 2
 bl save_context
-ldr r0, [sp, #24]
+ldr r0, =current
+ldr r0, [r0]
+ldr r0, [r0, #8]
+ldr r0, [r0, #56]
 sub r0, #2
 ldrb r0, [r0]
 bl svc_handler

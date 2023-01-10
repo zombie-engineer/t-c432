@@ -70,6 +70,7 @@ void main(void)
 {
   struct scb_cpuid i;
   struct task *t;
+  struct task *main_task;
 
   zero_bss();
   scb_get_cpuid(&i);
@@ -84,8 +85,8 @@ void main(void)
   int adc_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_ADC1);
 
   rcc_set_72mhz_usb();
-  t = task_create("main", main_task, scheduler_exit_task);
-  if (!t) {
+  main_task = task_create("main", main_task, scheduler_exit_task);
+  if (!main_task) {
     BRK;
     while(1);
   }
@@ -97,7 +98,6 @@ void main(void)
   debug_pin_setup();
 
   scheduler_init();
-  scheduler_enqueue_runnable(t);
 
   t = task_create("ui_task", ui_task, scheduler_exit_task);
   if (!t) {
@@ -106,7 +106,7 @@ void main(void)
   }
 
   scheduler_enqueue_runnable(t);
-  scheduler_start();
+  scheduler_start(main_task);
 
 #if 0
   usb_init();

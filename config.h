@@ -1,6 +1,7 @@
 #pragma once
 
 #define F_CPU 72000000
+#define CNF_SCHEDULER_TICK_MS 50
 
 /*
  * If display power is controlled by transistor switch, the gpio port and pin

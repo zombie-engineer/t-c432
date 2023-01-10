@@ -24,6 +24,8 @@ struct task {
   const char *name;
   /* pointer to context switching buffer */
   struct stack *stack;
+
+  int timer;
 };
 
 struct task *task_create(const char *task_name, task_entr_fn entry_fn,
@@ -34,3 +36,6 @@ uint32_t *task_get_context_ptr(const struct task *t);
 void task_init_process_frame(struct task *t,
   task_entr_fn entry_fn,
   task_exit_fn exit_fn);
+
+void task_wait_ms(uint32_t ms);
+uint32_t task_context_get_reg(const struct task *t, int reg_idx);

@@ -1,9 +1,10 @@
 #include "main_task.h"
 #include "systick.h"
+#include <config.h>
 
 void main_task(void *)
 {
-  systick_set(40);
+  systick_set(CNF_SCHEDULER_TICK_MS);
   timer_setup();
   while(1) {
   }

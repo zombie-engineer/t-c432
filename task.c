@@ -1,4 +1,5 @@
 #include "task.h"
+#include "scheduler.h"
 #include "common_util.h"
 #include "compiler.h"
 #include "reg_access.h"
@@ -124,4 +125,16 @@ struct task *task_create(const char *task_name, task_entr_fn entry_fn,
 uint32_t *task_get_context_ptr(const struct task *t)
 {
   return (uint32_t *)t->ctx;
+}
+
+void task_wait_ms(uint32_t ms)
+{
+  scheduler_task_wait_ms(ms);
+}
+
+uint32_t task_context_get_reg(const struct task *t, int reg_idx)
+{
+  struct hw_stored_ctx *p;
+  p = &t->ctx->hw;
+  return p->r0;
 }
