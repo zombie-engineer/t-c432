@@ -10,3 +10,5 @@ void exti_enable_gpio_interrupt(int ext_int_nr, uint32_t trigger_flags);
 typedef void (*exti_interrupt_callback)(void);
 
 void exti_register_callback(int ext_int_nr, exti_interrupt_callback cb);
+
+void exti_clear_interrupts();

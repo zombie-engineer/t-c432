@@ -42,3 +42,8 @@ void exti_register_callback(int ext_int_nr, exti_interrupt_callback cb)
 
   exti_callbacks[ext_int_nr] = cb;
 }
+
+void exti_clear_interrupts()
+{
+  reg_write(EXTI_PR, 0xffffff);
+}
