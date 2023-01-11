@@ -28,7 +28,7 @@ static void pushbutton_signal(int button_idx)
 
   b = &buttons[button_idx];
 
-  if (gpio_pin_is_set(b->port, b->pin)) {
+  if (!gpio_pin_is_set(b->port, b->pin)) {
     if (b->state == BUTTON_STATE_RELEASED) {
       ui_callback_button_event_pressed(button_idx);
     }
@@ -56,14 +56,17 @@ static void pushbutton_int_mid(void)
   pushbutton_signal(PUSHBUTTON_ID_MID);
 }
 
+
 void pushbutton_init_single(struct button_info *b)
 {
   gpio_setup(b->port, b->pin, GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
   gpio_odr_modify(b->port, b->pin, 0);
+  exti_register_callback(b->pin, b->cb);
+
+  exti_clear_interrupts();
+  gpio_map_to_exti(b->port, b->pin);
   exti_enable_gpio_interrupt(b->pin,
     (1<<EXTI_TRIGGER_FLAG_RISING) | (1<<EXTI_TRIGGER_FLAG_FALLING));
-  exti_register_callback(b->pin, b->cb);
-  gpio_map_to_exti(b->port, b->pin);
 
   if (b->pin < 5)
     nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_EXTI0 + b->pin);

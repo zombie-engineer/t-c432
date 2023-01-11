@@ -10,10 +10,8 @@ struct arrow_button_priv {
 struct arrow_button_priv ab_priv_array[4];
 static int ab_priv_cnt = 0;
 
-static inline void draw_arrow_left(int x, int y, int sx, int sy, bool active)
+static inline void draw_arrow_left(int x, int y, int sx, int sy, int white)
 {
-  int white = 1;
-
   dbuf_draw_pixel(x + 2, y - 0, white);
   dbuf_draw_pixel(x + 1, y - 1, white);
   dbuf_draw_pixel(x + 0, y - 2, white);
@@ -21,7 +19,7 @@ static inline void draw_arrow_left(int x, int y, int sx, int sy, bool active)
   dbuf_draw_pixel(x + 2, y - 4, white);
 }
 
-static inline void draw_arrow_right(int x, int y, int sx, int sy, bool white)
+static inline void draw_arrow_right(int x, int y, int sx, int sy, int white)
 {
   dbuf_draw_pixel(x + 0, y - 0, white);
   dbuf_draw_pixel(x + 1, y - 1, white);
@@ -49,7 +47,7 @@ static void arrow_button_widget_draw(struct widget *w)
       w->pos_x,
       w->pos_y,
       w->pos_x + w->size_x,
-      w->pos_y + w->size_y, white);
+      w->pos_y - w->size_y, white);
 
     white = 0;
   }
