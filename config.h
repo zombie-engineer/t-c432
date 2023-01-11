@@ -1,7 +1,7 @@
 #pragma once
 
 #define F_CPU 72000000
-#define CNF_SCHEDULER_TICK_MS 50
+#define CNF_SCHEDULER_TICK_MS 10
 
 /*
  * If display power is controlled by transistor switch, the gpio port and pin
@@ -20,8 +20,8 @@
 #define CNF_BUTTON_KEY_MID_PORT B
 #define CNF_BUTTON_KEY_RIGHT_PORT B
 #define CNF_BUTTON_KEY_LEFT_PIN 9
-#define CNF_BUTTON_KEY_MID_PIN 5
-#define CNF_BUTTON_KEY_RIGHT_PIN 8
+#define CNF_BUTTON_KEY_MID_PIN 8
+#define CNF_BUTTON_KEY_RIGHT_PIN 5
 
 /* Debug pin */
 #define CNF_DEBUG_PIN_PIN 13

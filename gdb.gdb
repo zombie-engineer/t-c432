@@ -419,11 +419,19 @@ reup
 #  end
 #  
 #  b ssd1306_init
-# b ui_init
-# b ui_callback_button_event_pressed
-b main_widget_draw
-b dbuf_draw_line
+
+
+# tb task_wait_ms
+#   commands
+#     tb svc_handler
+#     commands
+#     tb scheduler_tick
+#   end
+#   c
+# end
+
 c
+
 show_i2c
 show_nvic
 show_usbr

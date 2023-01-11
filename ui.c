@@ -18,9 +18,13 @@ struct widget main_widget;
 struct widget *focus_widget = NULL;
 struct widget *current_window = NULL;
 
-void ui_update(void)
+void ui_tick(int ms)
 {
-  // frame_counter++;
+  focus_widget->on_tick(focus_widget, ms);
+}
+
+void ui_redraw(void)
+{
   dbuf_clear();
   focus_widget->draw(focus_widget);
   dbuf_flush();

@@ -60,8 +60,9 @@ void ui_task(void *arg)
   pushbuttons_init();
 
   while(1) {
-    task_wait_ms(100);
-    ui_update();
+    task_wait_ms(20);
+    ui_tick(50);
+    ui_redraw();
     debug_pin_toggle();
     asm volatile ("wfi");
   }

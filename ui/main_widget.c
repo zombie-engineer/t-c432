@@ -54,13 +54,12 @@ static void draw_blinker_icon(int x, int y, int sz, int num_frames, int interval
 
 static void on_left_clicked()
 {
-  struct widget *b = &main_widget_priv.vert_bar;
-  // set_prev_screen();
-  b->pos_x--;
+  arrow_button_widget_activate(&main_widget_priv.arrow_button_left);
 }
 
 static void on_mid_clicked()
 {
+  arrow_button_widget_activate(&main_widget_priv.arrow_button_right);
 }
 
 static void on_right_clicked()
@@ -200,6 +199,7 @@ int main_widget_init(struct widget *w)
 
   w->priv = &main_widget_priv;
   w->draw = main_widget_draw;
+  w->on_tick = main_on_tick;
   w->handle_event = main_widget_handle_event;
   w->pos_x = 0;
   w->pos_y = 0;

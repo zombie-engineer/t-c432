@@ -30,10 +30,12 @@ static inline void draw_arrow_right(int x, int y, int sx, int sy, bool white)
   dbuf_draw_pixel(x + 0, y - 4, white);
 }
 
-static int left_click_lifetime = 0;
-
 static void arrow_button_widget_on_tick(struct widget *w, int tick_ms)
 {
+  struct arrow_button_priv *p = w->priv;
+
+  if (p->active_count)
+    p->active_count--;
 }
 
 static void arrow_button_widget_draw(struct widget *w)
@@ -74,4 +76,10 @@ int arrow_button_widget_init(struct widget *w, arrow_button_type_t type)
   w->priv = p;
   w->draw = arrow_button_widget_draw;
   w->on_tick = arrow_button_widget_on_tick;
+}
+
+void arrow_button_widget_activate(struct widget *w)
+{
+  struct arrow_button_priv *p = w->priv;
+  p->active_count = 4;
 }

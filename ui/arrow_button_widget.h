@@ -7,3 +7,4 @@ typedef enum {
 } arrow_button_type_t;
 
 int arrow_button_widget_init(struct widget *w, arrow_button_type_t type);
+void arrow_button_widget_activate(struct widget *w);
