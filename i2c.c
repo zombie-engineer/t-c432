@@ -1,6 +1,7 @@
 #include "i2c.h"
 #include "i2c_regs.h"
 #include "reg_access.h"
+#include "scheduler.h"
 #include "nvic.h"
 #include "svc.h"
 #include "dma.h"
@@ -37,6 +38,7 @@ typedef enum {
 } i2c_async_state_t;
 
 static i2c_async_state_t i2c_async_state = I2C_ASYNC_STATE_IDLE;
+static uint32_t i2c_async_transfer_completed = false;
 
 #if defined(I2C_FAST_MODE)
 void i2c_clock_setup_fast(void)
@@ -142,8 +144,14 @@ void i2c_write_async(uint8_t i2c_addr, const uint8_t *data, int count, bool dma)
   reg32_set_bit(I2C_CR1, I2C_CR1_ACK);
   reg32_set_bit(I2C_CR1, I2C_CR1_START);
   i2c_async_state = I2C_ASYNC_STATE_WAIT_EV5;
-  while(i2c_async_state !=I2C_ASYNC_STATE_IDLE)
-    asm volatile ("wfe");
+
+  while(i2c_async_state != I2C_ASYNC_STATE_IDLE) asm volatile("wfe");
+#if 0
+  {
+    svc_wait_on_flag(&i2c_async_transfer_completed);
+  }
+  i2c_async_transfer_completed = false;
+#endif
 }
 
 void i2c_write_sync(uint8_t i2c_addr, const uint8_t *data, int count)
@@ -310,6 +318,8 @@ void i2c_handle_event(void)
        */
       nvic_clear_pending(NVIC_INTERRUPT_NUMBER_I2C1_EV);
       i2c_async_state = I2C_ASYNC_STATE_IDLE;
+      // i2c_async_transfer_completed = true;
+      // scheduler_signal_flag_irq(&i2c_async_transfer_completed);
       break;
     }
     default:

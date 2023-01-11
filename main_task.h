@@ -1,3 +1,3 @@
 #pragma once
 
-void main_task(void *);
+void main_task_fn(void *);

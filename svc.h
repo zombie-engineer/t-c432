@@ -1,7 +1,10 @@
 #pragma once
+#include <stdint.h>
+
 #define SVC_JUMP_TO_MAIN 55
 #define SVC_PANIC        56
 #define SVC_SLEEP        57
+#define SVC_WAIT_ON_FLAG 58
 
 /*
  * svc_call macro uses preprocessor stringify feature
@@ -15,3 +18,5 @@
 #define svc_call(__arg) __svc_call(__arg)
 
 int svc_handler(char arg);
+
+int svc_wait_on_flag(uint32_t *flag);

@@ -26,6 +26,7 @@ struct task {
   struct stack *stack;
 
   int timer;
+  uint32_t *wait_on_flag;
 };
 
 struct task *task_create(const char *task_name, task_entr_fn entry_fn,

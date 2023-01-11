@@ -86,7 +86,7 @@ void main(void)
   int adc_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_ADC1);
 
   rcc_set_72mhz_usb();
-  main_task = task_create("main", main_task, scheduler_exit_task);
+  main_task = task_create("main", main_task_fn, scheduler_exit_task);
   if (!main_task) {
     BRK;
     while(1);
