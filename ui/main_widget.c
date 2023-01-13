@@ -24,8 +24,8 @@ static void draw_tim2_cntr(int x, int y)
   char counterbuf[32];
   int val = tim2_read_counter_value() >> 4;
   itoa(val, counterbuf, 10);
-  x = dbuf_draw_text(x, y, "TIM2_TCNT:", &font_1);
-  dbuf_draw_text(x, y, counterbuf, &font_2);
+  x = dbuf_draw_text(x, y, "TIM2_TCNT:", &font_1, 1);
+  dbuf_draw_text(x, y, counterbuf, &font_2, 1);
 }
 
 static void draw_voltmeter(int x, int y, int volt_int, int volt_frac)
@@ -37,8 +37,8 @@ static void draw_voltmeter(int x, int y, int volt_int, int volt_frac)
   *p++ = '.';
   itoa(volt_frac, p, 10);
   p += strlen(p);
-  x = dbuf_draw_text(x, y, "V:", &font_3);
-  dbuf_draw_text(x, y, b, &font_3);
+  x = dbuf_draw_text(x, y, "V:", &font_3, 1);
+  dbuf_draw_text(x, y, b, &font_3, 1);
 }
 
 static void draw_blinker_icon(int x, int y, int sz, int num_frames, int interval)
@@ -91,7 +91,7 @@ void main_widget_draw(struct widget *w)
 
   text_pos_x = main_widget_priv.screen_size_x / 2 - text_size_x / 2;
   text_pos_y = main_widget_priv.screen_size_y - text_size_y;
-  dbuf_draw_text(text_pos_x, text_pos_y, title_str, &font_1);
+  dbuf_draw_text(text_pos_x, text_pos_y, title_str, &font_1, 1);
 
   y0 = main_widget_priv.screen_size_y - 3;
   y1 = y0 - 1;

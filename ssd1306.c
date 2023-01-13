@@ -251,7 +251,8 @@ void dbuf_draw_line(int x0, int y0, int x1, int y1, int color)
   }
 }
 
-void dbuf_draw_char(int *x, int y, char ch, const struct font_descriptor *f)
+void dbuf_draw_char(int *x, int y, char ch, const struct font_descriptor *f,
+  int color)
 {
   const struct font_glyph *g;
   const uint8_t *p;
@@ -267,6 +268,9 @@ void dbuf_draw_char(int *x, int y, char ch, const struct font_descriptor *f)
       int bit_pos = 7 - (bit_no % 8);
       uint8_t b = p[bit_no / 8];
       int val = (b >> bit_pos) & 1;
+      if (!color)
+        val = (~val) & 1;
+
       dbuf_draw_pixel(*x + cx, y + g->height - cy, val);
     }
   }
@@ -291,14 +295,15 @@ bool dbuf_get_char_size(char ch, const struct font_descriptor *f,
   return true;
 }
 
-int dbuf_draw_text(int x, int y, const char *text, const struct font_descriptor *f)
+int dbuf_draw_text(int x, int y, const char *text,
+  const struct font_descriptor *f, int color)
 {
   const char *p = text;
   while(1) {
     char c = *p++;
     if (!c)
       break;
-    dbuf_draw_char(&x, y, c, f);
+    dbuf_draw_char(&x, y, c, f, color);
   }
   return x;
 }

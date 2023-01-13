@@ -15,8 +15,8 @@ void dbuf_clear(void);
 void dbuf_flush(void);
 
 struct font_descriptor;
-void dbuf_draw_char(int *x, int y, char c, const struct font_descriptor *f);
-int dbuf_draw_text(int x, int y, const char *text, const struct font_descriptor *f);
+void dbuf_draw_char(int *x, int y, char c, const struct font_descriptor *f, int color);
+int dbuf_draw_text(int x, int y, const char *text, const struct font_descriptor *f, int color);
 
 bool dbuf_get_text_size(
   const char *text,
