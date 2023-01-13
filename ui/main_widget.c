@@ -139,7 +139,6 @@ static void main_widget_on_button_pressed(struct widget *w, int button_id)
       break;
     case PUSHBUTTON_ID_RIGHT:
       on_right_clicked();
-      // set_next_screen();
       break;
     default:
       break;
@@ -205,4 +204,5 @@ int main_widget_init(struct widget *w)
   w->pos_y = 0;
   w->size_x = 128;
   w->size_y = 64;
+  return 0;
 }

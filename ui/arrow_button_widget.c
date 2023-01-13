@@ -63,7 +63,7 @@ static void arrow_button_widget_draw(struct widget *w)
 
 int arrow_button_widget_init(struct widget *w, arrow_button_type_t type)
 {
-  if (ab_priv_cnt >= sizeof(ab_priv_cnt))
+  if (ab_priv_cnt >= ARRAY_SIZE(ab_priv_array))
   {
     return -1;
   }
@@ -74,6 +74,7 @@ int arrow_button_widget_init(struct widget *w, arrow_button_type_t type)
   w->priv = p;
   w->draw = arrow_button_widget_draw;
   w->on_tick = arrow_button_widget_on_tick;
+  return 0;
 }
 
 void arrow_button_widget_activate(struct widget *w)
