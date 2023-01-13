@@ -1,13 +1,16 @@
 #include "main_widget.h"
 #include "bar_widget.h"
 #include "arrow_button_widget.h"
+#include "text_widget.h"
 #include <tim.h>
 #include <ssd1306.h>
+#include <scheduler.h>
 #include <font.h>
 #include <stdlib.h>
 #include <string.h>
 
 struct main_widget_priv {
+  struct widget text;
   struct widget vert_bar;
   struct widget arrow_button_left;
   struct widget arrow_button_right;
@@ -21,11 +24,21 @@ static int duration;
 
 static void draw_tim2_cntr(int x, int y)
 {
-  char counterbuf[32];
+  char buf[32];
   int val = tim2_read_counter_value() >> 4;
-  itoa(val, counterbuf, 10);
-  x = dbuf_draw_text(x, y, "TIM2_TCNT:", &font_1, 1);
-  dbuf_draw_text(x, y, counterbuf, &font_2, 1);
+  const char *prefix_str = "TIM2_TCNT:";
+  int text_size_x;
+  int text_size_y;
+  itoa(val, buf, 10);
+
+  if (!dbuf_get_text_size(prefix_str, &font_1, &text_size_x, &text_size_y, false))
+    return;
+
+  x = dbuf_draw_text(x - text_size_x, y - text_size_y / 2, prefix_str, &font_1, 1);
+  dbuf_draw_text(x, y - text_size_y / 2, buf, &font_2, 1);
+
+  itoa(sched_stats.task_switches, buf, 10);
+  dbuf_draw_text(x, y + 15, buf, &font_2, 1);
 }
 
 static void draw_voltmeter(int x, int y, int volt_int, int volt_frac)
@@ -59,13 +72,12 @@ static void on_left_clicked()
 
 static void on_mid_clicked()
 {
-  arrow_button_widget_activate(&main_widget_priv.arrow_button_right);
+  text_widget_activate(&main_widget_priv.text);
 }
 
 static void on_right_clicked()
 {
-  struct widget *b = &main_widget_priv.vert_bar;
-  b->pos_x++;
+  arrow_button_widget_activate(&main_widget_priv.arrow_button_right);
 }
 
 void main_on_tick(struct widget *w, int tick_ms)
@@ -73,6 +85,7 @@ void main_on_tick(struct widget *w, int tick_ms)
   struct main_widget_priv *p = &main_widget_priv;
   p->arrow_button_left.on_tick(&p->arrow_button_left, tick_ms);
   p->arrow_button_right.on_tick(&p->arrow_button_right, tick_ms);
+  p->text.on_tick(&p->text, tick_ms);
 }
 
 void main_widget_draw(struct widget *w)
@@ -83,26 +96,16 @@ void main_widget_draw(struct widget *w)
   int text_size_y;
   int text_pos_x;
   int text_pos_y;
-  int y0, y1, y2;
-  int x0, x1;
-
-  if (!dbuf_get_text_size(title_str, &font_1, &text_size_x, &text_size_y, false))
-    return;
-
-  text_pos_x = main_widget_priv.screen_size_x / 2 - text_size_x / 2;
-  text_pos_y = main_widget_priv.screen_size_y - text_size_y;
-  dbuf_draw_text(text_pos_x, text_pos_y, title_str, &font_1, 1);
-
-  y0 = main_widget_priv.screen_size_y - 3;
-  y1 = y0 - 1;
-  y2 = y1 - 1;
 
   /* < */
-  main_widget_priv.arrow_button_left.draw(
-    &main_widget_priv.arrow_button_left);
+  p->arrow_button_left.draw(&p->arrow_button_left);
 
-  main_widget_priv.arrow_button_right.draw(
-    &main_widget_priv.arrow_button_right);
+  p->text.draw(&p->text);
+
+  /* > */
+  p->arrow_button_right.draw(&p->arrow_button_right);
+
+  draw_tim2_cntr(p->screen_size_x / 2, p->screen_size_y / 2);
 
   return;
   p->vert_bar.draw(&p->vert_bar);
@@ -170,6 +173,7 @@ int main_widget_init(struct widget *w)
   struct widget *b = &main_widget_priv.vert_bar;
   struct widget *larrow = &main_widget_priv.arrow_button_left;
   struct widget *rarrow = &main_widget_priv.arrow_button_right;
+  struct widget *text = &main_widget_priv.text;
 
   if (!dbuf_get_frame_size(
     &main_widget_priv.screen_size_x,
@@ -195,6 +199,12 @@ int main_widget_init(struct widget *w)
   rarrow->pos_y = main_widget_priv.screen_size_y - 3;
   rarrow->size_x = 3;
   rarrow->size_y = 5;
+
+  text_widget_init(text, "scheduler", &font_1);
+  text->pos_x = main_widget_priv.screen_size_x / 2;
+  text->pos_y = main_widget_priv.screen_size_y - 3;
+  text->size_x = 0;
+  text->size_y = 0;
 
   w->priv = &main_widget_priv;
   w->draw = main_widget_draw;
