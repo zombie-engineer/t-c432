@@ -430,6 +430,7 @@ reup
 #   c
 # end
 
+b value_widget_draw
 c
 
 show_i2c

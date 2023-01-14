@@ -2,6 +2,7 @@
 #include "bar_widget.h"
 #include "arrow_button_widget.h"
 #include "text_widget.h"
+#include "value_widget.h"
 #include <tim.h>
 #include <ssd1306.h>
 #include <scheduler.h>
@@ -11,6 +12,7 @@
 
 struct main_widget_priv {
   struct widget text;
+  struct widget value;
   struct widget vert_bar;
   struct widget arrow_button_left;
   struct widget arrow_button_right;
@@ -101,11 +103,13 @@ void main_widget_draw(struct widget *w)
   p->arrow_button_left.draw(&p->arrow_button_left);
 
   p->text.draw(&p->text);
+  p->value.draw(&p->value);
 
   /* > */
   p->arrow_button_right.draw(&p->arrow_button_right);
 
-  draw_tim2_cntr(p->screen_size_x / 2, p->screen_size_y / 2);
+  // draw_tim2_cntr(p->screen_size_x / 2, p->screen_size_y / 2);
+
 
   return;
   p->vert_bar.draw(&p->vert_bar);
@@ -126,7 +130,6 @@ void main_widget_draw(struct widget *w)
 //  dbuf_draw_line(64, y, 64, y + 3, 1);
 //  y = 5;
 //  dbuf_draw_line(64, y, 64, y + 3, 1);
-//  draw_tim2_cntr(10, 50);
 }
 
 
@@ -174,6 +177,7 @@ int main_widget_init(struct widget *w)
   struct widget *larrow = &main_widget_priv.arrow_button_left;
   struct widget *rarrow = &main_widget_priv.arrow_button_right;
   struct widget *text = &main_widget_priv.text;
+  struct widget *v = &main_widget_priv.value;
 
   if (!dbuf_get_frame_size(
     &main_widget_priv.screen_size_x,
@@ -205,6 +209,14 @@ int main_widget_init(struct widget *w)
   text->pos_y = main_widget_priv.screen_size_y - 3;
   text->size_x = 0;
   text->size_y = 0;
+
+  struct value_widget_value value_initial = {
+    .u.int_value = 30
+  };
+
+  value_widget_init(v, VALUE_TYPE_INT, &value_initial, &font_1);
+  v->pos_x = main_widget_priv.screen_size_x / 2;
+  v->pos_y = main_widget_priv.screen_size_y - 30;
 
   w->priv = &main_widget_priv;
   w->draw = main_widget_draw;
