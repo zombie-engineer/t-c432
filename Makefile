@@ -9,6 +9,7 @@ OBJS := main.o \
   ui/bar_widget.o \
   ui/text_widget.o \
   ui/arrow_button_widget.o \
+  fault.o \
   exti.o \
   pushbuttons.o \
   svc.o \

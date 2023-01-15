@@ -2,18 +2,22 @@
 .thumb
 .globl reset_isr
 .align 5
+.equ SCB_SHCSR, 0xe000ed24
+
+# main stack is at 0x20001000
+.equ MAIN_STACK_BASE, 0x20000000
+.equ MAIN_STACK_SIZE, 0x1000
+
 reset_isr:
 # SCB_SHCSR Enable MEMFAULT, BUSFAULT, USGFAULT handling
-ldr r0, =0xe000ed24
+ldr r0, =SCB_SHCSR
 ldr r2, [r0]
 mov r1, #7
 bfi r2, r1, #16, #3
 str r2, [r0]
 
-mov r0, #0x20
-lsl r0, r0, #24
-mov r1, #0x10
-lsl r1, r1, #8
+ldr r0, =MAIN_STACK_BASE
+ldr r1, =MAIN_STACK_SIZE
 add r0, r1
 mov sp, r0
 bl main
@@ -32,19 +36,6 @@ b 1b
 2:
 bx lr
 
-.globl memfault_isr
-.align 3
-memfault_isr:
-1:
-wfe
-b 1b
-
-.globl reserved_isr
-.align 3
-reserved_isr:
-1:
-wfe
-b 1b
 
 .globl svcall_isr
 .align 3
@@ -73,12 +64,6 @@ sub r0, #2
 ldrb r0, [r0]
 bl svc_handler
 b restore_context
-
-.globl usgfault_isr
-.align 3
-usgfault_isr:
-1:
-b 1b
 
 .macro load_current, dst_reg
   ldr \dst_reg, =current
@@ -166,57 +151,46 @@ isb
 ldr r0, =0xfffffffd
 bx r0
 
-.globl systick_isr
+.macro ISR_START name
+.globl \name\()_isr
 .align 5
-systick_isr:
+\name\()_isr:
 bl save_context
-bl scheduler_tick
-b restore_context
+.endm
 
-.globl exti_0_isr
-.align 5
-exti_0_isr:
+.macro ISR_END
+b restore_context
+.endm
+
+ISR_START exti_0
 bl save_context
 mov r0, #0
 bl exti_isr
-b restore_context
+ISR_END
 
-.globl exti_1_isr
-.align 5
-exti_1_isr:
-bl save_context
+ISR_START exti_1
 mov r0, #1
 bl exti_isr
-b restore_context
+ISR_END
 
-.globl exti_2_isr
-.align 5
-exti_2_isr:
-bl save_context
+ISR_START exti_2
 mov r0, #2
 bl exti_isr
-b restore_context
+ISR_END
 
-.globl exti_3_isr
-.align 5
-exti_3_isr:
+ISR_START exti_3
 bl save_context
 mov r0, #3
 bl exti_isr
-b restore_context
+ISR_END
 
-.globl exti_4_isr
-.align 5
-exti_4_isr:
+ISR_START exti_4
 bl save_context
 mov r0, #4
 bl exti_isr
-b restore_context
+ISR_END
 
-.globl exti_9_5_isr
-.align 5
-exti_9_5_isr:
-bl save_context
+ISR_START exti_9_5
 ldr r0, =0x40010414
 ldr r1, [r0]
 mov r0, #5
@@ -230,12 +204,9 @@ lsr r1, #1
 tst r1, r2
 beq 1b
 bl exti_isr
-b restore_context
+ISR_END
 
-.globl exti_15_10_isr
-.align 5
-exti_15_10_isr:
-bl save_context
+ISR_START exti_15_10
 ldr r0, =0x40010414
 ldr r1, [r0]
 mov r0, #10
@@ -249,18 +220,28 @@ lsr r1, #1
 tst r1, r2
 beq 1b
 bl exti_isr
-b restore_context
+ISR_END
 
-.macro ISR_START name
-.globl \name\()_isr
-.align 5
-\name\()_isr:
+.globl memfault_isr
+.align 3
+memfault_isr:
+1:
+bkpt
+wfe
+b 1b
+
+.globl reserved_isr
+.align 3
+reserved_isr:
+1:
+bkpt
+wfe
+b 1b
+
+ISR_START systick
 bl save_context
-.endm
-
-.macro ISR_END
-b restore_context
-.endm
+bl scheduler_tick
+ISR_END
 
 ISR_START i2c1_ev
 mov r0, #0
@@ -274,6 +255,10 @@ ISR_END
 
 ISR_START tim2
 bl __tim2_isr
+ISR_END
+
+ISR_START usgfault
+bl __usgfault_isr
 ISR_END
 
 .macro DMA_ISR dma_id, channel_id

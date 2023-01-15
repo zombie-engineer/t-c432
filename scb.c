@@ -93,6 +93,11 @@
 #define SCB_CFSR (volatile uint32_t *)(SCB_BASE + 0x28)
 #define SCB_CFSR_IACCVIOL 0
 #define SCB_CFSR_IACCVIOL_WIDTH 1
+#define SCB_CFSR_UFSR (reg16_t)(SCB_BASE + 0x2a)
+#define SCB_CFSR_UFSR_UNDEFINSTR 0
+#define SCB_CFSR_UFSR_INVSTATE 1
+#define SCB_CFSR_UFSR_INVPC 2
+#define SCB_CFSR_UFSR_NOCP 3
 
 #define SCB_HFSR (volatile uint32_t *)(SCB_BASE + 0x2c)
 #define SCB_HFSR_VECTTBL 1
@@ -208,4 +213,22 @@ bool scb_memfault_is_access_violation(void)
 uint32_t scb_thread_entry_ena(void)
 {
   reg32_set_bit(SCB_CCR, SCB_CCR_NONBASETHRDENA);
+}
+
+usgfault_type_t scb_get_usage_fault_type(void)
+{
+  uint16_t ufsr = reg_read16(SCB_CFSR_UFSR);
+  if (u16_bit_is_set(ufsr, SCB_CFSR_UFSR_UNDEFINSTR)) {
+    return USGFAULT_TYPE_UNDEFINED_INSTR;
+  }
+  if (u16_bit_is_set(ufsr, SCB_CFSR_UFSR_INVSTATE)) {
+    return USGFAULT_TYPE_INVALID_STATE;
+  }
+  if (u16_bit_is_set(ufsr, SCB_CFSR_UFSR_INVPC)) {
+    return USGFAULT_TYPE_INVALID_PC_LOAD;
+  }
+  if (u16_bit_is_set(ufsr, SCB_CFSR_UFSR_NOCP)) {
+    return USGFAULT_TYPE_NO_COPROC;
+  }
+  return USGFAULT_NONE;
 }

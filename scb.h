@@ -41,3 +41,13 @@ uint32_t scb_thread_entry_ena(void);
 uint32_t scb_get_icsr(void);
 
 bool scb_memfault_is_access_violation(void);
+
+typedef enum {
+  USGFAULT_NONE,
+  USGFAULT_TYPE_UNDEFINED_INSTR,
+  USGFAULT_TYPE_INVALID_STATE,
+  USGFAULT_TYPE_INVALID_PC_LOAD,
+  USGFAULT_TYPE_NO_COPROC
+} usgfault_type_t;
+
+usgfault_type_t scb_get_usage_fault_type(void);

@@ -90,7 +90,7 @@ void hardfault_isr(void)
 {
   uint32_t v = scb_get_shcsr();
   bool is_vector_table_hardfault = scb_is_vector_table_hardfault();
-  // BRK;
+  BRK;
 }
 
 void bus_fault_isr(void) { }

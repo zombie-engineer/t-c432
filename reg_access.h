@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 typedef volatile uint32_t *reg32_t;
+typedef volatile uint16_t *reg16_t;
 
 #define reg_write(__reg, __value) \
   *(reg32_t)(__reg) = (__value)
@@ -15,6 +16,9 @@ typedef volatile uint32_t *reg32_t;
 
 #define reg_read8(__reg) \
   (*(volatile uint8_t *)(__reg))
+
+#define reg_read16(__reg) \
+  (*(volatile uint16_t *)(__reg))
 
 #define bitmask_size(__bitmask) (sizeof(__bitmask) * 8)
 
@@ -30,6 +34,16 @@ static inline void u32_modify_bits(uint32_t *v, int bitpos, int bitwidth, int va
 static inline uint32_t u32_bitmask(int bitpos)
 {
   return (1 << bitpos) - 1;
+}
+
+static inline bool u8_bit_is_set(uint8_t v, int bitpos)
+{
+  return v & (1 << bitpos);
+}
+
+static inline bool u16_bit_is_set(uint16_t v, int bitpos)
+{
+  return v & (1 << bitpos);
 }
 
 static inline bool u32_bit_is_set(uint32_t v, int bitpos)
