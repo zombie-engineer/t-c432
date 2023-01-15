@@ -31,14 +31,19 @@ static uint32_t task_pool_busy_mask = 0;
 static inline struct stack *stack_pool_get(void)
 {
   int i;
+  struct stack *result = NULL;
   int max_stack_bits = min(bitmask_size(stack_pool_busy_mask), NUM_STACKS);
   for (i = 0; i < max_stack_bits; ++i) {
     if (!u32_bit_is_set(stack_pool_busy_mask, i)) {
       u32_set_bit(&stack_pool_busy_mask, i);
-      return &stack_pool[i];
+      result = &stack_pool[i];
+      for (int i = 0; i < STACK_SIZE; ++i) {
+        result->raw[i] = 0xfeefdead;
+      }
+      break;
     }
   }
-  return NULL;
+  return result;
 }
 
 static inline void stack_pool_put(struct stack *s)
