@@ -308,7 +308,10 @@ void i2c_handle_event(void)
       // asm volatile ("bkpt");
       if (!u32_bit_is_set(sr1, I2C_SR1_TXE)
         || !u32_bit_is_set(sr1, I2C_SR1_BTF))
-        svc_call(SVC_PANIC);
+      {
+        // while(!reg32_bit_is_set(I2C_SR1, I2C_SR1_BTF));
+//        svc_call(SVC_PANIC);
+      }
 
       sr1 = reg_read(I2C_SR1);
       reg32_set_bit(I2C_CR1, I2C_CR1_STOP);
