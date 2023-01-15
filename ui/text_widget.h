@@ -3,7 +3,12 @@
 
 struct font_descriptor;
 
-int text_widget_init(struct widget *w, const char *text,
-  const struct font_descriptor *f);
-
 void text_widget_activate(struct widget *w);
+
+int text_widget_init(struct widget *w,
+  int x,
+  int y,
+  int sx,
+  int sy,
+  const char *text,
+  const struct font_descriptor *font);

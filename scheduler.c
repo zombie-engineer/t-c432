@@ -43,6 +43,7 @@ static void scheduler_select_next_current(
     if (!l) {
       while(1);
     }
+    sched_stats.num_runnable_tasks--;
     /* Current is selected to run after exiting interrupt state */
     current = container_of(l, struct task, scheduler_list);
     sched_stats.task_switches++;
@@ -57,10 +58,14 @@ static void scheduler_select_next_current(
     return;
 
   /* Previous 'current' has to be put to the tail of runnable or elsewhere */
-  if (prev_task_action == PREV_TASK_TO_TAIL)
+  if (prev_task_action == PREV_TASK_TO_TAIL) {
     list_add_tail(&runnable,  &prev_current->scheduler_list);
-  else if (prev_task_action == PREV_TASK_TO_SLEEP)
+    sched_stats.num_runnable_tasks++;
+  }
+  else if (prev_task_action == PREV_TASK_TO_SLEEP) {
     list_add_tail(&time_waiting, &prev_current->scheduler_list);
+    sched_stats.task_sleeps++;
+  }
   else if (prev_task_action == PREV_TASK_TO_WAITING)
     list_add_tail(&resource_waiting, &prev_current->scheduler_list);
 }
@@ -81,6 +86,7 @@ void scheduler_check_time_waiting_tasks(void)
     if (!t->timer) {
       list_del(&t->scheduler_list);
       list_add_tail(&runnable, &t->scheduler_list);
+      sched_stats.num_runnable_tasks++;
     }
     l = l_tmp;
   }
@@ -111,6 +117,7 @@ void scheduler_start(struct task *main_task)
 void scheduler_enqueue_runnable(struct task *t)
 {
   list_add_tail(&runnable, &t->scheduler_list);
+  sched_stats.num_runnable_tasks++;
 }
 
 static void idle_fn(void *arg)
@@ -177,6 +184,7 @@ void scheduler_signal_flag_irq(uint32_t *flag)
     if (t->wait_on_flag == flag) {
       list_del(&t->scheduler_list);
       list_add_tail(&runnable, &t->scheduler_list);
+      sched_stats.num_runnable_tasks++;
     }
     l = l_tmp;
   }

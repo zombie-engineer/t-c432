@@ -4,9 +4,9 @@
 
 struct widget;
 
+typedef void (*nextprev_fn)(void);
 typedef void (*handle_event_fn)(struct widget *w, ui_event_type ev, int param);
 typedef void (*draw_fn)(struct widget *w);
-typedef void (*tick_fn)(struct widget *w, int tick_ms);
 
 struct widget {
   struct list_node list;
@@ -16,7 +16,6 @@ struct widget {
   int size_y;
   handle_event_fn handle_event;
   draw_fn draw;
-  tick_fn on_tick;
   struct widget *parent;
   void *priv;
 };

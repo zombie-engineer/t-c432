@@ -1,7 +1,6 @@
 #include "main_widget.h"
 #include "bar_widget.h"
-#include "arrow_button_widget.h"
-#include "text_widget.h"
+#include "navi_header_widget.h"
 #include "value_widget.h"
 #include <tim.h>
 #include <ssd1306.h>
@@ -11,13 +10,11 @@
 #include <string.h>
 
 struct main_widget_priv {
-  struct widget text;
-  struct widget value;
+  struct widget navi_header;
+  struct widget value1;
+  struct widget value2;
+  struct widget value3;
   struct widget vert_bar;
-  struct widget arrow_button_left;
-  struct widget arrow_button_right;
-  int screen_size_x;
-  int screen_size_y;
 };
 
 static struct main_widget_priv main_widget_priv;
@@ -67,98 +64,32 @@ static void draw_blinker_icon(int x, int y, int sz, int num_frames, int interval
   }
 }
 
-static void on_left_clicked()
-{
-  arrow_button_widget_activate(&main_widget_priv.arrow_button_left);
-}
-
-static void on_mid_clicked()
-{
-  text_widget_activate(&main_widget_priv.text);
-}
-
-static void on_right_clicked()
-{
-  arrow_button_widget_activate(&main_widget_priv.arrow_button_right);
-}
-
-void main_on_tick(struct widget *w, int tick_ms)
+static void main_on_tick(struct widget *w, int tick_ms)
 {
   struct main_widget_priv *p = &main_widget_priv;
-  p->arrow_button_left.on_tick(&p->arrow_button_left, tick_ms);
-  p->arrow_button_right.on_tick(&p->arrow_button_right, tick_ms);
-  p->text.on_tick(&p->text, tick_ms);
+  p->navi_header.handle_event(&p->navi_header, UI_EVENT_TICK, tick_ms);
 
   struct value_widget_value v = {
     .u.int_value = sched_stats.task_switches
   };
 
-  value_widget_set_value(&p->value, &v);
+  value_widget_set_value(&p->value1, &v);
+  v.u.int_value = sched_stats.task_sleeps;
+  value_widget_set_value(&p->value2, &v);
+  v.u.int_value = sched_stats.num_runnable_tasks;
+  value_widget_set_value(&p->value3, &v);
 }
 
-void main_widget_draw(struct widget *w)
+static void main_widget_draw(struct widget *w)
 {
   struct main_widget_priv *p = w->priv;
-  const char *title_str = "main";
-  int text_size_x;
-  int text_size_y;
-  int text_pos_x;
-  int text_pos_y;
 
-  /* < */
-  p->arrow_button_left.draw(&p->arrow_button_left);
+  /* < title  >*/
+  p->navi_header.draw(&p->navi_header);
 
-  p->text.draw(&p->text);
-  p->value.draw(&p->value);
-
-  /* > */
-  p->arrow_button_right.draw(&p->arrow_button_right);
-
-  // draw_tim2_cntr(p->screen_size_x / 2, p->screen_size_y / 2);
-
-
-  return;
-  p->vert_bar.draw(&p->vert_bar);
-
-  return;
-  draw_blinker_icon(89, 6, 5, 3, 13);
-  int y;
-  float adc_normalized = 0.0f;// (float)last_adc / 4096;
-  int level = adc_normalized * 64;
-  int num_volt = adc_normalized * 3300;
-  int first = num_volt / 1000;
-  int next = num_volt - first * 1000;
-//  draw_voltmeter(2, 35, first, next);
-//
-//  y = 40;
-//  dbuf_draw_line(64, y, 64, y + 3, 1);
-//  y = 20;
-//  dbuf_draw_line(64, y, 64, y + 3, 1);
-//  y = 5;
-//  dbuf_draw_line(64, y, 64, y + 3, 1);
-}
-
-
-static void main_widget_on_button_pressed(struct widget *w, int button_id)
-{
-  switch(button_id)
-  {
-    case PUSHBUTTON_ID_LEFT:
-      on_left_clicked();
-      break;
-    case PUSHBUTTON_ID_MID:
-      on_mid_clicked();
-      break;
-    case PUSHBUTTON_ID_RIGHT:
-      on_right_clicked();
-      break;
-    default:
-      break;
-  }
-}
-
-static void main_widget_on_button_released(struct widget *w, int button_id)
-{
+  p->value1.draw(&p->value1);
+  p->value2.draw(&p->value2);
+  p->value3.draw(&p->value3);
 }
 
 static void main_widget_handle_event(struct widget *w, ui_event_type event,
@@ -167,30 +98,30 @@ static void main_widget_handle_event(struct widget *w, ui_event_type event,
   switch (event)
   {
     case UI_EVENT_BUTTON_PRESSED:
-      main_widget_on_button_pressed(w, param);
-      break;
     case UI_EVENT_BUTTON_RELEASED:
-      main_widget_on_button_released(w, param);
+      main_widget_priv.navi_header.handle_event(
+        &main_widget_priv.navi_header, event, param);
+      break;
+    case UI_EVENT_TICK:
+      main_on_tick(w, param);
       break;
     default:
       break;
   }
 }
 
-int main_widget_init(struct widget *w)
+int main_widget_init(struct widget *w, nextprev_fn prev, nextprev_fn next)
 {
+  struct widget *navi = &main_widget_priv.navi_header;
   struct widget *b = &main_widget_priv.vert_bar;
-  struct widget *larrow = &main_widget_priv.arrow_button_left;
-  struct widget *rarrow = &main_widget_priv.arrow_button_right;
-  struct widget *text = &main_widget_priv.text;
-  struct widget *v = &main_widget_priv.value;
+  struct widget *v1 = &main_widget_priv.value1;
+  struct widget *v2 = &main_widget_priv.value2;
+  struct widget *v3 = &main_widget_priv.value3;
 
-  if (!dbuf_get_frame_size(
-    &main_widget_priv.screen_size_x,
-    &main_widget_priv.screen_size_y))
-  {
-    return -1;
-  }
+  w->pos_x = 0;
+  w->pos_y = 0;
+  w->size_x = 128;
+  w->size_y = 64;
 
   bar_widget_init(b);
   b->pos_x = 110;
@@ -198,39 +129,47 @@ int main_widget_init(struct widget *w)
   b->size_x = 10;
   b->size_y = 48,
 
-  arrow_button_widget_init(larrow, ARROW_BUTTON_TYPE_LEFT);
-  larrow->pos_x = 3;
-  larrow->pos_y = main_widget_priv.screen_size_y - 3;
-  larrow->size_x = 3;
-  larrow->size_y = 5;
-
-  arrow_button_widget_init(rarrow, ARROW_BUTTON_TYPE_RIGHT);
-  rarrow->pos_x = main_widget_priv.screen_size_x - 4;
-  rarrow->pos_y = main_widget_priv.screen_size_y - 3;
-  rarrow->size_x = 3;
-  rarrow->size_y = 5;
-
-  text_widget_init(text, "scheduler", &font_1);
-  text->pos_x = main_widget_priv.screen_size_x / 2;
-  text->pos_y = main_widget_priv.screen_size_y - 3;
-  text->size_x = 0;
-  text->size_y = 0;
+  navi_header_widget_init(navi,
+    0,
+    w->size_y - 10,
+    w->size_x,
+    10,
+    prev,
+    next,
+    "scheduler",
+    &font_1
+  );
 
   struct value_widget_value value_initial = {
-    .u.int_value = 30
+    .u.int_value = 0
   };
 
-  value_widget_init(v, "sw", VALUE_TYPE_INT, &value_initial, &font_1);
-  v->pos_x = main_widget_priv.screen_size_x / 2;
-  v->pos_y = main_widget_priv.screen_size_y - 30;
+  value_widget_init(v1,
+    w->size_x / 2,
+    w->size_y - 30,
+    "sw",
+    VALUE_TYPE_INT,
+    &value_initial,
+    &font_1);
+
+  value_widget_init(v2,
+    w->size_x / 2,
+    w->size_y - 40,
+    "sl",
+    VALUE_TYPE_INT,
+    &value_initial,
+    &font_1);
+
+  value_widget_init(v3,
+    w->size_x / 2,
+    w->size_y - 50,
+    "tr",
+    VALUE_TYPE_INT,
+    &value_initial,
+    &font_1);
 
   w->priv = &main_widget_priv;
   w->draw = main_widget_draw;
-  w->on_tick = main_on_tick;
   w->handle_event = main_widget_handle_event;
-  w->pos_x = 0;
-  w->pos_y = 0;
-  w->size_x = 128;
-  w->size_y = 64;
   return 0;
 }

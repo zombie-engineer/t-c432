@@ -3,6 +3,8 @@
 
 struct scheduler_stats {
   int task_switches;
+  int task_sleeps;
+  int num_runnable_tasks;
 };
 
 extern struct scheduler_stats sched_stats;

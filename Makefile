@@ -6,9 +6,11 @@ INCLUDES := -I.
 
 OBJS := main.o \
   ui/main_widget.o \
+  ui/adc_widget.o \
   ui/bar_widget.o \
   ui/text_widget.o \
   ui/value_widget.o \
+  ui/navi_header_widget.o \
   ui/arrow_button_widget.o \
   fault.o \
   exti.o \

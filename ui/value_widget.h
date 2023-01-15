@@ -21,6 +21,7 @@ void value_widget_set_value(struct widget *w,
   const struct value_widget_value *v);
 
 int value_widget_init(struct widget *w,
+  int x, int y,
   const char *name_string,
   value_widget_type_t value_type,
   const struct value_widget_value *initial_value,

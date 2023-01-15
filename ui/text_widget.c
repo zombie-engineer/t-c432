@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <ssd1306.h>
 #include <font.h>
+#include <common_util.h>
 
 struct text_priv {
   const char *text;
@@ -42,21 +43,16 @@ static void text_widget_on_tick(struct widget *w, int tick_ms)
   }
 }
 
-int text_widget_init(struct widget *w, const char *text,
-  const struct font_descriptor *f)
+static void text_handle_event(struct widget *w, ui_event_type event, int param)
 {
-  if (t_priv_cnt >= sizeof(t_priv_array))
+  switch(event)
   {
-    return -1;
+    case UI_EVENT_TICK:
+      text_widget_on_tick(w, param);
+      break;
+    default:
+      break;
   }
-
-  struct text_priv *p = &t_priv_array[t_priv_cnt++];
-
-  p->text = text;
-  p->font = f;
-  w->draw = text_widget_draw;
-  w->on_tick = text_widget_on_tick;
-  w->priv = p;
 }
 
 void text_widget_activate(struct widget *w)
@@ -65,3 +61,28 @@ void text_widget_activate(struct widget *w)
   p->active_count = 3;
 }
 
+int text_widget_init(struct widget *w,
+  int x,
+  int y,
+  int sx,
+  int sy,
+  const char *text,
+  const struct font_descriptor *font)
+{
+  if (t_priv_cnt >= ARRAY_SIZE(t_priv_array)) {
+    return -1;
+  }
+
+  struct text_priv *p = &t_priv_array[t_priv_cnt++];
+
+  p->text = text;
+  p->font = font;
+
+  w->pos_x = x;
+  w->pos_y = y;
+  w->size_x = sx;
+  w->size_y = sy;
+  w->draw = text_widget_draw;
+  w->handle_event = text_handle_event;
+  w->priv = p;
+}

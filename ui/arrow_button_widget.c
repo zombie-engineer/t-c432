@@ -28,12 +28,20 @@ static inline void draw_arrow_right(int x, int y, int sx, int sy, int white)
   dbuf_draw_pixel(x + 0, y - 4, white);
 }
 
-static void arrow_button_widget_on_tick(struct widget *w, int tick_ms)
+static void arrow_button_handle_event(struct widget *w, ui_event_type event,
+  int param)
 {
   struct arrow_button_priv *p = w->priv;
+  switch(event)
+  {
+    case UI_EVENT_TICK:
+      if (p->active_count)
+        p->active_count--;
 
-  if (p->active_count)
-    p->active_count--;
+      break;
+    default:
+      break;
+  }
 }
 
 static void arrow_button_widget_draw(struct widget *w)
@@ -61,24 +69,34 @@ static void arrow_button_widget_draw(struct widget *w)
   }
 }
 
-int arrow_button_widget_init(struct widget *w, arrow_button_type_t type)
+void arrow_button_widget_activate(struct widget *w)
 {
-  if (ab_priv_cnt >= ARRAY_SIZE(ab_priv_array))
-  {
+  struct arrow_button_priv *p = w->priv;
+  p->active_count = 4;
+}
+
+int arrow_button_widget_init(struct widget *w,
+  int x,
+  int y,
+  int sx,
+  int sy,
+  arrow_button_type_t type)
+{
+  if (ab_priv_cnt >= ARRAY_SIZE(ab_priv_array)) {
     return -1;
   }
+
+  w->pos_x = x;
+  w->pos_y = y;
+  w->size_x = sx;
+  w->size_y = sy;
 
   struct arrow_button_priv *p = &ab_priv_array[ab_priv_cnt++];
   p->active_count = 0;
   p->type = type;
   w->priv = p;
   w->draw = arrow_button_widget_draw;
-  w->on_tick = arrow_button_widget_on_tick;
+  w->handle_event = arrow_button_handle_event;
   return 0;
 }
 
-void arrow_button_widget_activate(struct widget *w)
-{
-  struct arrow_button_priv *p = w->priv;
-  p->active_count = 4;
-}
