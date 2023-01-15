@@ -4,10 +4,6 @@
 .align 5
 .equ SCB_SHCSR, 0xe000ed24
 
-# main stack is at 0x20001000
-.equ MAIN_STACK_BASE, 0x20000000
-.equ MAIN_STACK_SIZE, 0x1000
-
 reset_isr:
 # SCB_SHCSR Enable MEMFAULT, BUSFAULT, USGFAULT handling
 ldr r0, =SCB_SHCSR
@@ -16,9 +12,7 @@ mov r1, #7
 bfi r2, r1, #16, #3
 str r2, [r0]
 
-ldr r0, =MAIN_STACK_BASE
-ldr r1, =MAIN_STACK_SIZE
-add r0, r1
+ldr r0, =__main_stack_base
 mov sp, r0
 bl main
 1:

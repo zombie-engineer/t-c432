@@ -5,6 +5,12 @@ MEMORY {
 SECTIONS {
   .isr_vector : { isr_vector.o(.isr_vector) } > FLASH
   .text : { exti.o(.text) start.o(.text) main.o(.text) } > FLASH
+  .main_stack(NOLOAD):
+  {
+    . = ALIGN(4);
+    . += 0x400;
+    __main_stack_base = .;
+  } > RAM
   .bss :
   {
     . = ALIGN(4);
