@@ -88,6 +88,12 @@ void main_on_tick(struct widget *w, int tick_ms)
   p->arrow_button_left.on_tick(&p->arrow_button_left, tick_ms);
   p->arrow_button_right.on_tick(&p->arrow_button_right, tick_ms);
   p->text.on_tick(&p->text, tick_ms);
+
+  struct value_widget_value v = {
+    .u.int_value = sched_stats.task_switches
+  };
+
+  value_widget_set_value(&p->value, &v);
 }
 
 void main_widget_draw(struct widget *w)
@@ -214,7 +220,7 @@ int main_widget_init(struct widget *w)
     .u.int_value = 30
   };
 
-  value_widget_init(v, VALUE_TYPE_INT, &value_initial, &font_1);
+  value_widget_init(v, "sw", VALUE_TYPE_INT, &value_initial, &font_1);
   v->pos_x = main_widget_priv.screen_size_x / 2;
   v->pos_y = main_widget_priv.screen_size_y - 30;
 
