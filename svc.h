@@ -19,4 +19,6 @@
 
 int svc_handler(char arg);
 
+void svc_wait_ms(uint32_t ms);
+
 int svc_wait_on_flag(uint32_t *flag);

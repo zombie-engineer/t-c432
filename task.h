@@ -38,5 +38,4 @@ void task_init_process_frame(struct task *t,
   task_entr_fn entry_fn,
   task_exit_fn exit_fn);
 
-void task_wait_ms(uint32_t ms);
 uint32_t task_context_get_reg(const struct task *t, int reg_idx);

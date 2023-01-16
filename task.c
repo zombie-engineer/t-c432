@@ -132,11 +132,6 @@ uint32_t *task_get_context_ptr(const struct task *t)
   return (uint32_t *)t->ctx;
 }
 
-void task_wait_ms(uint32_t ms)
-{
-  scheduler_task_wait_ms(ms);
-}
-
 uint32_t task_context_get_reg(const struct task *t, int reg_idx)
 {
   struct hw_stored_ctx *p;

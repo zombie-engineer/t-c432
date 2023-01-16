@@ -19,10 +19,6 @@ void scheduler_exit_task(void);
 
 void scheduler_jump_to_main(void);
 
-void scheduler_task_wait_ms(uint32_t ms);
-
-void scheduler_wait_ms(uint32_t ms);
-
 void scheduler_task_sleep();
 
 void scheduler_wait_on_flag();

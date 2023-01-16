@@ -26,3 +26,8 @@ int svc_wait_on_flag(uint32_t *flag)
 {
   svc_call(SVC_WAIT_ON_FLAG);
 }
+
+void svc_wait_ms(uint32_t ms)
+{
+  svc_call(SVC_SLEEP);
+}

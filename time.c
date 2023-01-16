@@ -4,5 +4,6 @@
 
 void wait_ms(uint32_t ms)
 {
-  scheduler_wait_ms(ms);
+  for (volatile int i = 0; i < 1000 * ms; ++i);
 }
+

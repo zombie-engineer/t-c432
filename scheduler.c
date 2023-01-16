@@ -146,16 +146,6 @@ void scheduler_jump_to_main(void)
   task_init_process_frame(current, main_task_fn, scheduler_exit_task);
 }
 
-void scheduler_task_wait_ms(uint32_t ms)
-{
-  svc_call(SVC_SLEEP);
-}
-
-void scheduler_wait_ms(uint32_t ms)
-{
-  for (volatile int i = 0; i < 1000 * ms; ++i);
-}
-
 void scheduler_task_sleep()
 {
   uint32_t ms = task_context_get_reg(current, 0);
