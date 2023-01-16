@@ -13,7 +13,6 @@
 #include "string.h"
 #include "debug_pin.h"
 #include "adc.h"
-#include "usb_driver.h"
 #include "scheduler.h"
 #include "task.h"
 #include "main_task.h"
@@ -109,10 +108,10 @@ void main(void)
   }
 
   scheduler_enqueue_runnable(t);
+
   scheduler_start(main_task);
 
 #if 0
-  usb_init();
 //  uart2_setup();
 //  adc_setup();
   while(1);

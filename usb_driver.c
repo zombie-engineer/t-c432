@@ -8,6 +8,7 @@
 #include "common_util.h"
 #include "time.h"
 #include "systick.h"
+#include <svc.h>
 #include <string.h>
 
 #define USB_CONFIG_VALUE 1
@@ -736,7 +737,7 @@ void usb_wakeup_isr(void)
 
 void usb_init(void)
 {
-  wait_ms(20);
+  svc_wait_ms(20);
   rcc_periph_ena(RCC_PERIPH_USB);
   rcc_periph_ena(RCC_PERIPH_IOPA);
   rcc_periph_ena(RCC_PERIPH_AFIO);
@@ -758,7 +759,7 @@ void usb_init(void)
   /* Disable power-down bit, USB peripheral powers up */
   reg32_clear_bit(USB_CNTR, USB_CNTR_PDWN);
 
-  wait_ms(1);
+  svc_wait_ms(1);
   /* On power clear Force-RESET bit to exit reset state */
   reg32_clear_bit(USB_CNTR, USB_CNTR_FRES);
   /* Clear all possible spurious interrupts */
