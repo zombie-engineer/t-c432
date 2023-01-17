@@ -30,6 +30,8 @@ b 1b
 2:
 bx lr
 
+.ltorg
+
 
 .globl svcall_isr
 .align 3
@@ -237,6 +239,7 @@ bl save_context
 bl scheduler_tick
 ISR_END
 
+
 ISR_START i2c1_ev
 mov r0, #0
 bl i2c1_isr
@@ -249,6 +252,18 @@ ISR_END
 
 ISR_START tim2
 bl __tim2_isr
+ISR_END
+
+ISR_START usb_hp
+bl __usb_hp_isr
+ISR_END
+
+ISR_START usb_lp
+bl __usb_lp_isr
+ISR_END
+
+ISR_START usb_wakeup
+bl __usb_wakeup_isr
 ISR_END
 
 ISR_START usgfault

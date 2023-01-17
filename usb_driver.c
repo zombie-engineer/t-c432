@@ -223,7 +223,7 @@ struct usb_interrupt_stats {
 
 static struct usb_interrupt_stats usbstats = { 0 };
 
-void usb_hp_isr(void)
+void __usb_hp_isr(void)
 {
   while(1);
 }
@@ -294,8 +294,10 @@ static void usb_reset_handler(void)
 {
   struct ep_buf_desc ebdt[USB_NUM_ENDPOINTS] = { 0 };
   usbstats.num_resets++;
+#if 0
   if (reg_read(USB_DADDR) & 0x7f)
     BRK;
+#endif
 
   usb_reset_clear_ram();
 
@@ -682,7 +684,7 @@ static void usb_ctr_handler(int ep, int dir)
   }
 }
 
-void usb_lp_isr(void)
+void __usb_lp_isr(void)
 {
   uint32_t v;
   v = reg_read(USB_ISTR);
@@ -730,7 +732,7 @@ void usb_lp_isr(void)
   }
 }
 
-void usb_wakeup_isr(void)
+void __usb_wakeup_isr(void)
 {
   // while(1);
 }

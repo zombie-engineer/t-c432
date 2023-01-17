@@ -430,7 +430,10 @@ reup
 #   c
 # end
 
-b value_widget_draw
+# b __usb_lp_isr
+# b i2c1_isr
+b dbuf_flush
+b usb_init
 c
 
 show_i2c
