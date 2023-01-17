@@ -42,6 +42,7 @@
 #define I2C_DR (volatile uint32_t *)(I2C1_BASE + 0x10)
 #define I2C_DR_DR 0
 #define I2C_DR_DR_WIDTH 8
+
 #define I2C_SR1 (volatile uint32_t *)(I2C1_BASE + 0x14)
 #define I2C_SR1_SB 0
 #define I2C_SR1_ADDR 1
@@ -57,6 +58,7 @@
 #define I2C_SR1_PECERR 12
 #define I2C_SR1_TIMEOUT 14
 #define I2C_SR1_SMBALERT 15
+
 #define I2C_SR2  (volatile uint32_t *)(I2C1_BASE + 0x18)
 #define I2C_SR2_MSL 0
 #define I2C_SR2_BUSY 1

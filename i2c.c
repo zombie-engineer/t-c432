@@ -331,8 +331,53 @@ void i2c_handle_event(void)
   }
 }
 
+static void i2c_handle_ack_failure(void)
+{
+  asm volatile ("bkpt");
+  switch (i2c_async_state) {
+    case I2C_ASYNC_STATE_IDLE:
+      break;
+    case I2C_ASYNC_STATE_WAIT_EV5:
+      break;
+    case I2C_ASYNC_STATE_WAIT_EV6:
+      break;
+    case I2C_ASYNC_STATE_WAIT_EV8_1:
+      break;
+    case I2C_ASYNC_STATE_WAIT_EV8:
+      break;
+    case I2C_ASYNC_STATE_WAIT_EV8_2:
+    default:
+      asm volatile ("bkpt");
+      break;
+  }
+}
+
 void i2c_handle_error(void)
 {
+  uint32_t sr1 = reg_read(I2C_SR1);
+  if (u32_bit_is_set(sr1, I2C_SR1_BERR)) {
+    asm volatile ("bkpt");
+  }
+  if (u32_bit_is_set(sr1, I2C_SR1_ARLO)) {
+    asm volatile ("bkpt");
+  }
+  if (u32_bit_is_set(sr1, I2C_SR1_AF)) {
+    i2c_handle_ack_failure();
+    u32_clear_bit(&sr1, I2C_SR1_AF);
+  }
+  if (u32_bit_is_set(sr1, I2C_SR1_OVR)) {
+    asm volatile ("bkpt");
+  }
+  if (u32_bit_is_set(sr1, I2C_SR1_PECERR)) {
+    asm volatile ("bkpt");
+  }
+  if (u32_bit_is_set(sr1, I2C_SR1_TIMEOUT)) {
+    asm volatile ("bkpt");
+  }
+  if (u32_bit_is_set(sr1, I2C_SR1_SMBALERT)) {
+    asm volatile ("bkpt");
+  }
+
   asm volatile ("bkpt");
 }
 
