@@ -8,17 +8,14 @@
 #include "ui/widget.h"
 #include "ui/main_widget.h"
 #include "ui/adc_widget.h"
+#include "ui/usb_widget.h"
 
-#define UI_ID_MAIN 0
-#define UI_ID_TEST1 1
-#define UI_ID_TEST2 2
-#define UI_ID_COUNT 3
-
-#define NUM_ROOT_WIDGETS 2
+#define NUM_ROOT_WIDGETS 3
 struct widget root_widgets[NUM_ROOT_WIDGETS];
 int focus_widget_idx = 0;
 
 #define FOCUS_WIDGET (&root_widgets[focus_widget_idx])
+
 static void focus_next_cb(void)
 {
   focus_widget_idx++;
@@ -61,4 +58,20 @@ void ui_init(void)
 {
   main_widget_init(&root_widgets[0], focus_prev_cb, focus_next_cb);
   adc_widget_init(&root_widgets[1], focus_prev_cb, focus_next_cb);
+  usb_widget_init(&root_widgets[2], focus_prev_cb, focus_next_cb);
+}
+
+void ui_on_set_address(void)
+{
+  focus_widget_idx = 2;
+}
+
+void ui_on_tx(const char *buf)
+{
+  usb_widget_set_tx(buf);
+}
+
+void ui_on_rx(const char *buf)
+{
+  usb_widget_set_rx(buf);
 }

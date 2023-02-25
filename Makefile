@@ -7,6 +7,7 @@ INCLUDES := -I.
 OBJS := main.o \
   ui/main_widget.o \
   ui/adc_widget.o \
+  ui/usb_widget.o \
   ui/bar_widget.o \
   ui/text_widget.o \
   ui/value_widget.o \

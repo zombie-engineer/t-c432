@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <libusb-1.0/libusb.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
+#define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
 libusb_context *ctx = NULL;
 
@@ -40,52 +43,118 @@ void bulk_completed(struct libusb_transfer *t)
 {
 }
 
-int main()
+#define PACKET_SIZE 64
+static int transfer_string(libusb_device_handle *h, int ep_out,
+  const char *str)
 {
+  char buf[PACKET_SIZE];
+  int status;
+  int actual;
+  int len;
+
+  memset(buf, sizeof(buf), 0);
+  actual = 0;
+  len = strlen(str);
+  strncpy(buf, str, len);
+  buf[len] = 0;
+  status = libusb_bulk_transfer(h, ep_out, buf, PACKET_SIZE, &actual, 0);
+  printf("bulk_transfer ep: 0x%02x, st: %d\n", ep_out, status);
+
+  if (status != LIBUSB_SUCCESS) {
+    return -1;
+  }
+
+  return 0;
+}
+
+static void test_ep_in(libusb_device_handle *h, int ep_in)
+{
+  int actual;
+  int status;
+
+  char buf[PACKET_SIZE];
+
+  while(1) {
+    int status;
+    memset(buf, 0, sizeof(buf));
+    status = libusb_bulk_transfer(h, ep_in, buf, PACKET_SIZE, &actual, 0);
+    if (status != LIBUSB_SUCCESS) {
+      abort();
+    }
+
+    printf("bulk_transfer ep: 0x%02x, st: %d, actual:%d\n", ep_in, status,
+	actual);
+  }
+}
+
+static void test_ep_out(libusb_device_handle *h, int ep_out)
+{
+  bool should_break = false;
+
+  const char *strings[] = {
+    "test_1",
+    "test_2",
+    "test_3"
+  };
+
+  while(!should_break) {
+    for (int i = 0; i < ARRAY_SIZE(strings); ++i)
+    {
+      if (transfer_string(h, ep_out, strings[i]))
+        should_break = true;
+    }
+  }
+}
+
+static libusb_device_handle *device_open(int *ep_in, int *ep_out)
+{
+  struct libusb_config_descriptor *cfg;
   libusb_device_handle *h;
   libusb_device *d;
-  struct libusb_config_descriptor *cfg;
-  int ret = -1;
-  int ep_in;
-  int ep_out;
   int iface;
-  struct libusb_transfer t;
-  char buf[256];
 
-  libusb_init(&ctx);
   h = open_device_by_vid_pid(0xd001, 0xd002);
-  if (!h) {
-    goto out;
-  }
+  if (!h)
+    return NULL;
 
   d = libusb_get_device(h);
   if (!d) {
-    goto out_close;
+    libusb_close(h);
+    return NULL;
   }
 
-  if (libusb_get_config_descriptor(d, 0, &cfg) != LIBUSB_SUCCESS)
-  {
-    goto out_close;
+  if (libusb_get_config_descriptor(d, 0, &cfg) != LIBUSB_SUCCESS) {
+    libusb_close(h);
+    return NULL;
   }
 
-  ep_in = cfg->interface->altsetting->endpoint[0].bEndpointAddress;
-  ep_out = cfg->interface->altsetting->endpoint[1].bEndpointAddress;
+  *ep_in = cfg->interface->altsetting->endpoint[0].bEndpointAddress;
+  *ep_out = cfg->interface->altsetting->endpoint[1].bEndpointAddress;
   iface = 0;
   libusb_free_config_descriptor(cfg);
 
   if (libusb_claim_interface(h, iface) != LIBUSB_SUCCESS) {
-    goto out_close;
+    libusb_close(h);
+    return NULL;
   }
 
-  int actual;
-  int st = libusb_bulk_transfer(h, ep_in, buf, 64, &actual, 0);
+  return h;
+}
 
-  printf("bulk_transfer ep: 0x%02x, st: %d\n", ep_in, st);
+int main()
+{
+  libusb_device_handle *h;
+  int ret = -1;
+  int ep_in;
+  int ep_out;
+  struct libusb_transfer t;
+  char buf[256];
 
-  memset(buf, 64, 0x30);
-  st = libusb_bulk_transfer(h, ep_out, buf, 64, &actual, 0);
+  libusb_init(&ctx);
+  h = device_open(&ep_in, &ep_out);
 
-  printf("bulk_transfer ep: 0x%02x, st: %d\n", ep_out, st);
+  test_ep_out(h, ep_out);
+  test_ep_in(h, ep_in);
 
   libusb_fill_bulk_transfer(&t, h, ep_out, buf, sizeof(buf), bulk_completed, NULL,
     2000);

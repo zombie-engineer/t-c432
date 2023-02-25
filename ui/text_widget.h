@@ -12,3 +12,5 @@ int text_widget_init(struct widget *w,
   int sy,
   const char *text,
   const struct font_descriptor *font);
+
+void text_widget_set_text(struct widget *w, const char *t);

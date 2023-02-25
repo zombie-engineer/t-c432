@@ -432,8 +432,8 @@ reup
 
 # b __usb_lp_isr
 # b i2c1_isr
-b dbuf_flush
-b usb_init
+b ep2_rx_handler
+b usb_err_handler
 c
 
 show_i2c

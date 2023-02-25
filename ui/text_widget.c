@@ -3,9 +3,11 @@
 #include <ssd1306.h>
 #include <font.h>
 #include <common_util.h>
+#include <string.h>
 
+#define UI_TEXT_WIDGET_MAX_TEXT_LEN 8
 struct text_priv {
-  const char *text;
+  char text[UI_TEXT_WIDGET_MAX_TEXT_LEN];
   const struct font_descriptor *font;
   int active_count;
 };
@@ -75,7 +77,7 @@ int text_widget_init(struct widget *w,
 
   struct text_priv *p = &t_priv_array[t_priv_cnt++];
 
-  p->text = text;
+  strncpy(p->text, text, UI_TEXT_WIDGET_MAX_TEXT_LEN);
   p->font = font;
 
   w->pos_x = x;
@@ -85,4 +87,10 @@ int text_widget_init(struct widget *w,
   w->draw = text_widget_draw;
   w->handle_event = text_handle_event;
   w->priv = p;
+}
+
+void text_widget_set_text(struct widget *w, const char *t)
+{
+  struct text_priv *p = w->priv;
+  strncpy(p->text, t, UI_TEXT_WIDGET_MAX_TEXT_LEN);
 }

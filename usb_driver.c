@@ -16,6 +16,11 @@
 #define USB_STRING_ID_PRODUCT 2
 #define USB_STRING_ID_SERIAL 3
 
+#define EP1_IN_MAX_PACKET_SIZE 64
+#define EP1_IN_ADDR 1
+
+#define EP2_OUT_ADDR 2
+#define EP2_OUT_MAX_PACKET_SIZE 64
 const struct usb_descriptor_device device_desc = {
   .bLength = sizeof(struct usb_descriptor_device),
   .bDescriptorType = USB_DESCRIPTOR_TYPE_DEVICE,
@@ -77,17 +82,17 @@ const struct usb_config_full config_desc = {
   .ep1 = {
     .bLength = sizeof(struct usb_descriptor_endpoint),
     .bDescriptorType = USB_DESCRIPTOR_TYPE_ENDPOINT,
-    .bEndpointAddress = 0x81,
+    .bEndpointAddress = 0x80 | EP1_IN_ADDR,
     .bmAttributes = USB_EP_ATTRIBUTE_TYPE_BULK,
-    .wMaxPacketSize = 64,
+    .wMaxPacketSize = EP1_IN_MAX_PACKET_SIZE,
     .bInterval = 0
   },
   .ep2 = {
     .bLength = sizeof(struct usb_descriptor_endpoint),
     .bDescriptorType = USB_DESCRIPTOR_TYPE_ENDPOINT,
-    .bEndpointAddress = 0x02,
+    .bEndpointAddress = EP2_OUT_ADDR,
     .bmAttributes = USB_EP_ATTRIBUTE_TYPE_BULK,
-    .wMaxPacketSize = 64,
+    .wMaxPacketSize = EP2_OUT_MAX_PACKET_SIZE,
     .bInterval = 0
   }
 };
@@ -177,6 +182,20 @@ const struct usb_descriptor_string_serial serial_string_desc = {
     '0', 0,
   }
 };
+
+static usb_driver_cb usb_driver_set_address_callback = NULL;
+static usb_driver_cb usb_driver_tx_callback = NULL;
+static usb_driver_cb usb_driver_rx_callback = NULL;
+
+void usb_driver_set_cb(usb_driver_cb_t cb_type, usb_driver_cb cb)
+{
+  if (cb_type == USB_CB_SET_ADDRESS)
+    usb_driver_set_address_callback = cb;
+  else if (cb_type == USB_CB_TX)
+    usb_driver_tx_callback = cb;
+  else if (cb_type == USB_CB_RX)
+    usb_driver_rx_callback = cb;
+}
 
 static void pmacpy_from(void *dst, uint32_t pma_offset, int num_bytes)
 {
@@ -282,10 +301,10 @@ static void usb_reset_clear_ram(void)
  * Writing 0 is same as clearing (and thus missing) one of those
  * two events
  */
-#define USB_EPxR_STATIC_BITS(__ep, __type) \
-  (((__type) << USB_EPXR_EP_TYPE) \
-    | (1 << USB_EPXR_EP_KIND) \
-    | (1 << USB_EPXR_EP_TYPE) \
+#define USB_EPxR_STATIC_BITS(__ep, __type, __kind) \
+  ( 0 \
+    | ((__type) << USB_EPXR_EP_TYPE) \
+    | ((__kind) << USB_EPXR_EP_KIND) \
     | (1 << USB_EPXR_CTR_TX) \
     | (1 << USB_EPXR_CTR_RX) \
     | (__ep & 0xf))
@@ -359,8 +378,10 @@ static void bp(void)
 
 static void usb_err_handler(void)
 {
+#if 0
   if (usbstats.num_errs)
     BRK;
+#endif
   usbstats.num_errs++;
 }
 
@@ -434,14 +455,17 @@ uint16_t addr = 0;
 static uint32_t usb_get_static_epxr_bits(int ep)
 {
   int type;
+  int kind;
 
   if (ep == 0) {
     type = USB_EPXR_EP_TYPE_CONTROL;
+    kind = 1;
   } else {
     type = USB_EPXR_EP_TYPE_BULK;
+    kind = 0;
   }
 
-  return USB_EPxR_STATIC_BITS(ep, type);
+  return USB_EPxR_STATIC_BITS(ep, type, kind);
 }
 
 static void usb_ep_tx_nak_to_valid(int ep)
@@ -480,6 +504,8 @@ static void usb_handle_set_address(uint16_t address)
   u32_modify_bits(&v, USB_DADDR_ADDR, USB_DADDR_ADDR_WIDTH, address);
   u32_set_bit(&v, USB_DADDR_EF);
   reg_write(USB_DADDR, v);
+  if (usb_driver_set_address_callback)
+    usb_driver_set_address_callback(NULL);
 }
 
 static void usb_handle_get_descriptor(int ep, const struct usb_request *r)
@@ -594,30 +620,36 @@ static void ep1_tx_handler()
 {
   usb_ep_clear_ctr_tx(1);
   ddx++;
-  char buf[64] = { 0x5a };
-  memset(buf, 0x5a, sizeof(buf));
-  pmacpy_to(usb_pma_get_tx_addr(1), buf, 64);
-  if (ddx > 2)
-  {
-    usb_pma_set_tx_count(1, 0);
-  }
-  else
-  {
-    usb_pma_set_tx_count(1, 64);
-  }
-  reg_write(pma_get_io_addr(1, 6), 0);
-  usb_ep_tx_nak_to_valid(1);
+  char buf[EP1_IN_MAX_PACKET_SIZE];
+
+  memset(buf, 'A' + ddx, sizeof(buf));
+
+  pmacpy_to(usb_pma_get_tx_addr(EP1_IN_ADDR),
+    buf, sizeof(buf));
+
+  usb_pma_set_tx_count(EP1_IN_ADDR, sizeof(buf));
+  reg_write(pma_get_io_addr(EP1_IN_ADDR, 6), 0);
+  usb_ep_tx_nak_to_valid(EP1_IN_ADDR);
+
+  if (usb_driver_tx_callback)
+    usb_driver_tx_callback(buf);
 }
 
 static void ep2_rx_handler()
 {
-  BRK;
-  char buf[64] = { 0x5a };
-  memset(buf, 0x5a, sizeof(buf));
-  pmacpy_to(usb_pma_get_tx_addr(1), buf, 64);
-  usb_pma_set_tx_count(1, 64);
-  reg_write(pma_get_io_addr(1, 6), 0);
-  usb_ep_tx_nak_to_valid(1);
+  char buf[64];
+  memset(buf, 0, sizeof(buf));
+
+  pmacpy_from(buf,
+    usb_pma_get_rx_addr(EP2_OUT_ADDR),
+    usb_pma_get_rx_count(EP2_OUT_ADDR));
+  usb_pma_reset_rx_count(EP2_OUT_ADDR);
+
+  usb_ep_rx_nak_to_valid(EP2_OUT_ADDR);
+  usb_ep_clear_ctr_rx(EP2_OUT_ADDR);
+
+  if (usb_driver_rx_callback)
+    usb_driver_rx_callback(buf);
 }
 
 static void usb_ep0_handler(int dir)
@@ -630,11 +662,15 @@ static void usb_ep0_handler(int dir)
   if (dir) {
     /* CTR_RX should be set because this is an RX (OUT or SETUP) packet */
     if (!reg32_bit_is_set(usb_get_ep_reg(0), USB_EPXR_CTR_RX)) {
+      BRK;
     }
+
     usb_ep_clear_ctr_rx(0);
     if (reg32_bit_is_set(usb_get_ep_reg(0), USB_EPXR_SETUP)) {
+
       struct usb_request r;
       if (usb_ep_read_rx_packet(0, (void *)&r, sizeof(r)) < sizeof(r)) {
+        BRK;
       }
       usb_pma_reset_rx_count(0);
 
@@ -675,11 +711,10 @@ static void usb_ctr_handler(int ep, int dir)
   if (ep == 0) {
     usb_ep0_handler(dir);
   }
-  else if (ep == 1) {
+  else if (ep == EP1_IN_ADDR) {
     ep1_tx_handler();
   }
-  else if (ep == 2) {
-    BRK;
+  else if (ep == EP2_OUT_ADDR) {
     ep2_rx_handler();
   }
 }
