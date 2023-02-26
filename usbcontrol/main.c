@@ -3,6 +3,9 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/fcntl.h>
+#include <errno.h>
 
 #define ARRAY_SIZE(_a) (sizeof(_a)/sizeof(_a[0]))
 
@@ -20,7 +23,7 @@ libusb_device_handle *open_device_by_vid_pid(uint16_t vid, uint16_t pid)
 
   libusb_init(&ctx);
   libusb_get_device_list(ctx, &dlist);
-  for (libusb_device **d = dlist; d; d++) {
+  for (libusb_device **d = dlist; d && *d; d++) {
     if (libusb_get_device_descriptor(*d, &desc) != LIBUSB_SUCCESS) {
       return NULL;
     }
@@ -141,6 +144,46 @@ static libusb_device_handle *device_open(int *ep_in, int *ep_out)
   return h;
 }
 
+int read_single_word(char *buf, int size)
+{
+  int i = 0;
+
+  while(i < size) {
+    char ch = getchar();
+
+    printf("%c-", ch);
+    if (ch == EOF) {
+      perror("read STDIN");
+      return -1;
+    }
+
+    if (ch == '\n') {
+      break;
+    }
+
+    buf[i++] = ch;
+  }
+
+  return i;
+}
+
+int io_loop(libusb_device_handle *h, int ep_out)
+{
+  char buf[64];
+  int len;
+  while(1) {
+    len = read_single_word(buf, sizeof(buf) - 1);
+    if (len == -1) {
+      return -1;
+    }
+    buf[len] = 0;
+    printf("New word: %s\n", buf);
+    if (transfer_string(h, ep_out, buf)) {
+      break;
+    }
+  }
+}
+
 int main()
 {
   libusb_device_handle *h;
@@ -148,20 +191,30 @@ int main()
   int ep_in;
   int ep_out;
   struct libusb_transfer t;
-  char buf[256];
 
   libusb_init(&ctx);
   h = device_open(&ep_in, &ep_out);
+  if (!h) {
+    printf("Failed to open device. Ensure it is connected\n");
+    return -1;
+  }
+
+  ret =  io_loop(h, ep_out);
+  if (ret) {
+    return ret;
+  }
 
   test_ep_out(h, ep_out);
   test_ep_in(h, ep_in);
 
+#if 0
   libusb_fill_bulk_transfer(&t, h, ep_out, buf, sizeof(buf), bulk_completed, NULL,
     2000);
 
   if (libusb_submit_transfer(&t) != LIBUSB_SUCCESS) {
     goto out_close;
   }
+#endif
 
 out_close:
   libusb_close(h);
