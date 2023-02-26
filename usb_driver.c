@@ -468,16 +468,29 @@ static uint32_t usb_get_static_epxr_bits(int ep)
   return USB_EPxR_STATIC_BITS(ep, type, kind);
 }
 
+/*
+ * NAK   bits are 0b10 aka 2
+ * VALID bits are 0b11 aka 3
+ * to toggle from NAK to VALID from 2 to 3 we need XOR op
+ * 2^3 = 0b10 XOR 0b11 = 0b01
+ * Check - 2 TOGGLE 1 = 0b10 TOGGLE 0b01 = 0b11
+ */
+#define EP_TOGGLE_BITS_NAK_TO_VALID (2^3)
+
 static void usb_ep_tx_nak_to_valid(int ep)
 {
   uint32_t v = usb_get_static_epxr_bits(ep);
-  reg_write(usb_get_ep_reg(ep), v | ((2 ^ 3)<<4) | addr);
+  v |= EP_TOGGLE_BITS_NAK_TO_VALID << 4;
+  v |= addr;
+  reg_write(usb_get_ep_reg(ep), v);
 }
 
 static void usb_ep_rx_nak_to_valid(int ep)
 {
   uint32_t v = usb_get_static_epxr_bits(ep);
-  reg_write(usb_get_ep_reg(ep), v | ((2 ^ 3)<<12) | addr);
+  v |= EP_TOGGLE_BITS_NAK_TO_VALID << 12;
+  v |= addr;
+  reg_write(usb_get_ep_reg(ep), v);
 }
 
 static void usb_ep_tx_nak_to_stall(int ep)
