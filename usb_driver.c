@@ -636,6 +636,7 @@ static void ep1_tx_handler()
   char buf[EP1_IN_MAX_PACKET_SIZE];
 
   memset(buf, 'A' + ddx, sizeof(buf));
+  *(uint32_t *)buf = ddx;
 
   pmacpy_to(usb_pma_get_tx_addr(EP1_IN_ADDR),
     buf, sizeof(buf));

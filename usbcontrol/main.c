@@ -90,6 +90,28 @@ static void test_ep_in(libusb_device_handle *h, int ep_in)
   }
 }
 
+static int transfer_back(libusb_device_handle *h, int ep_in,
+  int *word)
+{
+  char buf[PACKET_SIZE];
+  int status;
+  int actual;
+  int len;
+
+  memset(buf, sizeof(buf), 0);
+  actual = 0;
+  status = libusb_bulk_transfer(h, ep_in, buf, PACKET_SIZE, &actual, 0);
+  printf("bulk_transfer ep: 0x%02x, st: %d\n", ep_in, status);
+
+  if (status != LIBUSB_SUCCESS) {
+    return -1;
+  }
+
+  *word = *(int *)buf;
+
+  return 0;
+}
+
 static void test_ep_out(libusb_device_handle *h, int ep_out)
 {
   bool should_break = false;
@@ -151,7 +173,7 @@ int read_single_word(char *buf, int size)
   while(i < size) {
     char ch = getchar();
 
-    printf("%c-", ch);
+    // printf("%c-", ch);
     if (ch == EOF) {
       perror("read STDIN");
       return -1;
@@ -167,20 +189,25 @@ int read_single_word(char *buf, int size)
   return i;
 }
 
-int io_loop(libusb_device_handle *h, int ep_out)
+int io_loop(libusb_device_handle *h, int ep_in, int ep_out)
 {
   char buf[64];
   int len;
+  int word;
   while(1) {
     len = read_single_word(buf, sizeof(buf) - 1);
     if (len == -1) {
       return -1;
     }
     buf[len] = 0;
-    printf("New word: %s\n", buf);
+    // printf("New word: %s\n", buf);
     if (transfer_string(h, ep_out, buf)) {
       break;
     }
+    if (transfer_back(h, ep_in, &word)) {
+      break;
+    }
+    printf("New word: %s:%d\n", buf, word);
   }
 }
 
@@ -199,7 +226,7 @@ int main()
     return -1;
   }
 
-  ret =  io_loop(h, ep_out);
+  ret =  io_loop(h, ep_in, ep_out);
   if (ret) {
     return ret;
   }
