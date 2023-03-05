@@ -244,7 +244,13 @@ void i2c_handle_event(void)
           dma_ch_tx,
           I2C_DR,
           current_i2c_rq.data,
-          current_i2c_rq.size);
+          current_i2c_rq.size,
+          8,
+          8,
+          true,
+          false,
+          true
+          );
       }
 
       reg_write(I2C_DR, current_i2c_rq.addr);

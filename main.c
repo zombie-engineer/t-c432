@@ -20,6 +20,8 @@
 #include "compiler.h"
 #include "dma.h"
 #include "stm32f103_pin_config.h"
+#include "debug_pin.h"
+#include "drivers/ws2812b/ws2812b.h"
 #include <svc.h>
 #include <stdlib.h>
 
@@ -87,6 +89,12 @@ void main(void)
   int adc_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_ADC1);
 
   rcc_set_72mhz_usb();
+  rcc_periph_ena(RCC_PERIPH_IOPB);
+  // gpio_setup(GPIO_PORT_B, 0, GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
+  debug_pin_setup();
+
+  run_led_strip();
+
   main_task = task_create("main", main_task_fn, scheduler_exit_task);
   if (!main_task) {
     BRK;
@@ -110,6 +118,7 @@ void main(void)
   scheduler_enqueue_runnable(t);
 
   scheduler_start(main_task);
+
 
 #if 0
 //  uart2_setup();

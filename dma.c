@@ -44,8 +44,14 @@
 #define DMA_CCR_MINC 7
 #define DMA_CCR_PSIZE 8
 #define DMA_CCR_PSIZE_WIDTH 2
+#define DMA_CCR_PSIZE_8_BITS 0b00
+#define DMA_CCR_PSIZE_16_BITS 0b01
+#define DMA_CCR_PSIZE_32_BITS 0b10
 #define DMA_CCR_MSIZE 10
 #define DMA_CCR_MSIZE_WIDTH 2
+#define DMA_CCR_MSIZE_8_BITS 0b00
+#define DMA_CCR_MSIZE_16_BITS 0b01
+#define DMA_CCR_MSIZE_32_BITS 0b10
 #define DMA_CCR_PL 12
 #define DMA_CCR_PL_WIDTH 2
 #define DMA_CCR_PL_MEM2MEM 14
@@ -68,24 +74,49 @@ void dma_transfer_disable(int ch)
   reg32_clear_bit(DMA_CCR(0, ch), DMA_CCR_EN);
 }
 
-void dma_transfer_setup(int ch, reg32_t paddr, const uint8_t *maddr,
-  int size)
+void dma_transfer_enable(int ch)
 {
-  uint32_t v;
+  reg32_set_bit(DMA_CCR(0, ch), DMA_CCR_EN);
+}
+
+
+void dma_transfer_setup(int ch, reg32_t paddr, const uint8_t *maddr,
+  int size, int mwidth, int pwidth, bool minc, bool pinc, bool enable)
+{
+  uint32_t v = 0;
 
   reg_write(DMA_CPAR(0, ch), (uint32_t)paddr);
   reg_write(DMA_CMAR(0, ch), (uint32_t)maddr);
   reg_write(DMA_CNDTR(0, ch), size);
   /* transfer complete interrupt enable */
-  u32_set_bit(&v, DMA_CCR_TCIE);
+
+  reg_write(DMA_CCR(0, ch), 0);
+
   /* transfer error interrupt enable */
   u32_set_bit(&v, DMA_CCR_TEIE);
+
   /* DIR=1 is "Read from memory" */
   u32_set_bit(&v, DMA_CCR_DIR);
-  /* Memory increment mode */
-  u32_set_bit(&v, DMA_CCR_MINC);
+
+  /* Memory increment mode, peripheral address not incremented */
+  if (minc)
+    u32_set_bit(&v, DMA_CCR_MINC);
+
+  if (pinc)
+    u32_set_bit(&v, DMA_CCR_PINC);
+
+  /* Peripheral data width */
+  u32_modify_bits(&v, DMA_CCR_PSIZE, DMA_CCR_PSIZE_WIDTH,
+    DMA_CCR_PSIZE_16_BITS);
+
+  /* Memory data width */
+  u32_modify_bits(&v, DMA_CCR_MSIZE, DMA_CCR_MSIZE_WIDTH,
+    DMA_CCR_MSIZE_16_BITS);
+
   reg_write(DMA_CCR(0, ch), v);
-  reg32_set_bit(DMA_CCR(0, ch), DMA_CCR_EN);
+
+  if (enable)
+    reg32_set_bit(DMA_CCR(0, ch), DMA_CCR_EN);
 }
 
 int dma_get_channel_id(dma_periph_t p)

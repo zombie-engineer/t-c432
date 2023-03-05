@@ -13,6 +13,7 @@ OBJS := main.o \
   ui/value_widget.o \
   ui/navi_header_widget.o \
   ui/arrow_button_widget.o \
+  drivers/ws2812b/ws2812b.o \
   fault.o \
   exti.o \
   pushbuttons.o \

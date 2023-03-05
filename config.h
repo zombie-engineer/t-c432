@@ -30,3 +30,4 @@
 /* Debug pin */
 #define CNF_DEBUG_PIN_PIN 13
 #define CNF_DEBUG_PIN_PORT C
+#define LED_TIM_PERIOD 45
