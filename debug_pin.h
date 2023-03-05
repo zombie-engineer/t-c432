@@ -21,7 +21,7 @@ void debug_pin_on(void)
   if (debug_pin_status == DEBUG_PIN_DISABLED)
     return;
 
-  gpio_bit_set(GPIO_PORT(CNF_DEBUG_PIN_PORT), CNF_DEBUG_PIN_PIN);
+  gpio_odr_modify(GPIO_PORT(CNF_DEBUG_PIN_PORT), CNF_DEBUG_PIN_PIN, 0);
   debug_pin_status = DEBUG_PIN_ON;
 }
 
@@ -30,7 +30,7 @@ void debug_pin_off(void)
   if (debug_pin_status == DEBUG_PIN_DISABLED)
     return;
 
-  gpio_bit_set(GPIO_PORT(CNF_DEBUG_PIN_PORT), CNF_DEBUG_PIN_PIN);
+  gpio_odr_modify(GPIO_PORT(CNF_DEBUG_PIN_PORT), CNF_DEBUG_PIN_PIN, 1);
   debug_pin_status = DEBUG_PIN_OFF;
 }
 
