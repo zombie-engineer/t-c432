@@ -50,6 +50,11 @@
 
 #define RCC_CFGR_PPRE2_POS 11
 #define RCC_CFGR_PPRE2_WIDTH 3
+#define RCC_CFGR_PPRE2_DIV_1 0b000
+#define RCC_CFGR_PPRE2_DIV_2 0b100
+#define RCC_CFGR_PPRE2_DIV_4 0b101
+#define RCC_CFGR_PPRE2_DIV_8 0b110
+#define RCC_CFGR_PPRE2_DIV_16 0b111
 
 #define RCC_CFGR_ADCPRE_POS 14
 #define RCC_CFGR_ADCPRE_WIDTH 2
@@ -278,32 +283,45 @@ void rcc_set_72mhz_usb(void)
   flash_enable_prefetch();
 
   /*
-   * Configure PLL to HSE (8Hz) * 9 = 72MHz 
    * PLLCLK = HSE x 9 = 8MHz * 9 = 72MHz
    * SYSCLK = PLLCLK = 72MHz
-   * HCLK   = SYSCLK / HPRE = 72MHz / 1 = 72MHz
-   * PCLK1  = HCLK / PPRE1 = 72MHz / 2 = 36MHz
-   * PCLK2  = HCLK / PPRE2 = 72MHz / 1 = 72MHz
+   * F_AHB = HCLK   = SYSCLK / HPRE = 72MHz / 1 = 72MHz
+   * F_APB1 = PCLK1  = HCLK / PPRE1 = 72MHz / 2 = 36MHz
+   * F_APB2 = PCLK2  = HCLK / PPRE2 = 72MHz / 1 = 72MHz
    * ADCCLK = PCLK2 / ADCPRE = 72MHz / 1 = 72MHz
    * USB    = PLLCLK / USBPRE = 72MHZ / 1.5 = 48HMz
    */
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLSRC_POS, RCC_CFGR_PLLSRC_WIDTH, RCC_CFGR_PLLSRC_HSE);
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLMUL_POS, RCC_CFGR_PLLMUL_WIDTH, RCC_CFGR_PLLMUL_X9);
-  //reg32_modify_bits(RCC_CFGR, RCC_CFGR_HPRE_POS, RCC_CFGR_HPRE_WIDTH, RCC_CFGR_HPRE_BY_1);
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PPRE1_POS, RCC_CFGR_PPRE1_WIDTH, RCC_CFGR_PPRE1_DIV_2);
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLSRC_POS, RCC_CFGR_PLLSRC_WIDTH,
+    RCC_CFGR_PLLSRC_HSE);
 
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_USBPRE_POS, RCC_CFGR_USBPRE_WIDTH, RCC_CFGR_USBPRE_DIV_1_5);
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PLLMUL_POS, RCC_CFGR_PLLMUL_WIDTH,
+    RCC_CFGR_PLLMUL_X9);
+
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_HPRE_POS, RCC_CFGR_HPRE_WIDTH,
+    RCC_CFGR_HPRE_BY_1);
+
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PPRE1_POS, RCC_CFGR_PPRE1_WIDTH,
+    RCC_CFGR_PPRE1_DIV_2);
+
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_PPRE2_POS, RCC_CFGR_PPRE2_WIDTH,
+    RCC_CFGR_PPRE2_DIV_1);
+
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_USBPRE_POS, RCC_CFGR_USBPRE_WIDTH,
+    RCC_CFGR_USBPRE_DIV_1_5);
 
   /* Turn on PLL, after that both PLL + HSE will be running.*/
   reg32_set_bit(RCC_CR, RCC_CR_PLLON_POS);
   while(!reg32_bit_is_set(RCC_CR, RCC_CR_PLLRDY_POS));
 
   /* Select PLL as clock source */
-  reg32_modify_bits(RCC_CFGR, RCC_CFGR_SW_POS, RCC_CFGR_SW_WIDTH, RCC_CFGR_SW_PLL);
-  while(!reg32_bits_eq(RCC_CFGR, RCC_CFGR_SWS_POS, RCC_CFGR_SWS_WIDTH, RCC_CFGR_SW_PLL));
+  reg32_modify_bits(RCC_CFGR, RCC_CFGR_SW_POS, RCC_CFGR_SW_WIDTH,
+    RCC_CFGR_SW_PLL);
 
-//  reg32_clear_bit(RCC_CR, RCC_CR_HSION_POS);
-//  while(reg32_bit_is_set(RCC_CR, RCC_CR_HSIRDY_POS));
+  while(!reg32_bits_eq(RCC_CFGR, RCC_CFGR_SWS_POS, RCC_CFGR_SWS_WIDTH,
+    RCC_CFGR_SW_PLL));
+
+  reg32_clear_bit(RCC_CR, RCC_CR_HSION_POS);
+  while(reg32_bit_is_set(RCC_CR, RCC_CR_HSIRDY_POS));
 }
 
 void rcc_periph_ena(rcc_clock_periph_t p)

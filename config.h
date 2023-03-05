@@ -1,6 +1,10 @@
 #pragma once
 
 #define F_CPU 72000000
+#define F_SYSCLOCK F_CPU
+#define F_APB1 (F_CPU / 2)
+#define F_APB2 F_CPU
+
 #define CNF_SCHEDULER_TICK_MS 10
 
 /*
