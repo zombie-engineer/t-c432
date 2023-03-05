@@ -3,6 +3,64 @@ target remote :3333
 displ/8i $pc
 x/8i $pc
 
+set $TIM2_BASE    = 0x40000000
+set $TIM3_BASE    = 0x40000400
+
+set $TIM3_CR1   = ($TIM3_BASE + 0x00)
+set $TIM3_CR2   = ($TIM3_BASE + 0x04)
+set $TIM3_SMCR  = ($TIM3_BASE + 0x08)
+set $TIM3_DIER  = ($TIM3_BASE + 0x0c)
+set $TIM3_SR    = ($TIM3_BASE + 0x10)
+set $TIM3_EGR   = ($TIM3_BASE + 0x14)
+set $TIM3_CCMR1 = ($TIM3_BASE + 0x18)
+set $TIM3_CCMR2 = ($TIM3_BASE + 0x1c)
+set $TIM3_CCER  = ($TIM3_BASE + 0x20)
+set $TIM3_CNT   = ($TIM3_BASE + 0x24)
+set $TIM3_PSC   = ($TIM3_BASE + 0x28)
+set $TIM3_ARR   = ($TIM3_BASE + 0x2c)
+set $TIM3_CCR1  = ($TIM3_BASE + 0x34)
+set $TIM3_CCR2  = ($TIM3_BASE + 0x38)
+set $TIM3_CCR3  = ($TIM3_BASE + 0x3c)
+set $TIM3_CCR4  = ($TIM3_BASE + 0x40)
+set $TIM3_DCR   = ($TIM3_BASE + 0x48)
+set $TIM3_DMAR  = ($TIM3_BASE + 0x4c)
+
+set $USART_BASE   = 0x40004400
+set $I2C1_BASE    = 0x40005400
+set $I2C2_BASE    = 0x40005800
+set $USB_BASE     = 0x40005c00
+set $AFIO_BASE    = 0x40010000
+set $EXTI_BASE    = 0x40010400
+set $IOPA_BASE    = 0x40010800
+set $IOPB_BASE    = 0x40010c00
+set $IOPC_BASE    = 0x40011000
+set $IOPD_BASE    = 0x40011400
+set $IOPE_BASE    = 0x40011800
+set $IOPF_BASE    = 0x40011c00
+set $IOPG_BASE    = 0x40012000
+set $ADC1_BASE    = 0x40012400
+set $RCC_BASE     = 0x40021000
+set $DMA1_BASE    = 0x40020000
+set $DMA2_BASE    = 0x40020400
+set $FLASH_BASE   = 0x40022000
+set $SYSTICK_BASE = 0xe000e010
+set $SCB_BASE     = 0xe000ed00
+
+define show_tim3
+  printf "tim: CR1: %08x, DIER:%08x, ", *(int *)$TIM3_BASE, *(int *)($TIM3_BASE + 0x0c)
+  printf "CNT:%08x, ", *(int *)$TIM3_CNT
+  printf "SR:%08x, ", *(int *)$TIM3_SR
+  printf "PSC:%08x, ", *(int *)$TIM3_PSC
+  printf "ARR:%08x, ", *(int *)$TIM3_ARR
+  printf "CCR1:%08x, ", *(int *)$TIM3_CCR1
+  printf "CCR2:%08x, ", *(int *)$TIM3_CCR2
+  printf "CCR3:%08x, ", *(int *)$TIM3_CCR3
+  printf "CCR4:%08x, ", *(int *)$TIM3_CCR4
+  printf "DCR:%08x, ", *(int *)$TIM3_DCR
+  printf "DMAR:%08x, ", *(int *)$TIM3_DMAR
+  printf "\n"
+end
+
 define reup
   delete
   monitor program /home/user_user/stm32project/firmware.bin 0x08000000 verify
