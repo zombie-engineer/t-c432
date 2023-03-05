@@ -1,6 +1,7 @@
 #pragma once
 
 #define TIM2_BASE    0x40000000
+#define TIM3_BASE    0x40000400
 #define USART_BASE   0x40004400
 #define I2C1_BASE    0x40005400
 #define I2C2_BASE    0x40005800
