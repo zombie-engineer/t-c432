@@ -8,6 +8,11 @@
 
 #define AFIO_EVCR (volatile uint32_t *)(AFIO_BASE + 0x00)
 #define AFIO_MAPR (volatile uint32_t *)(AFIO_BASE + 0x04)
+#define AFIO_MAPR_TIM3_REMAP 10
+#define AFIO_MAPR_TIM3_REMAP_NO 0b00
+#define AFIO_MAPR_TIM3_REMAP_PART 0b01
+#define AFIO_MAPR_TIM3_REMAP_FULL 0b11
+
 #define AFIO_EXTICR1 (volatile uint32_t *)(AFIO_BASE + 0x08)
 #define AFIO_EXTICR2 (volatile uint32_t *)(AFIO_BASE + 0x0c)
 #define AFIO_EXTICR3 (volatile uint32_t *)(AFIO_BASE + 0x10)
