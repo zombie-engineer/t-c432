@@ -32,10 +32,18 @@ bx lr
 
 .ltorg
 
+.macro ISR_START name
+.globl \name\()_isr
+.align 5
+\name\()_isr:
+bl save_context
+.endm
 
-.globl svcall_isr
-.align 3
-svcall_isr:
+.macro ISR_END
+b restore_context
+.endm
+
+ISR_START svcall
 # What is the argeument to SVC?
 # SVC syntax is 'svc imm', where 'imm' is numeric svc argument
 # it is not passed to interrupt handler. The software should extract 'imm'
@@ -51,7 +59,6 @@ svcall_isr:
 # stacked pc.
 # svc encoding is (SVC opcode << 8) | (imm & 0xf)
 # imm byte goes first, so we can just read 1 byte at offset pc - 2
-bl save_context
 ldr r0, =current
 ldr r0, [r0]
 ldr r0, [r0, #8]
@@ -59,7 +66,8 @@ ldr r0, [r0, #56]
 sub r0, #2
 ldrb r0, [r0]
 bl svc_handler
-b restore_context
+ISR_END
+.ltorg
 
 .macro load_current, dst_reg
   ldr \dst_reg, =current
@@ -147,19 +155,7 @@ isb
 ldr r0, =0xfffffffd
 bx r0
 
-.macro ISR_START name
-.globl \name\()_isr
-.align 5
-\name\()_isr:
-bl save_context
-.endm
-
-.macro ISR_END
-b restore_context
-.endm
-
 ISR_START exti_0
-bl save_context
 mov r0, #0
 bl exti_isr
 ISR_END
@@ -175,13 +171,11 @@ bl exti_isr
 ISR_END
 
 ISR_START exti_3
-bl save_context
 mov r0, #3
 bl exti_isr
 ISR_END
 
 ISR_START exti_4
-bl save_context
 mov r0, #4
 bl exti_isr
 ISR_END
@@ -235,7 +229,6 @@ wfe
 b 1b
 
 ISR_START systick
-bl save_context
 bl scheduler_tick
 ISR_END
 
