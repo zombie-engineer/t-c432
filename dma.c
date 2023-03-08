@@ -56,7 +56,6 @@
 #define DMA_CCR_PL_WIDTH 2
 #define DMA_CCR_PL_MEM2MEM 14
 
-
 static dma_isr_cb dma1_isr_cbs[NUM_DMA1_CHANNELS] = { 0 };
 static dma_isr_cb dma2_isr_cbs[NUM_DMA2_CHANNELS] = { 0 };
 
@@ -79,11 +78,12 @@ void dma_transfer_enable(int ch)
   reg32_set_bit(DMA_CCR(0, ch), DMA_CCR_EN);
 }
 
-
-void dma_transfer_setup(int ch, reg32_t paddr, const uint8_t *maddr,
-  int size, int mwidth, int pwidth, bool minc, bool pinc, bool enable)
+void dma_transfer_setup(int ch, volatile void *paddr, void *maddr,
+  int size, int mwidth, int pwidth, bool minc, bool pinc, bool enable,
+  bool interrupt_on_completion)
 {
   uint32_t v = 0;
+  int width;
 
   reg_write(DMA_CPAR(0, ch), (uint32_t)paddr);
   reg_write(DMA_CMAR(0, ch), (uint32_t)maddr);
@@ -95,6 +95,9 @@ void dma_transfer_setup(int ch, reg32_t paddr, const uint8_t *maddr,
   /* transfer error interrupt enable */
   u32_set_bit(&v, DMA_CCR_TEIE);
 
+  if (interrupt_on_completion)
+    u32_set_bit(&v, DMA_CCR_TCIE);
+
   /* DIR=1 is "Read from memory" */
   u32_set_bit(&v, DMA_CCR_DIR);
 
@@ -105,18 +108,30 @@ void dma_transfer_setup(int ch, reg32_t paddr, const uint8_t *maddr,
   if (pinc)
     u32_set_bit(&v, DMA_CCR_PINC);
 
+  width = DMA_CCR_MSIZE_8_BITS;
+  if (mwidth == 16)
+    width = DMA_CCR_MSIZE_16_BITS;
+  else if (mwidth == 32)
+    width = DMA_CCR_MSIZE_32_BITS;
+
   /* Peripheral data width */
-  u32_modify_bits(&v, DMA_CCR_PSIZE, DMA_CCR_PSIZE_WIDTH,
-    DMA_CCR_PSIZE_16_BITS);
+  u32_modify_bits(&v, DMA_CCR_MSIZE, DMA_CCR_MSIZE_WIDTH,
+    width);
+
+  width = DMA_CCR_PSIZE_8_BITS;
+  if (pwidth == 16)
+    width = DMA_CCR_PSIZE_16_BITS;
+  else if (pwidth == 32)
+    width = DMA_CCR_PSIZE_32_BITS;
 
   /* Memory data width */
-  u32_modify_bits(&v, DMA_CCR_MSIZE, DMA_CCR_MSIZE_WIDTH,
-    DMA_CCR_MSIZE_16_BITS);
-
-  reg_write(DMA_CCR(0, ch), v);
+  u32_modify_bits(&v, DMA_CCR_PSIZE, DMA_CCR_PSIZE_WIDTH,
+    width);
 
   if (enable)
-    reg32_set_bit(DMA_CCR(0, ch), DMA_CCR_EN);
+    u32_set_bit(&v, DMA_CCR_EN);
+
+  reg_write(DMA_CCR(0, ch), v);
 }
 
 int dma_get_channel_id(dma_periph_t p)
@@ -180,6 +195,11 @@ void dma_isr(int dma_idx, int ch_idx)
 {
   dma_isr_cb cb = NULL;
 
+  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4);
+  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4 + 1);
+  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4 + 2);
+  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4 + 3);
+
   if (dma_idx == 0 && ch_idx < NUM_DMA1_CHANNELS) {
     cb = dma1_isr_cbs[ch_idx];
 
@@ -193,10 +213,6 @@ void dma_isr(int dma_idx, int ch_idx)
   if (cb)
     cb();
 
-  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4);
-  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4 + 1);
-  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4 + 2);
-  reg32_write_clear_bit(DMA_IFSR(dma_idx), ch_idx * 4 + 3);
 }
 
 void dma_init(void)

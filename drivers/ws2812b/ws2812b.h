@@ -1,3 +1,4 @@
 #pragma once
 
-void run_led_strip(void);
+void ws2812b_init(void);
+void ws2812b_update(void);
