@@ -7,7 +7,7 @@ struct arrow_button_priv {
   arrow_button_type_t type;
 };
 
-struct arrow_button_priv ab_priv_array[6];
+struct arrow_button_priv ab_priv_array[8];
 static int ab_priv_cnt = 0;
 
 static inline void draw_arrow_left(int x, int y, int sx, int sy, int white)

@@ -31,19 +31,27 @@ static uint8_t *led_strip_put_byte(uint8_t *dst, uint8_t value)
   return dst;
 }
 
+extern void ui_led_start(void);
+extern void ui_led_pixel(int idx, uint8_t r, uint8_t g, uint8_t b);
+
+char led_param_slow;
+char led_param_brightness;
+
 static uint8_t *led_strip_put_pixel(uint8_t *dst, uint8_t r, uint8_t g, uint8_t b)
 {
-  dst = led_strip_put_byte(dst, g);
-  dst = led_strip_put_byte(dst, r);
-  dst = led_strip_put_byte(dst, b);
+  ui_led_pixel((dst - led_strip_buf) / (8 * 3), r, g, b);
+  float k = led_param_brightness / 255.0f;
+  dst = led_strip_put_byte(dst, g * k);
+  dst = led_strip_put_byte(dst, r * k);
+  dst = led_strip_put_byte(dst, b * k);
   return dst;
 }
 
 struct hobo_led {
-  int idx;
+  char idx;
   int time_to_go;
   int rest_time;
-};
+} __attribute__((packed));
 
 struct hobo_led hleds[3];
 
@@ -53,7 +61,7 @@ static void hobo_led_update(struct hobo_led *l)
     l->time_to_go--;
 
   if (!l->time_to_go) {
-    l->time_to_go = l->rest_time;
+    l->time_to_go = l->rest_time * led_param_slow;
     l->idx++;
     if (l->idx == NUM_LEDS)
       l->idx = 0;
@@ -92,10 +100,10 @@ static void hobo_led_draw(struct hobo_led *l, int led_id)
     r = 255; g = 0; b = 0;
     break;
   case 1:
-    r = 235; g = 0; b = 10;
+    r = 255; g = 0; b = 10;
     break;
   case 2:
-    r = 215; g = 0; b = 10;
+    r = 255; g = 0; b = 10;
     break;
   }
   led_strip_put_pixel(p, r, g, b);
@@ -150,6 +158,7 @@ static void ws2812b_fill_buf(void)
 
 void ws2812b_init(void)
 {
+  led_param_slow = 1;
   ws2812b_fill_buf();
   hobo_leds_init();
   gpio_setup(GPIO_PORT_B, 0, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);

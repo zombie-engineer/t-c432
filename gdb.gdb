@@ -470,31 +470,10 @@ end
 
 reup
 
-#  tb dbuf_flush
-#    commands
-#    b dma_transfer_setup
-#    b dma_tx_cb
-#  end
-#  
-#  b ssd1306_init
-
-
-# tb task_wait_ms
-#   commands
-#     tb svc_handler
-#     commands
-#     tb scheduler_tick
-#   end
-#   c
-# end
-
-# b __usb_lp_isr
-# b i2c1_isr
-b ep2_rx_handler
-b usb_err_handler
+# b led_widget_on_button_action
 c
 
-show_i2c
-show_nvic
-show_usbr
+# show_i2c
+# show_nvic
+# show_usbr
 

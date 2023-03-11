@@ -7,8 +7,10 @@
 #include "pushbuttons.h"
 #include "ui/widget.h"
 #include "ui/main_widget.h"
-#include "ui/adc_widget.h"
+// #include "ui/adc_widget.h"
 #include "ui/usb_widget.h"
+#include "ui/led_widget.h"
+#include "svc.h"
 
 #define NUM_ROOT_WIDGETS 3
 struct widget root_widgets[NUM_ROOT_WIDGETS];
@@ -56,9 +58,20 @@ void ui_callback_button_event_released(int button_id)
 
 void ui_init(void)
 {
-  main_widget_init(&root_widgets[0], focus_prev_cb, focus_next_cb);
-  adc_widget_init(&root_widgets[1], focus_prev_cb, focus_next_cb);
-  usb_widget_init(&root_widgets[2], focus_prev_cb, focus_next_cb);
+  if (main_widget_init(&root_widgets[0], focus_prev_cb, focus_next_cb)) {
+    svc_call(SVC_PANIC);
+  }
+  if (led_widget_init(&root_widgets[1], focus_prev_cb, focus_next_cb)) {
+    svc_call(SVC_PANIC);
+  }
+  if (usb_widget_init(&root_widgets[2], focus_prev_cb, focus_next_cb)) {
+    svc_call(SVC_PANIC);
+  }
+#if 0
+  if (adc_widget_init(&root_widgets[1], focus_prev_cb, focus_next_cb)) {
+    svc_call(SVC_PANIC);
+  }
+#endif
 }
 
 void ui_on_set_address(void)

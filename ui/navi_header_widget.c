@@ -12,7 +12,7 @@ struct navi_header_widget_priv {
   nextprev_fn prev;
 };
 
-struct navi_header_widget_priv navi_priv_array[4];
+struct navi_header_widget_priv navi_priv_array[5];
 static int navi_priv_cnt = 0;
 
 void navi_header_draw(struct widget *w)
@@ -109,6 +109,8 @@ int navi_header_widget_init(struct widget *w,
   const struct font_descriptor *font
   )
 {
+  int ret;
+
   if (navi_priv_cnt >= ARRAY_SIZE(navi_priv_array))
     return -1;
 
@@ -122,26 +124,35 @@ int navi_header_widget_init(struct widget *w,
   w->size_y = sy;
   w->priv = p;
 
-  arrow_button_widget_init(&p->arrow_button_left,
+  ret = arrow_button_widget_init(&p->arrow_button_left,
     w->pos_x + 3,
     w->pos_y - 3,
     3,
     5,
     ARROW_BUTTON_TYPE_LEFT);
 
-  arrow_button_widget_init(&p->arrow_button_right,
+  if (ret)
+    return ret;
+
+  ret = arrow_button_widget_init(&p->arrow_button_right,
     w->pos_x - 4,
     w->pos_y - 3,
     3,
     5,
     ARROW_BUTTON_TYPE_RIGHT);
 
-  text_widget_init(&p->text,
+  if (ret)
+    return ret;
+
+  ret = text_widget_init(&p->text,
     w->pos_x + w->size_x / 2,
     w->pos_y - 3,
     0,
     0,
     name, font);
+
+  if (ret)
+    return ret;
 
   w->handle_event = navi_header_handle_event;
   w->draw = navi_header_draw;

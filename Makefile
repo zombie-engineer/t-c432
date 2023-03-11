@@ -4,15 +4,16 @@ LIBC := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libc.a
 $(info $(LIBC))
 INCLUDES := -I.
 
+#  ui/adc_widget.o 
 OBJS := main.o \
   ui/main_widget.o \
-  ui/adc_widget.o \
   ui/usb_widget.o \
   ui/bar_widget.o \
   ui/text_widget.o \
   ui/value_widget.o \
   ui/navi_header_widget.o \
   ui/arrow_button_widget.o \
+  ui/led_widget.o \
   drivers/ws2812b/ws2812b.o \
   fault.o \
   exti.o \
@@ -53,7 +54,8 @@ firmware.elf: $(OBJS) link.ld
 	arm-none-eabi-gcc -c $(INCLUDES) -g $< -o $@ -mthumb -mcpu=cortex-m3
 
 d:
-	arm-none-eabi-gdb -q -x gdb.gdb firmware.elf
+	arm-gnueabihfgdb -q -x gdb.gdb firmware.elf
+#	arm-none-eabi-gdb -q -x gdb.gdb firmware.elf
 
 hd: firmware.bin
 	hexdump -v -e '1/4 "%08_ax %08X \n"' $? | less

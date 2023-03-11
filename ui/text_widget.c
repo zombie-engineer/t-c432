@@ -12,7 +12,7 @@ struct text_priv {
   int active_count;
 };
 
-struct text_priv t_priv_array[4];
+struct text_priv t_priv_array[5];
 static int t_priv_cnt = 0;
 
 static void text_widget_draw(struct widget *w)
