@@ -87,6 +87,7 @@ int text_widget_init(struct widget *w,
   w->draw = text_widget_draw;
   w->handle_event = text_handle_event;
   w->priv = p;
+  return 0;
 }
 
 void text_widget_set_text(struct widget *w, const char *t)
