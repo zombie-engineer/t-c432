@@ -444,7 +444,7 @@ void ssd1306_power_init(void)
     GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
 
   gpio_odr_modify(GPIO_PORT(CNF_DSPL_PWR_PORT), CNF_DSPL_PWR_PIN, false);
-  wait_ms(10);
+  wait_ms(100);
   gpio_odr_modify(GPIO_PORT(CNF_DSPL_PWR_PORT), CNF_DSPL_PWR_PIN, true);
   wait_ms(10);
 }

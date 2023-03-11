@@ -89,21 +89,16 @@ void main(void)
 
   rcc_set_72mhz_usb();
   rcc_periph_ena(RCC_PERIPH_IOPB);
+  /* GPIO port B and AFIO needed to be enabled for push buttons */
+  rcc_periph_ena(RCC_PERIPH_AFIO);
   debug_pin_setup();
 
+  scheduler_init();
   main_task = task_create("main", main_task_fn, scheduler_exit_task);
   if (!main_task) {
     BRK;
     while(1);
   }
-
-  /* GPIO port B and AFIO needed to be enabled for push buttons */
-  rcc_periph_ena(RCC_PERIPH_AFIO);
-  rcc_periph_ena(RCC_PERIPH_IOPB);
-
-  debug_pin_setup();
-
-  scheduler_init();
 
   t = task_create("ui_task", ui_task, scheduler_exit_task);
   if (!t) {
@@ -112,9 +107,7 @@ void main(void)
   }
 
   scheduler_enqueue_runnable(t);
-
   scheduler_start(main_task);
-
 
 #if 0
 //  uart2_setup();

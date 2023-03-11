@@ -245,13 +245,13 @@ void i2c_handle_event(void)
           I2C_DR,
           (void *)current_i2c_rq.data,
           current_i2c_rq.size,
-          8,
-          8,
-          true,
-          false,
-          true,
-          false
-          );
+          8,     /* mem access size    */
+          16,    /* periph access size */
+          true,  /* mem addr inc       */
+          false, /* periph addr inc    */
+          true,  /* enable             */
+          true   /* interrupt          */
+        );
       }
 
       reg_write(I2C_DR, current_i2c_rq.addr);
