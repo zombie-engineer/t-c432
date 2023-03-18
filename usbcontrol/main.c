@@ -47,6 +47,24 @@ void bulk_completed(struct libusb_transfer *t)
 }
 
 #define PACKET_SIZE 64
+
+static int transfer_raw_bytes(libusb_device_handle *h, int ep_out,
+  char *data, int size)
+{
+  char buf[PACKET_SIZE];
+  int status;
+  int actual;
+  int len;
+
+  status = libusb_bulk_transfer(h, ep_out, data, PACKET_SIZE, &actual, 0);
+  printf("bulk_transfer ep: 0x%02x, st: %d\n", ep_out, status);
+
+  if (status != LIBUSB_SUCCESS) {
+    return -1;
+  }
+
+  return 0;
+}
 static int transfer_string(libusb_device_handle *h, int ep_out,
   const char *str)
 {
@@ -194,6 +212,19 @@ int io_loop(libusb_device_handle *h, int ep_in, int ep_out)
   char buf[64];
   int len;
   int word;
+  buf[0] = 0;
+  char data[6];
+  int idx = 0;
+  while(1) {
+    memset(data, 0, sizeof(data));
+    data[idx / 2] = 0xf << ((idx % 2) * 4);
+    transfer_raw_bytes(h, ep_out, data, sizeof(data));
+    idx++;
+    if (idx > 11)
+      idx = 0;
+
+    usleep(100000);
+  }
   while(1) {
     len = read_single_word(buf, sizeof(buf) - 1);
     if (len == -1) {

@@ -15,6 +15,7 @@
 #define NUM_LEDS 44
 
 static uint8_t led_strip_buf[NUM_LEDS * 8 * 3 + NUM_RESET_BYTES];
+uint8_t led_bitmask[6];
 
 static const uint8_t pwm_low = (0.4f / 1.25f) * LED_TIM_PERIOD + 1;
 static const uint8_t pwm_high = (0.8f / 1.25f) * LED_TIM_PERIOD + 1;
@@ -41,6 +42,7 @@ static uint8_t *led_strip_put_pixel(uint8_t *dst, uint8_t r, uint8_t g, uint8_t 
 {
   ui_led_pixel((dst - led_strip_buf) / (8 * 3), r, g, b);
   float k = led_param_brightness / 255.0f;
+  k = 0.05;
   dst = led_strip_put_byte(dst, g * k);
   dst = led_strip_put_byte(dst, r * k);
   dst = led_strip_put_byte(dst, b * k);
@@ -130,11 +132,13 @@ static void on_dma_finished(void)
 
   for (int i = 0; i < NUM_LEDS; ++i) {
     uint8_t *p = led_strip_buf + i * 8 * 3;
-    float coeff = (float)i / NUM_LEDS;
-    led_strip_put_pixel(p, 1, 0, coeff * 8 + 1);
+    if ((led_bitmask[i / 8] >> (i % 8)) & 1)
+      led_strip_put_pixel(p, 255, 255, 255);
+    else
+      led_strip_put_pixel(p, 0, 0, 0);
   }
 
-  hobo_leds_draw();
+  // hobo_leds_draw();
 
   tim3_pwm_dma_run(dma_channel, led_strip_buf, sizeof(led_strip_buf));
 }
@@ -159,6 +163,7 @@ static void ws2812b_fill_buf(void)
 void ws2812b_init(void)
 {
   led_param_slow = 1;
+  led_bitmask[3] = 0xff;
   ws2812b_fill_buf();
   hobo_leds_init();
   gpio_setup(GPIO_PORT_B, 0, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
