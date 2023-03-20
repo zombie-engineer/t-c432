@@ -314,6 +314,46 @@ define epxr_decode
   end
 end
 
+define show_spi1
+  set $spi_cr1 = *(short *)0x40013000
+  set $spi_cr2 = *(short *)0x40013004
+  set $spi_sr = *(short *)0x40013008
+  set $spi_dr = *(short *)0x4001300c
+  printf "SPI1_CR1 %04x", $spi_cr1
+  if $spi_cr1 & (1<<2)
+    printf " MSTR"
+  end
+  if $spi_cr1 & (1<<6)
+    printf " ENAB"
+  end
+  printf ", SPI1_SR %04x", $spi_sr
+  if $spi_sr & (1<<0)
+    printf " RXNE"
+  end
+  if $spi_sr & (1<<1)
+    printf " TXE"
+  end
+  if $spi_sr & (1<<2)
+    printf " CHSIDE"
+  end
+  if $spi_sr & (1<<3)
+    printf " UDR"
+  end
+  if $spi_sr & (1<<4)
+    printf " CRCERR"
+  end
+  if $spi_sr & (1<<5)
+    printf " MODF"
+  end
+  if $spi_sr & (1<<6)
+    printf " OVR"
+  end
+  if $spi_sr & (1<<7)
+    printf " BSY"
+  end
+  printf "\n"
+end
+
 define show_usbr
   printf "USB_CNTR: "
   x/1wx 0x40005c40

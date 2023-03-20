@@ -2,6 +2,8 @@
 
 #define TIM2_BASE    0x40000000
 #define TIM3_BASE    0x40000400
+#define SPI2_BASE    0x40003800
+#define SPI3_BASE    0x40003c00
 #define USART_BASE   0x40004400
 #define I2C1_BASE    0x40005400
 #define I2C2_BASE    0x40005800
@@ -16,6 +18,7 @@
 #define IOPF_BASE    0x40011c00
 #define IOPG_BASE    0x40012000
 #define ADC1_BASE    0x40012400
+#define SPI1_BASE    0x40013000
 #define RCC_BASE     0x40021000
 #define DMA1_BASE    0x40020000
 #define DMA2_BASE    0x40020400

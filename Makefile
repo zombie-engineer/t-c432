@@ -19,6 +19,7 @@ OBJS := main.o \
   exti.o \
   pushbuttons.o \
   svc.o \
+  spi.o \
   scheduler.o \
   task.o \
   main_task.o \
