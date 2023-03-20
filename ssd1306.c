@@ -6,8 +6,10 @@
 #include "config.h"
 #include "time.h"
 #include "string.h"
+#include "compiler.h"
 
 #define SSD1306_I2C_ADDR 0x78
+#define SSD1306_ADDRESSING_MODE_HORIZONTAL
 
 #ifdef CONFIG_I2C_ASYNC
 #define i2c_write_op i2c_write_async
@@ -147,25 +149,23 @@ static inline int i2c_write4(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3)
 #define NUM_PAGES (SIZE_Y / ROWS_PER_PAGE)
 #define NUM_COLUMNS SIZE_X
 
-#define REG_BYTE_SZ 1
-static uint8_t dbuf[REG_BYTE_SZ + SIZE_X * SIZE_Y / 8];
+struct ssd1306_draw_io {
+  char data_prefix;
+  char buf[NUM_COLUMNS * NUM_PAGES];
+} PACKED;
 
-#define DBYTE(__col, __page) (dbuf[__col + __page * SIZE_X + REG_BYTE_SZ])
+static struct ssd1306_draw_io ssd1306_io_buffer;
 
-void dbuf_clear(void)
+#define DBYTE(__col, __page) \
+  (ssd1306_io_buffer.buf[__col + __page * NUM_COLUMNS])
+
+void dbuf_clear()
 {
-  int page;
-  int col;
-
-  for (page = 0; page < NUM_PAGES; ++page) {
-    for (col = 0; col < NUM_COLUMNS; ++col) {
-      DBYTE(col, page)  = 0x00;
-    }
-  }
+  memset(ssd1306_io_buffer.buf, 0x00, sizeof(ssd1306_io_buffer.buf));
 }
-
 void dbuf_init(void)
 {
+  ssd1306_io_buffer.data_prefix = 0x40;
   dbuf_clear();
 }
 
@@ -351,13 +351,17 @@ int dbuf_get_pixel(int x, int y)
 {
   int page_idx = y / SIZE_Y;
   int bitpos = y % SIZE_Y;
-  int byte_idx = page_idx * SIZE_X + x + REG_BYTE_SZ;
-  uint8_t b = dbuf[byte_idx];
+  int byte_idx = page_idx * SIZE_X + x;
+  uint8_t b = ssd1306_io_buffer.buf[byte_idx];
   return (b >> bitpos) & 1;
 }
 
 void dbuf_flush(void)
 {
+#if defined SSD1306_ADDRESSING_MODE_HORIZONTAL
+  i2c_write_op(SSD1306_I2C_ADDR, (const uint8_t *)&ssd1306_io_buffer,
+    sizeof(ssd1306_io_buffer),  true);
+#elif defined SSD1306_ADDRESSING_MODE_PAGE
   int page;
   int col;
   /*
@@ -384,6 +388,7 @@ void dbuf_flush(void)
     i2c_write_op(SSD1306_I2C_ADDR, p, NUM_COLUMNS + 1, true);
     *p = stored_byte;
   }
+#endif
 }
 
 extern void b(void);
@@ -466,9 +471,7 @@ void ssd1306_init(void)
   CMD_DISPL_SET_ON_OFF(DISPL_OFF);
   CMD_SET_INVERTED(DISPL_INVERTED_OFF);
   CMD_SET_CLK_DIV_RATIO(15, 0);
-  CMD_MEMORY_ADDRESSING(MEMORY_ADDRESSING_PAGE);
-  CMD_SET_COL(0);
-  CMD_SET_PAGE_START_ADDRESS(0);
+  CMD_MEMORY_ADDRESSING(MEMORY_ADDRESSING_HORIZ);
   CMD_DISPL_SET_TURN_ON_BEHAVIOR(DISPL_ON_RESUME_RAM);
   CMD_SET_PRECHARGE_PERIOD(0x1, 0x1);
   CMD_SET_VCOM_DESELECT_LEVEL(1);
