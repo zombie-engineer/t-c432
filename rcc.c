@@ -225,7 +225,7 @@ typedef uint8_t periph_ena_location_t;
     RCC_EN_IDX_ ## __busname, \
     RCC_PERIPH_ ## __busname ## _ ## __periphname)
 
-static periph_ena_location_t rcc_periph_ena_map[] = {
+static const periph_ena_location_t rcc_periph_ena_map[] = {
   PERIPH_ENA_LOC(DMA1    , AHB),
   PERIPH_ENA_LOC(DMA2    , AHB),
   PERIPH_ENA_LOC(SRAM    , AHB),
