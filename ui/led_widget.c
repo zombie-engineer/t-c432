@@ -1,7 +1,7 @@
 #include "led_widget.h"
 #include "navi_header_widget.h"
 #include "bar_widget.h"
-#include <ssd1306.h>
+#include <display.h>
 #include <font.h>
 #include <stdlib.h>
 #include <string.h>
@@ -148,14 +148,14 @@ void led_widget_draw(struct widget *w)
 
   if (led_param_name) {
 //  led_widget_priv.bar.draw(&led_widget_priv.bar);
-    dbuf_draw_text(20, 20, led_param_name, &font_1, 1);
-    dbuf_draw_text(20 + 30, 20, led_param_buf, &font_1, 1);
+    display_draw_text(20, 20, led_param_name, &font_1, 1);
+    display_draw_text(20 + 30, 20, led_param_buf, &font_1, 1);
   }
 
   for (int i = 0 ; i < 44; ++i) {
     int x = (int)(i / 43.0f * 127);
     int y1 = 1 + (led_intensities[i] / 255.0 * (63.0f - 30));
-    dbuf_draw_line(x, 0, x, y1, 1);
+    display_draw_line(x, 0, x, y1, 1);
   }
 }
 

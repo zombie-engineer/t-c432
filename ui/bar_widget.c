@@ -1,6 +1,6 @@
 #include "bar_widget.h"
 #include <common_util.h>
-#include <ssd1306.h>
+#include <display.h>
 
 struct bar_widget_priv {
   int level;
@@ -10,19 +10,19 @@ void bar_widget_draw(struct widget *w)
 {
   struct bar_widget_priv *p;
   p = w->priv;
-  dbuf_draw_rect(
+  display_draw_rect(
     w->pos_x, w->pos_y,
     w->pos_x + w->size_x,
     w->pos_y + w->size_y, 1);
 
-  dbuf_draw_hatched_rect(
+  display_draw_hatched_rect(
     w->pos_x + 2,
     w->pos_y,
     w->pos_x + w->size_x - 1,
     w->pos_y + p->level,
     1);
 
-  dbuf_draw_line(
+  display_draw_line(
     w->pos_x + 2,
     w->pos_y + p->level,
     w->pos_x + w->size_x - 1,

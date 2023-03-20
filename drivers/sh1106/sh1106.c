@@ -91,7 +91,7 @@ void sh1106_flush(char pattern)
     sh1106_cmd(SH1106_CMD_SET_PAGE_ADDRESS | page);
     for(int i = 0; i < 130; ++i) {
       sh1106_data_one(pattern);
-      for (volatile int j = 0; j < 50000; ++j);
+      // for (volatile int j = 0; j < 50000; ++j);
     }
   }
 }

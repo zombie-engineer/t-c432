@@ -37,9 +37,9 @@ void main_task_fn(void *)
   usb_driver_set_cb(USB_CB_RX, usb_rx_callback);
   usb_driver_set_cb(USB_CB_TX, usb_tx_callback);
   usb_init();
-  ws2812b_init();
+  // ws2812b_init();
   while(1) {
-    ws2812b_update();
+    // ws2812b_update();
     asm volatile ("wfe");
   }
 }

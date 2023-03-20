@@ -2,10 +2,9 @@
 #include "i2c.h"
 #include "rcc.h"
 #include "gpio.h"
-#include "font.h"
 #include "config.h"
 #include "time.h"
-#include "string.h"
+#include "display.h"
 #include "compiler.h"
 
 #define SSD1306_I2C_ADDR 0x78
@@ -143,220 +142,22 @@ static inline int i2c_write4(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3)
 #define CMD_CHARGE_PUMP_ENA()\
   CMD2(0x8d, 0x14)
 
-#define SIZE_X 128
-#define SIZE_Y 64
-#define ROWS_PER_PAGE 8
-#define NUM_PAGES (SIZE_Y / ROWS_PER_PAGE)
-#define NUM_COLUMNS SIZE_X
+#define SSD1306_SIZE_X 128
+#define SSD1306_SIZE_Y 64
+#define SSD1306_ROWS_PER_PAGE 8
+#define SSD1306_NUM_PAGES (SSD1306_SIZE_Y / SSD1306_ROWS_PER_PAGE)
 
 struct ssd1306_draw_io {
   char data_prefix;
-  char buf[NUM_COLUMNS * NUM_PAGES];
+  char buf[SSD1306_SIZE_X * SSD1306_NUM_PAGES];
 } PACKED;
 
 static struct ssd1306_draw_io ssd1306_io_buffer;
 
 #define DBYTE(__col, __page) \
-  (ssd1306_io_buffer.buf[__col + __page * NUM_COLUMNS])
+  (ssd1306_io_buffer.buf[__col + __page * SSD1306_SIZE_X])
 
-void dbuf_clear()
-{
-  memset(ssd1306_io_buffer.buf, 0x00, sizeof(ssd1306_io_buffer.buf));
-}
-void dbuf_init(void)
-{
-  ssd1306_io_buffer.data_prefix = 0x40;
-  dbuf_clear();
-}
-
-void dbuf_draw_pixel(int x, int y, int color)
-{
-  uint8_t *p = &DBYTE(x, y / ROWS_PER_PAGE);
-  int bitidx = y % ROWS_PER_PAGE;
-  *p = (*p & ~(1<<bitidx)) | (color<<bitidx);
-}
-
-void dbuf_draw_filled_rect(int x0, int y0, int x1, int y1, int color)
-{
-  if (x1 < x0) {
-    int tmp = x0;
-    x0 = x1;
-    x1 = tmp;
-  }
-  if (y1 < y0) {
-    int tmp = y0;
-    y0 = y1;
-    y1 = tmp;
-  }
-  for (int y = y0; y < y1; ++y) {
-    for (int x = x0; x < x1; ++x) {
-      dbuf_draw_pixel(x, y, color);
-    }
-  }
-}
-
-void dbuf_draw_hatched_rect(int x0, int y0, int x1, int y1, int color)
-{
-  int p = 0;
-  if (x1 < x0) {
-    int tmp = x0;
-    x0 = x1;
-    x1 = tmp;
-  }
-  if (y1 < y0) {
-    int tmp = y0;
-    y0 = y1;
-    y1 = tmp;
-  }
-  for (int y = y0; y < y1; ++y) {
-    for (int x = x0; x < x1; ++x) {
-      p++;
-      dbuf_draw_pixel(x, y, (p % 4) == 0);
-    }
-  }
-}
-
-void dbuf_draw_rect(int x0, int y0, int x1, int y1, int color)
-{
-  dbuf_draw_line(x0, y0, x0, y1, color);
-  dbuf_draw_line(x0, y1, x1, y1, color);
-  dbuf_draw_line(x1, y0, x1, y1, color);
-  dbuf_draw_line(x0, y0, x1, y0, color);
-}
-
-void dbuf_draw_line(int x0, int y0, int x1, int y1, int color)
-{
-  if (x1 < x0) {
-    int tmp = x0;
-    x0 = x1;
-    x1 = tmp;
-  }
-  if (y1 < y0) {
-    int tmp = y0;
-    y0 = y1;
-    y1 = tmp;
-  }
-  if (x1 - x0 > y1 - y0)  {
-    float slope = (float)(y1 - y0) / (x1 - x0);
-    for (int x = x0; x <= x1; x++) {
-      int y = y0 + slope * (x - x0);
-      dbuf_draw_pixel(x, y, color);
-    }
-  } else {
-    float slope = (float)(x1 - x0) / (y1 - y0);
-    for (int y = y0; y <= y1; y++) {
-      int x = x0 + slope * (y - y0);
-      dbuf_draw_pixel(x, y, color);
-    }
-  }
-}
-
-void dbuf_draw_char(int *x, int y, char ch, const struct font_descriptor *f,
-  int color)
-{
-  const struct font_glyph *g;
-  const uint8_t *p;
-
-  g = font_get_glyph(f, ch);
-  if (!g)
-    return;
-
-  p = &f->data[g->bitmap_offset];
-  for (int cy = 0; cy < g->height; ++cy) {
-    for (int cx = 0; cx < g->width; ++cx) {
-      int bit_no = cy * g->width + cx;
-      int bit_pos = 7 - (bit_no % 8);
-      uint8_t b = p[bit_no / 8];
-      int val = (b >> bit_pos) & 1;
-      if (!color)
-        val = (~val) & 1;
-
-      dbuf_draw_pixel(*x + cx, y + g->height - cy, val);
-    }
-  }
-  *x += g->x_advance;
-}
-
-bool dbuf_get_char_size(char ch, const struct font_descriptor *f,
-  int *width, int *height, int *x_advance)
-{
-  const struct font_glyph *g;
-
-  if (!f || !width || !height || !x_advance)
-    return false;
-
-  g = font_get_glyph(f, ch);
-  if (!g)
-    return false;
-
-  *width = g->width;
-  *height = g->height;
-  *x_advance = g->x_advance;
-  return true;
-}
-
-int dbuf_draw_text(int x, int y, const char *text,
-  const struct font_descriptor *f, int color)
-{
-  const char *p = text;
-  while(1) {
-    char c = *p++;
-    if (!c)
-      break;
-    dbuf_draw_char(&x, y, c, f, color);
-  }
-  return x;
-}
-
-bool dbuf_get_text_size(const char *text, const struct font_descriptor *f,
-  int *size_x, int *size_y, bool with_spacing)
-{
-  int result_x = 0;
-  int result_y = 0;
-  int advance;
-  int char_width;
-  const char *p = text;
-
-  if (!text || !f || !size_x || !size_y)
-    return false;
-
-  while(1) {
-    int h;
-    char c = *p++;
-    if (!c)
-      break;
-
-    if (!dbuf_get_char_size(c, f, &char_width, &h, &advance))
-      return false;
-
-    if (result_y < h)
-      result_y = h;
-
-    result_x += advance;
-  }
-
-  if (!with_spacing) {
-    result_x -= advance;
-    result_x += char_width;
-  } else {
-    result_y = f->y_advance;
-  }
-
-  *size_x = result_x;
-  *size_y = result_y;
-  return true;
-}
-
-int dbuf_get_pixel(int x, int y)
-{
-  int page_idx = y / SIZE_Y;
-  int bitpos = y % SIZE_Y;
-  int byte_idx = page_idx * SIZE_X + x;
-  uint8_t b = ssd1306_io_buffer.buf[byte_idx];
-  return (b >> bitpos) & 1;
-}
-
-void dbuf_flush(void)
+void ssd1306_flush(void)
 {
 #if defined SSD1306_ADDRESSING_MODE_HORIZONTAL
   i2c_write_op(SSD1306_I2C_ADDR, (const uint8_t *)&ssd1306_io_buffer,
@@ -390,8 +191,6 @@ void dbuf_flush(void)
   }
 #endif
 }
-
-extern void b(void);
 
 void ssd1306_horizontal_scroll(int start_page, int end_page, int duration)
 {
@@ -478,17 +277,20 @@ void ssd1306_init(void)
   CMD_CHARGE_PUMP_ENA();
   CMD_DISPL_SET_ON_OFF(DISPL_ON);
 
-  dbuf_init();
-  dbuf_flush();
+  ssd1306_io_buffer.data_prefix = START_DATA_BYTE;
+  display_init(ssd1306_io_buffer.buf, SSD1306_SIZE_X, SSD1306_SIZE_Y,
+    SSD1306_ROWS_PER_PAGE);
+  display_clear();
+  ssd1306_flush();
 }
 
-bool dbuf_get_frame_size(int *size_x, int *size_y)
+bool ssd1306_get_frame_size(int *size_x, int *size_y)
 {
   if (!size_x || !size_y)
     return false;
 
-  *size_x = SIZE_X;
-  *size_y = SIZE_Y;
+  *size_x = SSD1306_SIZE_X;
+  *size_y = SSD1306_SIZE_Y;
 
   return true;
 }

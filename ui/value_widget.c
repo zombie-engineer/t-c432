@@ -1,6 +1,6 @@
 #include "value_widget.h"
 #include <common_util.h>
-#include <ssd1306.h>
+#include <display.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,14 +80,14 @@ static void value_widget_draw(struct widget *w)
     stringbuf[5] = 0;
   }
 
-  if (!dbuf_get_text_size(stringbuf, p->font, &text_size_x, &text_size_y,
+  if (!display_get_text_size(stringbuf, p->font, &text_size_x, &text_size_y,
     false))
     return;
 
   text_pos_x = w->pos_x - text_size_x / 2;
   text_pos_y = w->pos_y - text_size_y / 2;
 
-  dbuf_draw_text(text_pos_x, text_pos_y, stringbuf, p->font, 1);
+  display_draw_text(text_pos_x, text_pos_y, stringbuf, p->font, 1);
 }
 
 void value_widget_set_value(struct widget *w,

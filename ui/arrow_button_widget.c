@@ -1,6 +1,6 @@
 #include "arrow_button_widget.h"
 #include <common_util.h>
-#include <ssd1306.h>
+#include <display.h>
 
 struct arrow_button_priv {
   int active_count;
@@ -12,20 +12,20 @@ static int ab_priv_cnt = 0;
 
 static inline void draw_arrow_left(int x, int y, int sx, int sy, int white)
 {
-  dbuf_draw_pixel(x + 2, y - 0, white);
-  dbuf_draw_pixel(x + 1, y - 1, white);
-  dbuf_draw_pixel(x + 0, y - 2, white);
-  dbuf_draw_pixel(x + 1, y - 3, white);
-  dbuf_draw_pixel(x + 2, y - 4, white);
+  display_draw_pixel(x + 2, y - 0, white);
+  display_draw_pixel(x + 1, y - 1, white);
+  display_draw_pixel(x + 0, y - 2, white);
+  display_draw_pixel(x + 1, y - 3, white);
+  display_draw_pixel(x + 2, y - 4, white);
 }
 
 static inline void draw_arrow_right(int x, int y, int sx, int sy, int white)
 {
-  dbuf_draw_pixel(x + 0, y - 0, white);
-  dbuf_draw_pixel(x + 1, y - 1, white);
-  dbuf_draw_pixel(x + 2, y - 2, white);
-  dbuf_draw_pixel(x + 1, y - 3, white);
-  dbuf_draw_pixel(x + 0, y - 4, white);
+  display_draw_pixel(x + 0, y - 0, white);
+  display_draw_pixel(x + 1, y - 1, white);
+  display_draw_pixel(x + 2, y - 2, white);
+  display_draw_pixel(x + 1, y - 3, white);
+  display_draw_pixel(x + 0, y - 4, white);
 }
 
 static void arrow_button_handle_event(struct widget *w, ui_event_type event,
@@ -51,7 +51,7 @@ static void arrow_button_widget_draw(struct widget *w)
   int white = 1;
   if (p->active_count)
   {
-    dbuf_draw_filled_rect(
+    display_draw_filled_rect(
       w->pos_x,
       w->pos_y,
       w->pos_x + w->size_x,

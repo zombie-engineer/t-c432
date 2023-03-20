@@ -1,6 +1,6 @@
 #include "text_widget.h"
 #include <stddef.h>
-#include <ssd1306.h>
+#include <display.h>
 #include <font.h>
 #include <common_util.h>
 #include <string.h>
@@ -24,17 +24,17 @@ static void text_widget_draw(struct widget *w)
   int text_size_x;
   int text_size_y;
 
-  if (!dbuf_get_text_size(p->text, p->font, &text_size_x, &text_size_y, false))
+  if (!display_get_text_size(p->text, p->font, &text_size_x, &text_size_y, false))
     return;
 
   text_pos_x = w->pos_x - text_size_x / 2;
   text_pos_y = w->pos_y - text_size_y / 2;
   if (!white) {
-    dbuf_draw_filled_rect(
+    display_draw_filled_rect(
       text_pos_x, text_pos_y, text_pos_x + text_size_x,
       text_pos_y + text_size_y, 1);
   }
-  dbuf_draw_text(text_pos_x, text_pos_y, p->text, p->font, white);
+  display_draw_text(text_pos_x, text_pos_y, p->text, p->font, white);
 }
 
 static void text_widget_on_tick(struct widget *w, int tick_ms)

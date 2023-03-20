@@ -3,7 +3,7 @@
 #include "navi_header_widget.h"
 #include "value_widget.h"
 #include <tim.h>
-#include <ssd1306.h>
+#include <display.h>
 #include <scheduler.h>
 #include <font.h>
 #include <stdlib.h>
@@ -30,14 +30,14 @@ static void draw_tim2_cntr(int x, int y)
   int text_size_y;
   itoa(val, buf, 10);
 
-  if (!dbuf_get_text_size(prefix_str, &font_1, &text_size_x, &text_size_y, false))
+  if (!display_get_text_size(prefix_str, &font_1, &text_size_x, &text_size_y, false))
     return;
 
-  x = dbuf_draw_text(x - text_size_x, y - text_size_y / 2, prefix_str, &font_1, 1);
-  dbuf_draw_text(x, y - text_size_y / 2, buf, &font_2, 1);
+  x = display_draw_text(x - text_size_x, y - text_size_y / 2, prefix_str, &font_1, 1);
+  display_draw_text(x, y - text_size_y / 2, buf, &font_2, 1);
 
   itoa(sched_stats.task_switches, buf, 10);
-  dbuf_draw_text(x, y + 15, buf, &font_2, 1);
+  display_draw_text(x, y + 15, buf, &font_2, 1);
 }
 
 static void draw_voltmeter(int x, int y, int volt_int, int volt_frac)
@@ -49,8 +49,8 @@ static void draw_voltmeter(int x, int y, int volt_int, int volt_frac)
   *p++ = '.';
   itoa(volt_frac, p, 10);
   p += strlen(p);
-  x = dbuf_draw_text(x, y, "V:", &font_3, 1);
-  dbuf_draw_text(x, y, b, &font_3, 1);
+  x = display_draw_text(x, y, "V:", &font_3, 1);
+  display_draw_text(x, y, b, &font_3, 1);
 }
 
 static void draw_blinker_icon(int x, int y, int sz, int num_frames, int interval)
@@ -59,7 +59,7 @@ static void draw_blinker_icon(int x, int y, int sz, int num_frames, int interval
     duration = num_frames;
   }
   if (duration) {
-    dbuf_draw_filled_rect(x, y, x + sz, y + sz, 1);
+    display_draw_filled_rect(x, y, x + sz, y + sz, 1);
     duration--;
   }
 }

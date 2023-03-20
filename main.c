@@ -4,7 +4,6 @@
 #include "rcc.h"
 #include "i2c.h"
 #include "gpio.h"
-#include "ssd1306.h"
 #include "ui.h"
 #include "scb.h"
 #include "tim.h"
@@ -23,6 +22,17 @@
 #include "debug_pin.h"
 #include <svc.h>
 #include <stdlib.h>
+
+#define DISPLAY_DRIVER_SSD1306 1
+#define DISPLAY_DRIVER_SH1106 2
+#define DISPLAY_DRIVER DISPLAY_DRIVER_SSD1306
+
+#if DISPLAY_DRIVER == DISPLAY_DRIVER_SSD1306
+#include "ssd1306.h"
+#elif DISPLAY_DRIVER == DISPLAY_DRIVER_SH1106
+#include "drivers/sh1106/sh1106.h"
+#endif
+
 
 void tim2_isr_cb()
 {
@@ -56,7 +66,11 @@ static void i2c_init(void)
 void ui_task(void *arg)
 {
   i2c_init();
+#if DISPLAY_DRIVER == DISPLAY_DRIVER_SSD1306
   ssd1306_init();
+#elif DISPLAY_DRIVER == DISPLAY_DRIVER_SH1106
+  sh1106_init();
+#endif
   ui_init();
   pushbuttons_init();
 
@@ -88,9 +102,13 @@ void main(void)
   int adc_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_ADC1);
 
   rcc_set_72mhz_usb();
+  rcc_periph_ena(RCC_PERIPH_IOPA);
   rcc_periph_ena(RCC_PERIPH_IOPB);
+  rcc_periph_ena(RCC_PERIPH_IOPC);
+  rcc_periph_ena(RCC_PERIPH_SPI1);
   /* GPIO port B and AFIO needed to be enabled for push buttons */
   rcc_periph_ena(RCC_PERIPH_AFIO);
+
   debug_pin_setup();
 
   scheduler_init();
