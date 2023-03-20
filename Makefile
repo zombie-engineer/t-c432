@@ -15,6 +15,7 @@ OBJS := main.o \
   ui/arrow_button_widget.o \
   ui/led_widget.o \
   drivers/ws2812b/ws2812b.o \
+  drivers/sh1106/sh1106.o \
   fault.o \
   exti.o \
   pushbuttons.o \
