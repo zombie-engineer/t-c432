@@ -60,6 +60,11 @@ static uint32_t u32_extract_bits(uint32_t v, int bitpos, int bitwidth)
   return (v >> bitpos) & u32_bitmask(bitwidth);
 }
 
+static inline void u16_set_bit(uint16_t *v, int bitpos)
+{
+  *v |= (1<<bitpos);
+}
+
 static inline void u32_set_bit(uint32_t *v, int bitpos)
 {
   *v |= (1<<bitpos);
@@ -68,6 +73,15 @@ static inline void u32_set_bit(uint32_t *v, int bitpos)
 static inline void u32_clear_bit(uint32_t *v, int bitpos)
 {
   *v &= ~(1<<bitpos);
+}
+
+static inline void reg16_modify_bits(reg16_t r, int bitpos, int bitwidth, int value)
+{
+  uint16_t tmp_v = reg_read16(r);
+  uint16_t bitmask = ((uint16_t)((1 << bitwidth) - 1)) << bitpos;
+  tmp_v &= ~bitmask;
+  tmp_v |= (value << bitpos) & bitmask;
+  reg_write(r, tmp_v);
 }
 
 static inline void reg32_modify_bits(reg32_t r, int bitpos, int bitwidth, int value)
@@ -101,9 +115,19 @@ static inline void reg32_write_clear_bit(reg32_t r, int bitpos)
   reg_write(r, 1 << bitpos);
 }
 
+static inline void reg16_clear_bit(reg16_t r, int bitpos)
+{
+  reg_write16(r, reg_read16(r) & ~(1<<bitpos));
+}
+
 static inline void reg32_clear_bit(reg32_t r, int bitpos)
 {
   reg_write(r, reg_read(r) & ~(1<<bitpos));
+}
+
+static inline bool reg16_bit_is_set(reg16_t r, int bitpos)
+{
+  return *r & (1 << bitpos);
 }
 
 static inline bool reg32_bit_is_set(reg32_t r, int bitpos)
