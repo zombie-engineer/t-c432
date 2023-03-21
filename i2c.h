@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+void i2c_init(void);
 void i2c_init_isr(bool use_dma);
 void i2c_isr_disable(void);
 void i2c_clock_setup(void);

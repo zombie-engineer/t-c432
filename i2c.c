@@ -2,9 +2,12 @@
 #include "i2c_regs.h"
 #include "reg_access.h"
 #include "scheduler.h"
+#include "stm32f103_pin_config.h"
+#include "gpio.h"
 #include "nvic.h"
 #include "svc.h"
 #include "dma.h"
+#include "rcc.h"
 
 #define PCLK1_MHZ 36
 
@@ -394,4 +397,18 @@ void i2c1_isr(int interrupt_type)
     i2c_handle_event();
   else
     i2c_handle_error();
+}
+
+void i2c_init(void)
+{
+  rcc_periph_ena(RCC_PERIPH_I2C1);
+  /* B6 - SDA Alternate function open drain */
+  gpio_setup(I2C1_SDA_PORT, I2C1_SDA_PIN_6, GPIO_MODE_OUT_50_MHZ,
+    GPIO_CNF_OUT_ALT_OPEN_DRAIN);
+  /* B7 - SCL Alternate function open drain */
+  gpio_setup(I2C1_SCL_PORT, I2C1_SCL_PIN_7, GPIO_MODE_OUT_50_MHZ,
+    GPIO_CNF_OUT_ALT_OPEN_DRAIN);
+  gpio_remap_i2c1(GPIO_REMAP_I2C1_PB6_PB7);
+  i2c_clock_setup();
+  i2c_init_isr(true);
 }

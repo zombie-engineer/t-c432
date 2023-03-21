@@ -256,6 +256,7 @@ void ssd1306_power_init(void)
 
 void ssd1306_init(void)
 {
+  i2c_init();
 #ifdef CNF_DSPL_PWR
   ssd1306_power_init();
 #endif /* CNF_DSPL_PWR */
