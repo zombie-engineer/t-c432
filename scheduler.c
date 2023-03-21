@@ -26,7 +26,7 @@ typedef enum {
 
 static bool is_schedulable_action(task_schedule_action_t task_action)
 {
-  return task_action != PREV_TASK_TO_TAIL;
+  return task_action != PREV_TASK_TO_TAIL && task_action != PREV_TASK_TO_SLEEP;
 }
 
 static void scheduler_select_next_current(
