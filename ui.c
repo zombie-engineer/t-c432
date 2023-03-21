@@ -2,7 +2,7 @@
 #include "font.h"
 #include "list.h"
 #include <string.h>
-#include "ssd1306.h"
+#include "display_hw.h"
 #include "display.h"
 #include "tim.h"
 #include "pushbuttons.h"
@@ -42,7 +42,7 @@ void ui_redraw(void)
 {
   display_clear();
   FOCUS_WIDGET->draw(FOCUS_WIDGET);
-  ssd1306_flush();
+  display_hw_flush();
 }
 
 void ui_callback_button_event_pressed(int button_id)

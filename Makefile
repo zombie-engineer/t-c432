@@ -4,6 +4,8 @@ LIBC := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libc.a
 $(info $(LIBC))
 INCLUDES := -I.
 
+DISPLAY_DRIVER := sh1106
+
 #  ui/adc_widget.o 
 OBJS := main.o \
   ui/main_widget.o \
@@ -15,7 +17,6 @@ OBJS := main.o \
   ui/arrow_button_widget.o \
   ui/led_widget.o \
   drivers/ws2812b/ws2812b.o \
-  drivers/sh1106/sh1106.o \
   display.o \
   fault.o \
   exti.o \
@@ -38,11 +39,19 @@ OBJS := main.o \
   i2c.o \
   flash.o \
   gpio.o \
-  ssd1306.o \
   start.o \
   usb_driver.o \
   usart.o \
   systick.o
+
+ifeq "$(DISPLAY_DRIVER)" "sh1106"
+  OBJS += drivers/sh1106/sh1106.o
+endif
+ifeq "$(DISPLAY_DRIVER)" "ssd1306"
+  OBJS += ssd1306.o
+endif
+
+$(info DISPLAY_DRIVER: $(DISPLAY_DRIVER))
 
 firmware.bin: firmware.elf
 	arm-none-eabi-objcopy firmware.elf --output-target binary firmware.bin

@@ -22,16 +22,7 @@
 #include "debug_pin.h"
 #include <svc.h>
 #include <stdlib.h>
-
-#define DISPLAY_DRIVER_SSD1306 1
-#define DISPLAY_DRIVER_SH1106 2
-#define DISPLAY_DRIVER DISPLAY_DRIVER_SSD1306
-
-#if DISPLAY_DRIVER == DISPLAY_DRIVER_SSD1306
-#include "ssd1306.h"
-#elif DISPLAY_DRIVER == DISPLAY_DRIVER_SH1106
-#include "drivers/sh1106/sh1106.h"
-#endif
+#include "display_hw.h"
 
 
 void tim2_isr_cb()
@@ -49,28 +40,9 @@ void zero_bss(void)
   }
 }
 
-static void i2c_init(void)
-{
-  rcc_periph_ena(RCC_PERIPH_I2C1);
-  /* B6 - SDA Alternate function open drain */
-  gpio_setup(I2C1_SDA_PORT, I2C1_SDA_PIN_6, GPIO_MODE_OUT_50_MHZ,
-    GPIO_CNF_OUT_ALT_OPEN_DRAIN);
-  /* B7 - SCL Alternate function open drain */
-  gpio_setup(I2C1_SCL_PORT, I2C1_SCL_PIN_7, GPIO_MODE_OUT_50_MHZ,
-    GPIO_CNF_OUT_ALT_OPEN_DRAIN);
-  gpio_remap_i2c1(GPIO_REMAP_I2C1_PB6_PB7);
-  i2c_clock_setup();
-  i2c_init_isr(true);
-}
-
 void ui_task(void *arg)
 {
-  i2c_init();
-#if DISPLAY_DRIVER == DISPLAY_DRIVER_SSD1306
-  ssd1306_init();
-#elif DISPLAY_DRIVER == DISPLAY_DRIVER_SH1106
-  sh1106_init();
-#endif
+  display_hw_init();
   ui_init();
   pushbuttons_init();
 

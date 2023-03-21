@@ -284,13 +284,8 @@ void ssd1306_init(void)
   ssd1306_flush();
 }
 
-bool ssd1306_get_frame_size(int *size_x, int *size_y)
+void ssd1306_get_size(int *size_x, int *size_y);
 {
-  if (!size_x || !size_y)
-    return false;
-
   *size_x = SSD1306_SIZE_X;
   *size_y = SSD1306_SIZE_Y;
-
-  return true;
 }

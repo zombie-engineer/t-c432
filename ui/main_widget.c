@@ -4,6 +4,7 @@
 #include "value_widget.h"
 #include <tim.h>
 #include <display.h>
+#include <display_hw.h>
 #include <scheduler.h>
 #include <font.h>
 #include <stdlib.h>
@@ -117,6 +118,10 @@ int main_widget_init(struct widget *w, nextprev_fn prev, nextprev_fn next)
   struct widget *v1 = &main_widget_priv.value1;
   struct widget *v2 = &main_widget_priv.value2;
   struct widget *v3 = &main_widget_priv.value3;
+  int hw_size_x;
+  int hw_size_y;
+
+  display_hw_get_size(&hw_size_x, &hw_size_x);
 
   w->pos_x = 0;
   w->pos_y = 0;
