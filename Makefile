@@ -5,6 +5,7 @@ $(info $(LIBC))
 INCLUDES := -I.
 
 DISPLAY_DRIVER := sh1106
+DIODE_DRIVER := ws2812b
 
 #  ui/adc_widget.o 
 OBJS := main.o \
@@ -15,8 +16,6 @@ OBJS := main.o \
   ui/value_widget.o \
   ui/navi_header_widget.o \
   ui/arrow_button_widget.o \
-  ui/led_widget.o \
-  drivers/ws2812b/ws2812b.o \
   display.o \
   fault.o \
   exti.o \
@@ -43,6 +42,11 @@ OBJS := main.o \
   usb_driver.o \
   usart.o \
   systick.o
+
+ifeq "$(DIODE_DRIVER)" "ws2812b"
+  OBJS += drivers/ws2812b/ws2812b.o
+  OBJS += ui/led_widget.o
+endif
 
 ifeq "$(DISPLAY_DRIVER)" "sh1106"
   OBJS += drivers/sh1106/sh1106.o
