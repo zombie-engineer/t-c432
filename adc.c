@@ -4,6 +4,8 @@
 #include "nvic.h"
 #include "rcc.h"
 #include "reg_access.h"
+#include <svc.h>
+#include <dma.h>
 
 #define ADC1_SR    (volatile uint32_t *)(ADC1_BASE + 0x00)
 #define ADC1_CR1   (volatile uint32_t *)(ADC1_BASE + 0x04)
@@ -79,40 +81,71 @@
 
 #define ADC_SR_EOC 1
 
-uint16_t adc_buf[128];
+#define ADC_BUF_SIZE 128
+uint16_t adc_buf[ADC_BUF_SIZE];
 static int adc_buf_idx = 0;
-static int prescaler = 0;
+static int adc_prescaler = 0;
+static int adc_dma_channel = 0;
+
+void adc_dma_complete(void)
+{
+#if 0
+  dma_transfer_setup(adc_dma_channel, ADC1_DR, adc_buf,
+    DMA_TRANSFER_DIR_FROM_PERIPH,
+    128, 16, 16,
+    true /* memory address increment */,
+    false /* periph address increment */,
+    true /* enable */,
+    true /* interrupt_on_completion */);
+#endif
+}
 
 void adc_setup(void)
 {
-  // rcc_periph_ena(RCC_PERIPH_IOPA);
   rcc_periph_ena(RCC_PERIPH_ADC1);
   gpio_setup(GPIO_PORT_A, 0, GPIO_MODE_INPUT, GPIO_CNF_IN_ANALOG);
+  dma_init();
 
   reg_write(ADC1_SR, 0);
   nvic_clear_pending(NVIC_INTERRUPT_NUMBER_ADC1);
-  // nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_ADC1);
+  nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_ADC1);
 
-  // reg32_set_bit(ADC1_CR1, ADC_CR1_EOCIE);
+//  reg32_set_bit(ADC1_CR1, ADC_CR1_EOCIE);
+  reg32_set_bit(ADC1_CR2, ADC_CR2_DMA);
+  reg32_set_bit(ADC1_CR2, ADC_CR2_CONT);
+  
+  adc_dma_channel = dma_get_channel_id(DMA_PERIPH_ADC1);
+  dma_enable_interrupt(DMA_NUM_1, adc_dma_channel);
+  dma_set_isr_cb(1, adc_dma_channel, adc_dma_complete);
+
+  struct dma_channel_settings dma_settings = {
+    .paddr = ADC1_DR,
+    .maddr = adc_buf,
+    .count = ADC_BUF_SIZE,
+    .dir = DMA_TRANSFER_DIR_FROM_PERIPH,
+    .pwidth = 16,
+    .mwidth = 16,
+    .circular = true,
+    .pinc = false,
+    .minc = true,
+    .interrupt_on_completion = true,
+    .enable_after_setup = false
+  };
+
+  dma_transfer_setup(adc_dma_channel, &dma_settings);
+  dma_transfer_enable(adc_dma_channel);
+
   reg32_set_bit(ADC1_CR2, ADC_CR2_ADON);
   svc_wait_ms(50);
-  
-  while(1) {
-#if 0
-    prescaler_selector_cntr++;
-    if (prescaler_selector_cntr > 100000)
-    {
-      prescaler_selector_cntr = 0;
-      prescaler_selector++;
-      if (prescaler_selector > 4)
-        prescaler_selector = 0;
-    }
-#endif
+  reg32_set_bit(ADC1_CR2, ADC_CR2_ADON);
+  reg32_set_bit(ADC1_CR2, ADC_CR2_SWSTART);
 
+#if 0
+  while(1) {
     reg32_set_bit(ADC1_CR2, ADC_CR2_ADON);
     while(!reg32_bit_is_set(ADC1_SR, ADC_SR_EOC));
-    prescaler++;
-    if (prescaler < 20)
+    adc_prescaler++;
+    if (adc_prescaler < 20)
       continue;
 
     prescaler = 0;
@@ -122,6 +155,7 @@ void adc_setup(void)
       adc_buf_idx = 0;
     }
   }
+#endif
 }
 
 void __adc_isr(void)

@@ -54,10 +54,26 @@ typedef enum {
 
 int dma_get_channel_id(dma_periph_t p);
 
-void dma_transfer_setup(int dma_ch, volatile void *paddr, void *maddr,
-  int size, int mwidth, int pwidth, bool minc, bool pinc, bool enable,
-  bool interrupt_on_completion);
+typedef enum {
+  DMA_TRANSFER_DIR_TO_PERIPH,
+  DMA_TRANSFER_DIR_FROM_PERIPH
+} dma_transfer_dir_t;
 
+struct dma_channel_settings {
+  volatile void *paddr;
+  volatile void *maddr;
+  int count;
+  dma_transfer_dir_t dir;
+  int pwidth;
+  int mwidth;
+  bool circular;
+  bool pinc;
+  bool minc;
+  bool interrupt_on_completion;
+  bool enable_after_setup;
+};
+
+void dma_transfer_setup(int dma_ch, const struct dma_channel_settings *s);
 void dma_transfer_enable(int ch);
 void dma_transfer_disable(int ch);
 

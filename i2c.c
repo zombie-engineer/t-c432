@@ -243,18 +243,21 @@ void i2c_handle_event(void)
         svc_call(SVC_PANIC);
 
       if (current_i2c_rq.flags & I2C_TRANSFER_DMA) {
-        dma_transfer_setup(
-          dma_ch_tx,
-          I2C_DR,
-          (void *)current_i2c_rq.data,
-          current_i2c_rq.size,
-          8,     /* mem access size    */
-          16,    /* periph access size */
-          true,  /* mem addr inc       */
-          false, /* periph addr inc    */
-          true,  /* enable             */
-          true   /* interrupt          */
-        );
+        struct dma_channel_settings dma_settings = {
+          .paddr = I2C_DR,
+          .maddr = (void *)current_i2c_rq.data,
+          .count = current_i2c_rq.size,
+          .dir = DMA_TRANSFER_DIR_TO_PERIPH,
+          .pwidth = 8,
+          .mwidth = 16,
+          .circular = false,
+          .pinc = false,
+          .minc = true,
+          .interrupt_on_completion = true,
+          .enable_after_setup = true
+        };
+      
+        dma_transfer_setup(dma_ch_tx, &dma_settings);
       }
 
       reg_write(I2C_DR, current_i2c_rq.addr);

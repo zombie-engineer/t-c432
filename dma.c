@@ -78,16 +78,14 @@ void dma_transfer_enable(int ch)
   reg32_set_bit(DMA_CCR(0, ch), DMA_CCR_EN);
 }
 
-void dma_transfer_setup(int ch, volatile void *paddr, void *maddr,
-  int size, int mwidth, int pwidth, bool minc, bool pinc, bool enable,
-  bool interrupt_on_completion)
+void dma_transfer_setup(int ch, const struct dma_channel_settings *s)
 {
   uint32_t v = 0;
   int width;
 
-  reg_write(DMA_CPAR(0, ch), (uint32_t)paddr);
-  reg_write(DMA_CMAR(0, ch), (uint32_t)maddr);
-  reg_write(DMA_CNDTR(0, ch), size);
+  reg_write(DMA_CPAR(0, ch), (uint32_t)s->paddr);
+  reg_write(DMA_CMAR(0, ch), (uint32_t)s->maddr);
+  reg_write(DMA_CNDTR(0, ch), s->count);
   /* transfer complete interrupt enable */
 
   reg_write(DMA_CCR(0, ch), 0);
@@ -95,23 +93,30 @@ void dma_transfer_setup(int ch, volatile void *paddr, void *maddr,
   /* transfer error interrupt enable */
   u32_set_bit(&v, DMA_CCR_TEIE);
 
-  if (interrupt_on_completion)
+  if (s->interrupt_on_completion)
     u32_set_bit(&v, DMA_CCR_TCIE);
 
-  /* DIR=1 is "Read from memory" */
-  u32_set_bit(&v, DMA_CCR_DIR);
+  if (s->dir == DMA_TRANSFER_DIR_TO_PERIPH) {
+    /* DIR=1 is "Read from memory" */
+    u32_set_bit(&v, DMA_CCR_DIR);
+  } else {
+    u32_clear_bit(&v, DMA_CCR_DIR);
+  }
+
+  if (s->circular)
+    u32_set_bit(&v, DMA_CCR_CIRC);
 
   /* Memory increment mode, peripheral address not incremented */
-  if (minc)
+  if (s->minc)
     u32_set_bit(&v, DMA_CCR_MINC);
 
-  if (pinc)
+  if (s->pinc)
     u32_set_bit(&v, DMA_CCR_PINC);
 
   width = DMA_CCR_MSIZE_8_BITS;
-  if (mwidth == 16)
+  if (s->mwidth == 16)
     width = DMA_CCR_MSIZE_16_BITS;
-  else if (mwidth == 32)
+  else if (s->mwidth == 32)
     width = DMA_CCR_MSIZE_32_BITS;
 
   /* Peripheral data width */
@@ -119,16 +124,16 @@ void dma_transfer_setup(int ch, volatile void *paddr, void *maddr,
     width);
 
   width = DMA_CCR_PSIZE_8_BITS;
-  if (pwidth == 16)
+  if (s->pwidth == 16)
     width = DMA_CCR_PSIZE_16_BITS;
-  else if (pwidth == 32)
+  else if (s->pwidth == 32)
     width = DMA_CCR_PSIZE_32_BITS;
 
   /* Memory data width */
   u32_modify_bits(&v, DMA_CCR_PSIZE, DMA_CCR_PSIZE_WIDTH,
     width);
 
-  if (enable)
+  if (s->enable_after_setup)
     u32_set_bit(&v, DMA_CCR_EN);
 
   reg_write(DMA_CCR(0, ch), v);
@@ -137,7 +142,7 @@ void dma_transfer_setup(int ch, volatile void *paddr, void *maddr,
 int dma_get_channel_id(dma_periph_t p)
 {
   static const char map[] = {
-    [DMA_PERIPH_ADC1] = 1,
+    [DMA_PERIPH_ADC1] = 0,
     [DMA_PERIPH_TIM1_TRIG] = 4,
     [DMA_PERIPH_TIM1_COM] = 4,
     [DMA_PERIPH_TIM1_UP] = 5,

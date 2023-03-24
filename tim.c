@@ -167,11 +167,21 @@ void tim3_pwm_dma_run(int dma_channel, const void *src, int src_size)
   reg_write16(TIM3_CNT, 0);
   reg_write16(TIM3_CCR3, 0);
   reg_write16(TIM3_CR1, TIMx_CEN | TIMx_ARPE);
-  dma_transfer_setup(dma_channel, TIM3_CCR3, (void *)src, src_size, 8, 16,
-    true, false,
-    false, true);
+  struct dma_channel_settings dma_settings = {
+    .paddr = TIM3_CCR3,
+    .maddr = (void *)src,
+    .count = src_size,
+    .dir = DMA_TRANSFER_DIR_TO_PERIPH,
+    .pwidth = 16,
+    .mwidth = 8,
+    .circular = false,
+    .pinc = false,
+    .minc = true,
+    .interrupt_on_completion = true,
+    .enable_after_setup = true
+  };
 
-  dma_transfer_enable(dma_channel);
+  dma_transfer_setup(dma_channel, &dma_settings);
 }
 
 int tim2_setup(bool one_pulse, uint16_t prescaler, uint16_t counter_value,
