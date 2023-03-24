@@ -150,6 +150,8 @@ void scheduler_task_sleep()
 {
   uint32_t ms = task_context_get_reg(current, 0);
   current->timer = ms / CNF_SCHEDULER_TICK_MS;
+  if (!current->timer)
+    current->timer++;
   scheduler_select_next_current(PREV_TASK_TO_SLEEP);
 }
 
