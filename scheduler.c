@@ -58,7 +58,7 @@ static void scheduler_select_next_current(
     return;
 
   /* Previous 'current' has to be put to the tail of runnable or elsewhere */
-  if (prev_task_action == PREV_TASK_TO_TAIL) {
+  if (prev_task_action == PREV_TASK_TO_TAIL || prev_current != idle_task) {
     list_add_tail(&runnable,  &prev_current->scheduler_list);
     sched_stats.num_runnable_tasks++;
   }
