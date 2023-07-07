@@ -132,6 +132,7 @@ ldr r1, [r1]
 # Next write r0 (top of processor frame on stack) to ctx field ot struct task
 str r0, [r1, #8]
 .endm
+
 do_save_context
 bx lr
 
@@ -232,7 +233,6 @@ ISR_START systick
 bl scheduler_tick
 ISR_END
 
-
 ISR_START i2c1_ev
 mov r0, #0
 bl i2c1_isr
@@ -283,3 +283,10 @@ DMA_ISR 2, 2
 DMA_ISR 2, 3
 DMA_ISR 2, 4
 DMA_ISR 2, 5
+
+.ltorg
+ISR_START adc
+bl __adc_isr
+ISR_END
+
+

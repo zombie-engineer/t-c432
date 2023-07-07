@@ -510,7 +510,14 @@ end
 
 reup
 
-# b led_widget_on_button_action
+# b ui_redraw
+# b usb_init
+# b adc_isr
+
+b main_task_fn
+b adc_setup
+
+
 c
 
 # show_i2c

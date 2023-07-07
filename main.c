@@ -27,7 +27,7 @@
 
 void tim2_isr_cb()
 {
-  debug_pin_toggle();
+  // debug_pin_toggle();
 }
 
 extern uint32_t __bss_start;
@@ -50,7 +50,7 @@ void ui_task(void *arg)
     svc_wait_ms(20);
     ui_tick(20);
     ui_redraw();
-    debug_pin_toggle();
+//    debug_pin_toggle();
     asm volatile ("wfi");
   }
 }
@@ -101,7 +101,6 @@ void main(void)
 
 #if 0
 //  uart2_setup();
-//  adc_setup();
   while(1);
 #endif
 }

@@ -649,8 +649,6 @@ static void ep1_tx_handler()
     usb_driver_tx_callback(buf);
 }
 
-extern uint8_t led_bitmask[6];
-
 static void ep2_rx_handler()
 {
   char buf[64];
@@ -661,14 +659,11 @@ static void ep2_rx_handler()
     usb_pma_get_rx_count(EP2_OUT_ADDR));
   usb_pma_reset_rx_count(EP2_OUT_ADDR);
 
-  memcpy(led_bitmask, buf, sizeof(led_bitmask));
   usb_ep_rx_nak_to_valid(EP2_OUT_ADDR);
   usb_ep_clear_ctr_rx(EP2_OUT_ADDR);
 
-#if 0
   if (usb_driver_rx_callback)
     usb_driver_rx_callback(buf);
-#endif
 }
 
 static void usb_ep0_handler(int dir)

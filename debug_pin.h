@@ -7,7 +7,7 @@
 
 static int debug_pin_status = DEBUG_PIN_DISABLED;
 
-void debug_pin_setup(void)
+static void debug_pin_setup(void)
 {
   rcc_periph_ena(RCC_PERIPH_IOPC);
   gpio_setup(GPIO_PORT(CNF_DEBUG_PIN_PORT), CNF_DEBUG_PIN_PIN,
@@ -16,7 +16,7 @@ void debug_pin_setup(void)
   debug_pin_status = DEBUG_PIN_OFF;
 }
 
-void debug_pin_on(void)
+static void debug_pin_on(void)
 {
   if (debug_pin_status == DEBUG_PIN_DISABLED)
     return;
@@ -25,7 +25,7 @@ void debug_pin_on(void)
   debug_pin_status = DEBUG_PIN_ON;
 }
 
-void debug_pin_off(void)
+static void debug_pin_off(void)
 {
   if (debug_pin_status == DEBUG_PIN_DISABLED)
     return;
@@ -34,7 +34,7 @@ void debug_pin_off(void)
   debug_pin_status = DEBUG_PIN_OFF;
 }
 
-void debug_pin_toggle(void)
+static void debug_pin_toggle(void)
 {
   if (debug_pin_status == DEBUG_PIN_OFF) {
     debug_pin_on();

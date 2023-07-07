@@ -5,7 +5,7 @@ $(info $(LIBC))
 INCLUDES := -I.
 
 DISPLAY_DRIVER := sh1106
-DIODE_DRIVER := ws2812b
+# DIODE_DRIVER := ws2812b
 
 #  ui/adc_widget.o 
 OBJS := main.o \
