@@ -25,6 +25,10 @@
 #include "display_hw.h"
 
 
+void __errno()
+{
+}
+
 void tim2_isr_cb()
 {
   // debug_pin_toggle();
@@ -50,7 +54,6 @@ void ui_task(void *arg)
     svc_wait_ms(20);
     ui_tick(20);
     ui_redraw();
-//    debug_pin_toggle();
     asm volatile ("wfi");
   }
 }
@@ -63,7 +66,6 @@ void main(void)
 
   zero_bss();
   scb_get_cpuid(&i);
-  // scb_set_prigroup(3);
   nvic_set_priority(NVIC_INTERRUPT_NUMBER_ADC1, 1);
   nvic_set_priority(NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0, 0);
   /*
@@ -98,9 +100,4 @@ void main(void)
 
   scheduler_enqueue_runnable(t);
   scheduler_start(main_task);
-
-#if 0
-//  uart2_setup();
-  while(1);
-#endif
 }

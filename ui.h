@@ -1,5 +1,7 @@
 #pragma once
+#include <stdint.h>
 
+void ui_set_adcbuf(const uint16_t *array, int length);
 void ui_init(void);
 void ui_tick(int ms);
 void ui_redraw(void);

@@ -81,37 +81,35 @@
 
 #define ADC_SR_EOC 1
 
-#define ADC_BUF_SIZE 128
-uint16_t adc_buf[ADC_BUF_SIZE];
 static int adc_buf_idx = 0;
 static int adc_prescaler = 0;
 static int adc_dma_channel = 0;
 
 void adc_dma_complete(void)
 {
-#if 0
-  dma_transfer_setup(adc_dma_channel, ADC1_DR, adc_buf,
-    DMA_TRANSFER_DIR_FROM_PERIPH,
-    128, 16, 16,
-    true /* memory address increment */,
-    false /* periph address increment */,
-    true /* enable */,
-    true /* interrupt_on_completion */);
-#endif
 }
 
-void adc_setup(void)
+void adc_setup_freerunning_dma(int gpio_port, int gpio_pin,
+  uint16_t *dma_adc_array, int dma_adc_array_length)
 {
+  /* Start ADC1 clocks */
   rcc_periph_ena(RCC_PERIPH_ADC1);
-  gpio_setup(GPIO_PORT_A, 0, GPIO_MODE_INPUT, GPIO_CNF_IN_ANALOG);
-  dma_init();
 
+  /* Set up GPIO pin to ADC1 function */
+  gpio_setup(gpio_port, gpio_pin, GPIO_MODE_INPUT, GPIO_CNF_IN_ANALOG);
+
+
+  /* Clear status register */
   reg_write(ADC1_SR, 0);
+
+  /* Clear any pending interrupts and only after enable them */
   nvic_clear_pending(NVIC_INTERRUPT_NUMBER_ADC1);
   nvic_enable_interrupt(NVIC_INTERRUPT_NUMBER_ADC1);
 
-//  reg32_set_bit(ADC1_CR1, ADC_CR1_EOCIE);
+  /* Enable DMA */
+  dma_init();
   reg32_set_bit(ADC1_CR2, ADC_CR2_DMA);
+
   reg32_set_bit(ADC1_CR2, ADC_CR2_CONT);
   
   adc_dma_channel = dma_get_channel_id(DMA_PERIPH_ADC1);
@@ -120,8 +118,8 @@ void adc_setup(void)
 
   struct dma_channel_settings dma_settings = {
     .paddr = ADC1_DR,
-    .maddr = adc_buf,
-    .count = ADC_BUF_SIZE,
+    .maddr = dma_adc_array,
+    .count = dma_adc_array_length,
     .dir = DMA_TRANSFER_DIR_FROM_PERIPH,
     .pwidth = 16,
     .mwidth = 16,
@@ -135,33 +133,24 @@ void adc_setup(void)
   dma_transfer_setup(adc_dma_channel, &dma_settings);
   dma_transfer_enable(adc_dma_channel);
 
+  /*
+   * ADON bit is set twice:
+   * - first time to power up ADC module, it will then hold value 1 for ADON
+   *    bit
+   * - second time some to start conversion, 1 is written on top of existing
+   *   1 after time tSTAB has passed since first time,
+   * See STMF103xx advanced Arm-based 32-bit MCUs - Reference manual, page 243
+   * ADON bit is set alone, otherwise conversion will not start
+   * SWSTART is set AFTER ADON
+   */
   reg32_set_bit(ADC1_CR2, ADC_CR2_ADON);
   svc_wait_ms(50);
   reg32_set_bit(ADC1_CR2, ADC_CR2_ADON);
+
   reg32_set_bit(ADC1_CR2, ADC_CR2_SWSTART);
-
-#if 0
-  while(1) {
-    reg32_set_bit(ADC1_CR2, ADC_CR2_ADON);
-    while(!reg32_bit_is_set(ADC1_SR, ADC_SR_EOC));
-    adc_prescaler++;
-    if (adc_prescaler < 20)
-      continue;
-
-    prescaler = 0;
-
-    adc_buf[adc_buf_idx++] = reg_read(ADC1_DR);
-    if (adc_buf_idx == 128) {
-      adc_buf_idx = 0;
-    }
-  }
-#endif
 }
 
 void __adc_isr(void)
 {
-  // last_adc = reg_read(ADC1_DR);
-  // reg_write(ADC1_SR, 0);
-  // reg32_set_bit(ADC1_CR2, ADC_CR2_ADON);
 }
 

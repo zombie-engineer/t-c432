@@ -1,6 +1,7 @@
 CROSSDIR := /home/user_user/Downloads/arm-gnu-toolchain-12.2.mpacbti-bet1-x86_64-arm-none-eabi
 LIBGCC := $(CROSSDIR)/lib/gcc/arm-none-eabi/12.2.0/thumb/v7-m/nofp/libgcc.a
 LIBC := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libc.a
+LIBM := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libm.a
 $(info $(LIBC))
 INCLUDES := -I.
 
@@ -19,6 +20,7 @@ OBJS := main.o \
   display.o \
   fault.o \
   exti.o \
+  ntc10k.o \
   pushbuttons.o \
   svc.o \
   spi.o \
@@ -61,7 +63,8 @@ firmware.bin: firmware.elf
 	arm-none-eabi-objcopy firmware.elf --output-target binary firmware.bin
 
 firmware.elf: $(OBJS) link.ld
-	arm-none-eabi-ld $(OBJS) $(LIBGCC) $(LIBC) -o firmware.elf -T link.ld -Map firmware.map
+	@echo arm-none-eabi-ld $(OBJS) $(LIBGCC) $(LIBC) $(LIBM) -o firmware.elf -T link.ld -Map firmware.map
+	arm-none-eabi-ld _arm_unorddf2.o _arm_muldivdf3.o _arm_cmpdf2.o _arm_muldf3.o $(OBJS) $(LIBGCC) $(LIBC) $(LIBM) -o firmware.elf -T link.ld -Map firmware.map
 
 %.o: %.S
 	arm-none-eabi-as $< -o $@
