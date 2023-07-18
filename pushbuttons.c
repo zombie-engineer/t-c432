@@ -79,20 +79,22 @@ void pushbutton_init_single(struct button_info *b)
 
 void pushbuttons_init(void)
 {
-  buttons[PUSHBUTTON_ID_LEFT].pin = BUTTON_KEY_LEFT_PIN;
-  buttons[PUSHBUTTON_ID_LEFT].port = GPIO_PORT(BUTTON_KEY_LEFT_PORT);
+  buttons[PUSHBUTTON_ID_LEFT].pin = BUTTON_KEY_LEFT_GPIO_PIN;
+  buttons[PUSHBUTTON_ID_LEFT].port = BUTTON_KEY_LEFT_GPIO_PORT;
   buttons[PUSHBUTTON_ID_LEFT].state = BUTTON_STATE_RELEASED;
   buttons[PUSHBUTTON_ID_LEFT].cb = pushbutton_int_left;
 
-  buttons[PUSHBUTTON_ID_RIGHT].pin = BUTTON_KEY_RIGHT_PIN;
-  buttons[PUSHBUTTON_ID_RIGHT].port = GPIO_PORT(BUTTON_KEY_RIGHT_PORT);
+  buttons[PUSHBUTTON_ID_RIGHT].pin = BUTTON_KEY_RIGHT_GPIO_PIN;
+  buttons[PUSHBUTTON_ID_RIGHT].port = BUTTON_KEY_RIGHT_GPIO_PORT;
   buttons[PUSHBUTTON_ID_RIGHT].state = BUTTON_STATE_RELEASED;
   buttons[PUSHBUTTON_ID_RIGHT].cb = pushbutton_int_right;
 
+#if 0
   buttons[PUSHBUTTON_ID_MID].pin = BUTTON_KEY_MID_PIN;
   buttons[PUSHBUTTON_ID_MID].port = GPIO_PORT(BUTTON_KEY_MID_PORT);
   buttons[PUSHBUTTON_ID_MID].state = BUTTON_STATE_RELEASED;
   buttons[PUSHBUTTON_ID_MID].cb = pushbutton_int_mid;
+#endif
 
   for (int i = 0; i < 3; ++i) {
     pushbutton_init_single(&buttons[i]);
