@@ -41,13 +41,14 @@ void usb_rx_callback(void *arg)
 #define TEMP_SENSOR_ARRAY_LENGTH 128
 uint16_t temp_sensor_array[TEMP_SENSOR_ARRAY_LENGTH];
 
-#define TERMO_STATE_COOLING 0
-#define TERMO_STATE_HEATING_ACTIVE 1
-#define TERMO_STATE_HEATING_INERTIAL 2
+#define THERMOSTAT_STATE_COOLING 0
+#define THERMOSTAT_STATE_HEATING_ACTIVE 1
+#define THERMOSTAT_STATE_HEATING_INERTIAL 2
 
+#define THERMOSTAT_SETPOINT_CELSIUS 43
 #define TEMP_SENSOR_ADC_CHANNEL 0
 
-int thermostat_state = TERMO_STATE_COOLING;
+int thermostat_state = THERMOSTAT_STATE_COOLING;
 
 int termo_force_heating_timer = 0;
 
@@ -101,31 +102,32 @@ static float temp_sensor_calc_degrees_celisus(void)
 }
 
 float temperature_celsius = 0;
+
 static void thermostat_run(void)
 {
-  const int setpoint_temperature_celsius = 39;
+  const int setpoint_temperature_celsius = THERMOSTAT_SETPOINT_CELSIUS;
   int temperature_celsius_int;
 
   temperature_celsius = temp_sensor_calc_degrees_celisus();
   temperature_celsius_int = roundf(temperature_celsius);
 
-  if (thermostat_state == TERMO_STATE_COOLING) {
+  if (thermostat_state == THERMOSTAT_STATE_COOLING) {
     if (temperature_celsius < setpoint_temperature_celsius) {
-      thermostat_state = TERMO_STATE_HEATING_ACTIVE;
+      thermostat_state = THERMOSTAT_STATE_HEATING_ACTIVE;
       thermostat_heater_enable();
       termo_force_heating_timer = 500;
     }
-  } else if (thermostat_state == TERMO_STATE_HEATING_ACTIVE) {
+  } else if (thermostat_state == THERMOSTAT_STATE_HEATING_ACTIVE) {
     termo_force_heating_timer--;
     if (termo_force_heating_timer <= 0) {
       thermosat_heater_disable();
-      thermostat_state = TERMO_STATE_HEATING_INERTIAL;
+      thermostat_state = THERMOSTAT_STATE_HEATING_INERTIAL;
       termo_force_heating_timer = 1200;
     }
-  } else if (thermostat_state == TERMO_STATE_HEATING_INERTIAL) {
+  } else if (thermostat_state == THERMOSTAT_STATE_HEATING_INERTIAL) {
     termo_force_heating_timer--;
     if (termo_force_heating_timer <= 0) {
-      thermostat_state = TERMO_STATE_COOLING;
+      thermostat_state = THERMOSTAT_STATE_COOLING;
     }
   }
 }
@@ -133,8 +135,6 @@ static void thermostat_run(void)
 static void thermostat_init(void)
 {
   thermostat_heater_init();
-  systick_set(CNF_SCHEDULER_TICK_MS);
-  timer_setup();
   adc_setup_freerunning_dma(TEMP_SENSOR_GPIO_PORT, TEMP_SENSOR_GPIO_PIN,
     temp_sensor_array, ARRAY_SIZE(temp_sensor_array));
 }
@@ -142,6 +142,8 @@ static void thermostat_init(void)
 void main_task_fn(void *)
 {
   ui_set_adcbuf(temp_sensor_array, ARRAY_SIZE(temp_sensor_array));
+  systick_set(CNF_SCHEDULER_TICK_MS);
+  timer_setup();
 
   thermostat_init();
 
