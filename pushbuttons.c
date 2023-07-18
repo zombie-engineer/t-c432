@@ -96,6 +96,7 @@ void pushbuttons_init(void)
   buttons[PUSHBUTTON_ID_MID].cb = pushbutton_int_mid;
 #endif
 
+  return;
   for (int i = 0; i < 3; ++i) {
     pushbutton_init_single(&buttons[i]);
   }

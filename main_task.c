@@ -48,9 +48,33 @@ uint16_t temp_sensor_array[TEMP_SENSOR_ARRAY_LENGTH];
 #define THERMOSTAT_SETPOINT_CELSIUS 43
 #define TEMP_SENSOR_ADC_CHANNEL 0
 
+#define PUMP_STATE_IDLING  0
+#define PUMP_STATE_WORKING 1
+
 int thermostat_state = THERMOSTAT_STATE_COOLING;
+int pump_state = PUMP_STATE_IDLING;
 
 int termo_force_heating_timer = 0;
+
+int pump_process_counter = 0;
+
+static void pump_gpio_init(void)
+{
+  gpio_setup(PUMP_ENABLE_GPIO_PORT, PUMP_ENABLE_GPIO_PIN,
+    GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
+
+  gpio_odr_modify(PUMP_ENABLE_GPIO_PORT, PUMP_ENABLE_GPIO_PIN, 1);
+}
+
+static void pump_enable(void)
+{
+  gpio_odr_modify(PUMP_ENABLE_GPIO_PORT, PUMP_ENABLE_GPIO_PIN, 1);
+}
+
+static void pump_disable(void)
+{
+  gpio_odr_modify(PUMP_ENABLE_GPIO_PORT, PUMP_ENABLE_GPIO_PIN, 0);
+}
 
 static void thermostat_heater_init(void)
 {
@@ -139,6 +163,33 @@ static void thermostat_init(void)
     temp_sensor_array, ARRAY_SIZE(temp_sensor_array));
 }
 
+static void pump_init(void)
+{
+  pump_gpio_init();
+  pump_process_counter = 0;
+}
+
+#define PUMP_WORKING_TIME 500
+#define PUMP_IDLING_TIME 500
+
+static void pump_run(void)
+{
+  if (pump_process_counter > 0) {
+    pump_process_counter--;
+    return;
+  }
+
+  if (pump_state == PUMP_STATE_WORKING) {
+    pump_process_counter = PUMP_IDLING_TIME;
+    pump_state = PUMP_STATE_IDLING;
+    pump_disable();
+  } else {
+    pump_process_counter = PUMP_WORKING_TIME;
+    pump_state = PUMP_STATE_WORKING;
+    pump_enable();
+  }
+}
+
 void main_task_fn(void *)
 {
   ui_set_adcbuf(temp_sensor_array, ARRAY_SIZE(temp_sensor_array));
@@ -146,9 +197,11 @@ void main_task_fn(void *)
   timer_setup();
 
   thermostat_init();
+  pump_init();
 
   while(1) {
     thermostat_run();
+    pump_run();
     svc_wait_ms(10);
   }
 }
