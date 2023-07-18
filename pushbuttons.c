@@ -4,6 +4,7 @@
 #include "nvic.h"
 #include "common_util.h"
 #include "config.h"
+#include "pin_config.h"
 
 #define BUTTON_STATE_PRESSED 0
 #define BUTTON_STATE_RELEASED 1
@@ -78,18 +79,18 @@ void pushbutton_init_single(struct button_info *b)
 
 void pushbuttons_init(void)
 {
-  buttons[PUSHBUTTON_ID_LEFT].pin = CNF_BUTTON_KEY_LEFT_PIN;
-  buttons[PUSHBUTTON_ID_LEFT].port = GPIO_PORT(CNF_BUTTON_KEY_LEFT_PORT);
+  buttons[PUSHBUTTON_ID_LEFT].pin = BUTTON_KEY_LEFT_PIN;
+  buttons[PUSHBUTTON_ID_LEFT].port = GPIO_PORT(BUTTON_KEY_LEFT_PORT);
   buttons[PUSHBUTTON_ID_LEFT].state = BUTTON_STATE_RELEASED;
   buttons[PUSHBUTTON_ID_LEFT].cb = pushbutton_int_left;
 
-  buttons[PUSHBUTTON_ID_RIGHT].pin = CNF_BUTTON_KEY_RIGHT_PIN;
-  buttons[PUSHBUTTON_ID_RIGHT].port = GPIO_PORT(CNF_BUTTON_KEY_RIGHT_PORT);
+  buttons[PUSHBUTTON_ID_RIGHT].pin = BUTTON_KEY_RIGHT_PIN;
+  buttons[PUSHBUTTON_ID_RIGHT].port = GPIO_PORT(BUTTON_KEY_RIGHT_PORT);
   buttons[PUSHBUTTON_ID_RIGHT].state = BUTTON_STATE_RELEASED;
   buttons[PUSHBUTTON_ID_RIGHT].cb = pushbutton_int_right;
 
-  buttons[PUSHBUTTON_ID_MID].pin = CNF_BUTTON_KEY_MID_PIN;
-  buttons[PUSHBUTTON_ID_MID].port = GPIO_PORT(CNF_BUTTON_KEY_MID_PORT);
+  buttons[PUSHBUTTON_ID_MID].pin = BUTTON_KEY_MID_PIN;
+  buttons[PUSHBUTTON_ID_MID].port = GPIO_PORT(BUTTON_KEY_MID_PORT);
   buttons[PUSHBUTTON_ID_MID].state = BUTTON_STATE_RELEASED;
   buttons[PUSHBUTTON_ID_MID].cb = pushbutton_int_mid;
 

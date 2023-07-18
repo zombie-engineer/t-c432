@@ -20,14 +20,4 @@
 /* I2C runs based on interrupts */
 #define CONFIG_I2C_ASYNC 1
 
-#define CNF_BUTTON_KEY_LEFT_PORT B
-#define CNF_BUTTON_KEY_MID_PORT B
-#define CNF_BUTTON_KEY_RIGHT_PORT B
-#define CNF_BUTTON_KEY_LEFT_PIN 9
-#define CNF_BUTTON_KEY_MID_PIN 5
-#define CNF_BUTTON_KEY_RIGHT_PIN 8
-
-/* Debug pin */
-#define CNF_DEBUG_PIN_PIN 13
-#define CNF_DEBUG_PIN_PORT C
 #define LED_TIM_PERIOD 45

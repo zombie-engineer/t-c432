@@ -14,6 +14,7 @@
 #include "common_util.h"
 #include "ntc10k.h"
 #include <stdlib.h>
+#include "pin_config.h"
 
 void timer_setup(void)
 {
@@ -44,11 +45,6 @@ uint16_t temp_sensor_array[TEMP_SENSOR_ARRAY_LENGTH];
 #define TERMO_STATE_HEATING_ACTIVE 1
 #define TERMO_STATE_HEATING_INERTIAL 2
 
-#define THERMOSTAT_ENABLE_GPIO_PORT GPIO_PORT_B
-#define THERMOSTAT_ENABLE_GPIO_PIN 5
-
-#define TEMP_SENSOR_GPIO_PORT GPIO_PORT_A
-#define TEMP_SENSOR_GPIO_PIN 0
 #define TEMP_SENSOR_ADC_CHANNEL 0
 
 int thermostat_state = TERMO_STATE_COOLING;
