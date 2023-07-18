@@ -3,10 +3,16 @@ LIBGCC := $(CROSSDIR)/lib/gcc/arm-none-eabi/12.2.0/thumb/v7-m/nofp/libgcc.a
 LIBC := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libc.a
 LIBM := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libm.a
 $(info $(LIBC))
+$(info $(LIBGCC))
 INCLUDES := -I.
 
 DISPLAY_DRIVER := sh1106
 # DIODE_DRIVER := ws2812b
+
+FLOAT_MATH_OBJS := _arm_unorddf2.o \
+  _arm_muldivdf3.o \
+  _arm_cmpdf2.o \
+  _arm_muldf3.o
 
 #  ui/adc_widget.o 
 OBJS := main.o \
@@ -62,15 +68,19 @@ $(info DISPLAY_DRIVER: $(DISPLAY_DRIVER))
 firmware.bin: firmware.elf
 	arm-none-eabi-objcopy firmware.elf --output-target binary firmware.bin
 
-firmware.elf: $(OBJS) link.ld
-	@echo arm-none-eabi-ld $(OBJS) $(LIBGCC) $(LIBC) $(LIBM) -o firmware.elf -T link.ld -Map firmware.map
-	arm-none-eabi-ld _arm_unorddf2.o _arm_muldivdf3.o _arm_cmpdf2.o _arm_muldf3.o $(OBJS) $(LIBGCC) $(LIBC) $(LIBM) -o firmware.elf -T link.ld -Map firmware.map
+ALL_OBJS := $(OBJS) $(FLOAT_MATH_OBJS)
+firmware.elf: $(OBJS) float_math_objs link.ld
+	arm-none-eabi-ld  $(ALL_OBJS) $(LIBGCC) $(LIBC) $(LIBM) -o firmware.elf -T link.ld -Map firmware.map
 
 %.o: %.S
 	arm-none-eabi-as $< -o $@
 
 %.o : %.c
 	arm-none-eabi-gcc -c $(INCLUDES) -g $< -o $@ -mthumb -mcpu=cortex-m3
+
+.PHONY: $(FLOAT_MATH_OBJS) float_math_objs
+float_math_objs: $(FLOAT_MATH_OBJS)
+	arm-none-eabi-ar x $(LIBGCC) $(FLOAT_MATH_OBJS)
 
 d:
 	arm-gnueabihfgdb -q -x gdb.gdb firmware.elf
