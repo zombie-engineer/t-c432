@@ -17,6 +17,9 @@ extern void adc_isr(void);
 extern void usb_hp_isr(void);
 extern void usb_lp_isr(void);
 extern void usb_wakeup_isr(void);
+__attribute__((weak)) void __usb_hp_isr(void) {}
+__attribute__((weak)) void __usb_lp_isr(void) {}
+__attribute__((weak)) void __usb_wakeup_isr(void) {}
 extern void reserved_isr(void);
 extern void exti_0_isr(void);
 extern void exti_1_isr(void);

@@ -7,6 +7,7 @@ $(info $(LIBGCC))
 INCLUDES := -I.
 
 DISPLAY_DRIVER := sh1106
+ENABLE_USB := 0
 
 FLOAT_MATH_OBJS := _arm_unorddf2.o \
   _arm_muldivdf3.o \
@@ -15,7 +16,6 @@ FLOAT_MATH_OBJS := _arm_unorddf2.o \
 
 OBJS := main.o \
   ui/main_widget.o \
-  ui/usb_widget.o \
   ui/bar_widget.o \
   ui/text_widget.o \
   ui/value_widget.o \
@@ -45,9 +45,12 @@ OBJS := main.o \
   flash.o \
   gpio.o \
   start.o \
-  usb_driver.o \
   usart.o \
   systick.o
+
+ifeq "$(ENABLE_USB)" "1"
+  OBJS += usb_driver.o ui/usb_widget.o
+endif
 
 ifeq "$(DIODE_DRIVER)" "ws2812b"
   OBJS += drivers/ws2812b/ws2812b.o

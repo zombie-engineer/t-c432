@@ -10,7 +10,9 @@
 #include "ui/widget.h"
 #include "ui/main_widget.h"
 // #include "ui/adc_widget.h"
+#if ENABLE_USB == 1
 #include "ui/usb_widget.h"
+#endif
 #include <stdlib.h>
 // #include "ui/led_widget.h"
 #include "svc.h"
@@ -197,9 +199,12 @@ void ui_init(void)
   if (main_widget_init(&root_widgets[0], focus_prev_cb, focus_next_cb)) {
     svc_call(SVC_PANIC);
   }
+
+#if ENABLE_USB == 1
   if (usb_widget_init(&root_widgets[1], focus_prev_cb, focus_next_cb)) {
     svc_call(SVC_PANIC);
   }
+#endif
 #if 0
   if (led_widget_init(&root_widgets[2], focus_prev_cb, focus_next_cb)) {
     svc_call(SVC_PANIC);
@@ -219,10 +224,14 @@ void ui_on_set_address(void)
 
 void ui_on_tx(const char *buf)
 {
+#if ENABLE_USB == 1
   usb_widget_set_tx(buf);
+#endif
 }
 
 void ui_on_rx(const char *buf)
 {
+#if ENABLE_USB == 1
   usb_widget_set_rx(buf);
+#endif
 }

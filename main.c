@@ -67,12 +67,14 @@ void main(void)
   zero_bss();
   scb_get_cpuid(&i);
   nvic_set_priority(NVIC_INTERRUPT_NUMBER_ADC1, 1);
+#if ENABLE_USB == 1
   nvic_set_priority(NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0, 0);
   /*
    * usb irq should have higher priority than ADC or else it never gets
    * a chance to execute
    */
   int usb_irq_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_USB_LP_CAN_RX0);
+#endif
   int adc_pri =  nvic_get_priority(NVIC_INTERRUPT_NUMBER_ADC1);
 
   rcc_set_72mhz_usb();
