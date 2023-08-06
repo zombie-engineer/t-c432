@@ -77,6 +77,7 @@ static void draw_adc(void)
 
 extern float temperature_celsius;
 extern int thermostat_state;
+extern int pump_state;
 char textbuf_int[6];
 char textbuf_fra[4];
 
@@ -147,12 +148,29 @@ static void draw_thermostat_state(void)
   display_draw_text(10, 30, statebuf, &font_4, 1);
 }
 
+static void draw_pump_state(void)
+{
+  char statebuf[3];
+  if (pump_state == 1)
+  {
+    statebuf[0] = 'P';
+  }
+  else
+  {
+    statebuf[0] = '-';
+  }
+    statebuf[1] = 0;
+
+  display_draw_text(30, 30, statebuf, &font_4, 1);
+}
+
 void ui_redraw(void)
 {
   display_clear();
   // draw_adc();
   draw_temperature();
   draw_thermostat_state();
+  draw_pump_state();
 
   ctr++;
   if (ctr > 10)

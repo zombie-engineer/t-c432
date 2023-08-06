@@ -15,6 +15,7 @@
 #include "ntc10k.h"
 #include <stdlib.h>
 #include "pin_config.h"
+#include "pushbuttons.h"
 
 void timer_setup(void)
 {
@@ -45,7 +46,7 @@ uint16_t temp_sensor_array[TEMP_SENSOR_ARRAY_LENGTH];
 #define THERMOSTAT_STATE_HEATING_ACTIVE 1
 #define THERMOSTAT_STATE_HEATING_INERTIAL 2
 
-#define THERMOSTAT_SETPOINT_CELSIUS 43
+#define THERMOSTAT_SETPOINT_CELSIUS 35
 #define TEMP_SENSOR_ADC_CHANNEL 0
 
 #define PUMP_STATE_IDLING  0
@@ -58,13 +59,7 @@ int termo_force_heating_timer = 0;
 
 int pump_process_counter = 0;
 
-static void pump_gpio_init(void)
-{
-  gpio_setup(PUMP_ENABLE_GPIO_PORT, PUMP_ENABLE_GPIO_PIN,
-    GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
-
-  gpio_odr_modify(PUMP_ENABLE_GPIO_PORT, PUMP_ENABLE_GPIO_PIN, 1);
-}
+static bool button_is_pressed = false;
 
 static void pump_enable(void)
 {
@@ -74,6 +69,14 @@ static void pump_enable(void)
 static void pump_disable(void)
 {
   gpio_odr_modify(PUMP_ENABLE_GPIO_PORT, PUMP_ENABLE_GPIO_PIN, 0);
+}
+
+static void pump_gpio_init(void)
+{
+  gpio_setup(PUMP_ENABLE_GPIO_PORT, PUMP_ENABLE_GPIO_PIN,
+    GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
+
+  pump_disable();
 }
 
 static void thermostat_heater_init(void)
@@ -139,7 +142,11 @@ static void thermostat_run(void)
     if (temperature_celsius < setpoint_temperature_celsius) {
       thermostat_state = THERMOSTAT_STATE_HEATING_ACTIVE;
       thermostat_heater_enable();
-      termo_force_heating_timer = 500;
+      termo_force_heating_timer = 100;
+    }
+    else
+    {
+      thermosat_heater_disable();
     }
   } else if (thermostat_state == THERMOSTAT_STATE_HEATING_ACTIVE) {
     termo_force_heating_timer--;
@@ -152,6 +159,7 @@ static void thermostat_run(void)
     termo_force_heating_timer--;
     if (termo_force_heating_timer <= 0) {
       thermostat_state = THERMOSTAT_STATE_COOLING;
+      thermosat_heater_disable();
     }
   }
 }
@@ -163,14 +171,31 @@ static void thermostat_init(void)
     temp_sensor_array, ARRAY_SIZE(temp_sensor_array));
 }
 
+#define PUMP_BUTTON_IGNORE_TIME 30
+
+static void pump_button_event(int button_id, int event)
+{
+  if (button_id != PUSHBUTTON_ID_MAIN)
+    return;
+
+  if (event == PUSHBUTTON_EVENT_PRESSED)
+    button_is_pressed = true;
+  else
+    button_is_pressed = false;
+}
+
 static void pump_init(void)
 {
   pump_gpio_init();
-  pump_process_counter = 0;
-}
 
-#define PUMP_WORKING_TIME 500
-#define PUMP_IDLING_TIME 500
+  pushbutton_register_callback(PUSHBUTTON_ID_MAIN, PUSHBUTTON_EVENT_PRESSED,
+    pump_button_event);
+
+  pushbutton_register_callback(PUSHBUTTON_ID_MAIN, PUSHBUTTON_EVENT_RELEASED,
+    pump_button_event);
+
+  pump_process_counter = PUMP_BUTTON_IGNORE_TIME;
+}
 
 static void pump_run(void)
 {
@@ -178,15 +203,18 @@ static void pump_run(void)
     pump_process_counter--;
     return;
   }
+  pump_process_counter = PUMP_BUTTON_IGNORE_TIME;
 
   if (pump_state == PUMP_STATE_WORKING) {
-    pump_process_counter = PUMP_IDLING_TIME;
-    pump_state = PUMP_STATE_IDLING;
-    pump_disable();
+    if (!button_is_pressed) {
+      pump_disable();
+      pump_state = PUMP_STATE_IDLING;
+    }
   } else {
-    pump_process_counter = PUMP_WORKING_TIME;
-    pump_state = PUMP_STATE_WORKING;
-    pump_enable();
+    if (button_is_pressed) {
+      pump_enable();
+      pump_state = PUMP_STATE_WORKING;
+    }
   }
 }
 
