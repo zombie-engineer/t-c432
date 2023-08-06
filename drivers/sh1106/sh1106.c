@@ -1,6 +1,7 @@
 #include "sh1106.h"
 #include "spi.h"
 #include "gpio.h"
+#include "pin_config.h"
 #include <display.h>
 #include <compiler.h>
 #include <string.h>
@@ -29,47 +30,51 @@ struct sh1106_draw_io sh1106_io_buffer;
 
 static void sh1106_cs_init(void)
 {
-  gpio_setup(GPIO_PORT_A, 4, GPIO_MODE_OUT_2_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
+  gpio_setup(DISPLAY_SH1106_CS_GPIO_PORT, DISPLAY_SH1106_CS_GPIO_PIN,
+      GPIO_MODE_OUT_2_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
 }
 
 static void sh1106_cs_high(void)
 {
-  gpio_odr_modify(GPIO_PORT_A, 4, 1);
+  gpio_odr_modify(DISPLAY_SH1106_CS_GPIO_PORT, DISPLAY_SH1106_CS_GPIO_PIN, 1);
 }
 
 static void sh1106_cs_low(void)
 {
-  gpio_odr_modify(GPIO_PORT_A, 4, 0);
+  gpio_odr_modify(DISPLAY_SH1106_CS_GPIO_PORT, DISPLAY_SH1106_CS_GPIO_PIN, 0);
 }
 
 static void sh1106_rst_init(void)
 {
-  gpio_setup(GPIO_PORT_A, 6, GPIO_MODE_OUT_2_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
+  gpio_setup(DISPLAY_SH1106_RST_GPIO_PORT, DISPLAY_SH1106_RST_GPIO_PIN,
+      GPIO_MODE_OUT_2_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
 }
 
 static void sh1106_rst_high(void)
 {
-  gpio_odr_modify(GPIO_PORT_A, 6, 1);
+  gpio_odr_modify(DISPLAY_SH1106_RST_GPIO_PORT, DISPLAY_SH1106_RST_GPIO_PIN,
+      1);
 }
 
 static void sh1106_rst_low(void)
 {
-  gpio_odr_modify(GPIO_PORT_A, 6, 0);
+  gpio_odr_modify(DISPLAY_SH1106_RST_GPIO_PORT, DISPLAY_SH1106_RST_GPIO_PIN, 0);
 }
 
 static void sh1106_dc_init(void)
 {
-  gpio_setup(GPIO_PORT_B, 0, GPIO_MODE_OUT_2_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
+  gpio_setup(DISPLAY_SH1106_DC_GPIO_PORT, DISPLAY_SH1106_DC_GPIO_PIN,
+      GPIO_MODE_OUT_2_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
 }
 
 static void sh1106_dc_high(void)
 {
-  gpio_odr_modify(GPIO_PORT_B, 0, 1);
+  gpio_odr_modify(DISPLAY_SH1106_DC_GPIO_PORT, DISPLAY_SH1106_DC_GPIO_PIN, 1);
 }
 
 static void sh1106_dc_low(void)
 {
-  gpio_odr_modify(GPIO_PORT_B, 0, 0);
+  gpio_odr_modify(DISPLAY_SH1106_DC_GPIO_PORT, DISPLAY_SH1106_DC_GPIO_PIN, 0);
 }
 
 static void sh1106_cmd(uint8_t byte)
