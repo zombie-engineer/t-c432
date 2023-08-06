@@ -7,14 +7,12 @@ $(info $(LIBGCC))
 INCLUDES := -I.
 
 DISPLAY_DRIVER := sh1106
-# DIODE_DRIVER := ws2812b
 
 FLOAT_MATH_OBJS := _arm_unorddf2.o \
   _arm_muldivdf3.o \
   _arm_cmpdf2.o \
   _arm_muldf3.o
 
-#  ui/adc_widget.o 
 OBJS := main.o \
   ui/main_widget.o \
   ui/usb_widget.o \
@@ -84,7 +82,6 @@ float_math_objs: $(FLOAT_MATH_OBJS)
 
 d:
 	arm-gnueabihfgdb -q -x gdb.gdb firmware.elf
-#	arm-none-eabi-gdb -q -x gdb.gdb firmware.elf
 
 hd: firmware.bin
 	hexdump -v -e '1/4 "%08_ax %08X \n"' $? | less
