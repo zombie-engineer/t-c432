@@ -1,6 +1,7 @@
 #include "spi.h"
 #include "memory_layout.h"
 #include "reg_access.h"
+#include "pin_config.h"
 #include "gpio.h"
 
 #define SPI_CR1 (reg16_t)(SPI1_BASE + 0x00)
@@ -52,21 +53,40 @@
 #define SPI_I2SCFGR (reg16_t)(SPI1_BASE + 0x1c)
 #define SPI_I2SPR (reg16_t)(SPI1_BASE + 0x20)
 
-void spi_gpio_init(void)
+static void spi_gpio_init(int spi_pin_mask)
 {
   /* MISO /    master - NONE */
   /* NSS  / HW master - alternate function push-pull */
-  gpio_setup(GPIO_PORT_A, 4, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
+  if (spi_pin_mask & SPI_GPIO_PIN_NSS) {
+      gpio_setup(SPI_NSS_GPIO_PORT, SPI_NSS_GPIO_PIN, GPIO_MODE_OUT_50_MHZ,
+          GPIO_CNF_OUT_GP_PUSH_PULL);
+  }
 
   /* SCK  /    master - alternate function push-pull */
-  gpio_setup(GPIO_PORT_A, 5, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
+  if (spi_pin_mask & SPI_GPIO_PIN_SCK) {
+      gpio_setup(SPI_SCK_GPIO_PORT, SPI_SCK_GPIO_PIN, GPIO_MODE_OUT_50_MHZ,
+          GPIO_CNF_OUT_ALT_PUSH_PULL);
+  }
+
   /* MOSI /    master - alternate function push-pull */
-  gpio_setup(GPIO_PORT_A, 7, GPIO_MODE_OUT_50_MHZ, GPIO_CNF_OUT_ALT_PUSH_PULL);
+  if (spi_pin_mask & SPI_GPIO_PIN_MOSI) {
+      gpio_setup(SPI_MOSI_GPIO_PORT, SPI_MOSI_GPIO_PIN, GPIO_MODE_OUT_50_MHZ,
+          GPIO_CNF_OUT_ALT_PUSH_PULL);
+  }
+
+#if 0
+  /* MISO /    master - alternate function push-pull */
+  if (spi_pin_mask & SPI_GPIO_PIN_MISO) {
+      gpio_setup(SPI_MISO_GPIO_PORT, SPI_MISO_GPIO_PIN, GPIO_MODE_INPUT,
+          GPIO_CNF_OUT_ALT_PUSH_PULL);
+  }
+#endif
 }
 
-void spi_init(void)
+void spi_init(int spi_pin_mask)
 {
-  spi_gpio_init();
+  spi_gpio_init(spi_pin_mask);
+
   /* Enable Master mode */
   reg16_set_bit(SPI_CR1, SPI_CR1_MSTR);
   reg16_modify_bits(SPI_CR1, SPI_CR1_BR, SPI_CR1_BR_WIDTH, 3);
@@ -86,7 +106,6 @@ void spi_transfer_byte(uint8_t data)
   while(!reg16_bit_is_set(SPI_SR, SPI_SR_TXE));
   while(reg16_bit_is_set(SPI_SR, SPI_SR_BSY));
 }
-
 
 void spi_transfer(const uint8_t *data, int len)
 {
