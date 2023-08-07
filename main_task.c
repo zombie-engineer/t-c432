@@ -184,6 +184,12 @@ static void pump_button_event(int button_id, int event)
     button_is_pressed = false;
 }
 
+static void flow_meter_init(void)
+{
+  gpio_setup(FLOW_METER_GPIO_PORT, FLOW_METER_GPIO_PIN,
+    GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
+}
+
 static void pump_init(void)
 {
   pump_gpio_init();
