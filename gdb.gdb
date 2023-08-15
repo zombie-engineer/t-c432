@@ -509,13 +509,7 @@ define show_dma
 end
 
 reup
-
-# b ui_redraw
-# b usb_init
-# b adc_isr
-
-b main_task_fn
-b adc_setup
+b adc_voltage_to_temperature
 
 
 c

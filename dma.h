@@ -62,10 +62,10 @@ typedef enum {
 struct dma_channel_settings {
   volatile void *paddr;
   volatile void *maddr;
-  int count;
+  unsigned int count;
   dma_transfer_dir_t dir;
-  int pwidth;
-  int mwidth;
+  unsigned int pwidth;
+  unsigned int mwidth;
   bool circular;
   bool pinc;
   bool minc;

@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include "pin_config.h"
 #include "pushbuttons.h"
+#include "temp_info.h"
 
 void timer_setup(void)
 {
@@ -39,15 +40,107 @@ void usb_rx_callback(void *arg)
   ui_on_rx(arg);
 }
 
-#define TEMP_SENSOR_ARRAY_LENGTH 128
-uint16_t temp_sensor_array[TEMP_SENSOR_ARRAY_LENGTH];
-
 #define THERMOSTAT_STATE_COOLING 0
 #define THERMOSTAT_STATE_HEATING_ACTIVE 1
 #define THERMOSTAT_STATE_HEATING_INERTIAL 2
 
 #define THERMOSTAT_SETPOINT_CELSIUS 35
-#define TEMP_SENSOR_ADC_CHANNEL 0
+
+#define ADC_NUM_CHANNELS 4
+#define ADC_NUM_FILTER_SAMPLES_LOG2 3
+#define ADC_NUM_FILTER_SAMPLES (1 << ADC_NUM_FILTER_SAMPLES_LOG2)
+#define ADC_VREF 3.3f
+#define ADC_MAX_VALUE 4096
+#define TEMP_HISTORY_DEPTH 32
+
+#define ALL_SENSORS_BUF_LEN (ADC_NUM_CHANNELS * ADC_NUM_FILTER_SAMPLES)
+static int adc_dma_buffer_idx = 0;
+uint16_t adc_dma_buffer[ALL_SENSORS_BUF_LEN];
+
+static struct temp_info temp_history[TEMP_HISTORY_DEPTH] = { 0 };
+
+static int adc_voltage_history_idx = 0;
+
+static float current_temp_0 = 0.0f;
+static float current_temp_1 = 0.0f;
+static float current_temp_int = 0.0f;
+
+#define TEMP_SENSOR_0_R2 5100.0f
+#define TEMP_SENSOR_1_R2 100000.0f
+#define TEMP_SENSOR_VREF 3.3f
+
+static uint32_t temp_sensor_voltage_to_resistance(float voltage, float r2)
+{
+  return r2 * voltage / (TEMP_SENSOR_VREF - voltage);
+}
+
+static float adc_voltage_to_temp0(float voltage)
+{
+  uint32_t resist = temp_sensor_voltage_to_resistance(voltage,
+    TEMP_SENSOR_0_R2);
+
+  ntc10k_3950_resistance_to_degree_celsius(resist);
+}
+
+static float adc_voltage_to_temp1(float voltage)
+{
+  uint32_t resist = temp_sensor_voltage_to_resistance(voltage,
+    TEMP_SENSOR_1_R2);
+
+  ntc100k_3950_resistance_to_degree_celsius(resist);
+}
+
+static int temp_history_counter = 0;
+
+static void temp_history_update(float temp0, float temp1, float temp_int)
+{
+  int i;
+
+  temp_history[0].temp0 = temp0;
+  temp_history[0].temp1 = temp1;
+  temp_history[0].temp_int = temp_int;
+
+  if (!temp_history_counter) {
+    for (i = ARRAY_SIZE(temp_history) - 1; i > 0; i--)
+      temp_history[i] = temp_history[i - 1];
+
+    temp_history_counter = 180;
+    return;
+  }
+
+  temp_history_counter--;
+}
+
+static void adc_apply_filtering(void)
+{
+  uint32_t avg_values[ADC_NUM_CHANNELS] = { 0 };
+  uint32_t sample_idx;
+  uint32_t ch_idx;
+
+  for (sample_idx = 0; sample_idx < ADC_NUM_FILTER_SAMPLES; ++sample_idx) {
+    for (ch_idx = 0; ch_idx < ADC_NUM_CHANNELS; ++ch_idx) {
+      uint32_t src_idx = sample_idx * ADC_NUM_CHANNELS + ch_idx;
+      avg_values[ch_idx] += adc_dma_buffer[src_idx];
+    }
+  }
+
+  for (ch_idx = 0; ch_idx < ADC_NUM_CHANNELS; ++ch_idx) {
+    float avg_value = (float)(avg_values[ch_idx] >> ADC_NUM_FILTER_SAMPLES_LOG2);
+    float voltage = avg_value / ADC_MAX_VALUE * ADC_VREF;
+    if (ch_idx == 0)
+      current_temp_0 = adc_voltage_to_temp0(voltage);
+
+    else if (ch_idx == 1)
+      current_temp_1 = adc_voltage_to_temp1(voltage);
+
+    else if (ch_idx == 2)
+      current_temp_int = adc_voltage_to_temperature(voltage);
+
+    temp_history_update(current_temp_0, current_temp_1, current_temp_int);
+  }
+
+  ui_set_temperatures(current_temp_0, current_temp_1, current_temp_int);
+}
 
 #define PUMP_STATE_IDLING  0
 #define PUMP_STATE_WORKING 1
@@ -73,17 +166,11 @@ static void pump_disable(void)
 
 static void pump_gpio_init(void)
 {
-  gpio_setup(PUMP_ENABLE_GPIO_PORT, PUMP_ENABLE_GPIO_PIN,
-    GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
-
   pump_disable();
 }
 
 static void thermostat_heater_init(void)
 {
-  gpio_setup(THERMOSTAT_ENABLE_GPIO_PORT, THERMOSTAT_ENABLE_GPIO_PIN,
-    GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
-
   gpio_odr_modify(THERMOSTAT_ENABLE_GPIO_PORT, THERMOSTAT_ENABLE_GPIO_PIN, 1);
 }
 
@@ -102,44 +189,19 @@ static void thermosat_heater_disable(void)
 static uint16_t temp_sensor_get_filtered(void)
 {
   uint32_t sum = 0;
-  for (int i = 0; i < ARRAY_SIZE(temp_sensor_array); ++i)
-    sum += temp_sensor_array[i];
+  for (int i = 0; i < ARRAY_SIZE(adc_dma_buffer); ++i)
+    sum += adc_dma_buffer[i];
 
-  return (uint16_t)(sum / ARRAY_SIZE(temp_sensor_array));
+  return (uint16_t)(sum / ARRAY_SIZE(adc_dma_buffer));
 }
-
-static uint32_t temp_sensor_adc_to_resistance(uint16_t adc_value)
-{
-  const int adc_value_width = 12;
-  const float r2 = 5100.0f;
-  const float vref = 3.3f;
-  const float adc_max_value = (float)(1 << adc_value_width);
-  float v_measured = adc_value / adc_max_value * vref;
-  return r2 * v_measured / (vref - v_measured);
-}
-
-static float temp_sensor_calc_degrees_celisus(void)
-{
-  uint16_t adc_filtered;
-  uint32_t measured_resistance;
-
-  adc_filtered = temp_sensor_get_filtered();
-  measured_resistance = temp_sensor_adc_to_resistance(adc_filtered);
-  return ntc10k_3950_resistance_to_degree_celsius(measured_resistance);
-}
-
-float temperature_celsius = 0;
 
 static void thermostat_run(void)
 {
   const int setpoint_temperature_celsius = THERMOSTAT_SETPOINT_CELSIUS;
-  int temperature_celsius_int;
-
-  temperature_celsius = temp_sensor_calc_degrees_celisus();
-  temperature_celsius_int = roundf(temperature_celsius);
+  int temp_1_celsius_int;
 
   if (thermostat_state == THERMOSTAT_STATE_COOLING) {
-    if (temperature_celsius < setpoint_temperature_celsius) {
+    if (current_temp_0 < setpoint_temperature_celsius) {
       thermostat_state = THERMOSTAT_STATE_HEATING_ACTIVE;
       thermostat_heater_enable();
       termo_force_heating_timer = 100;
@@ -167,8 +229,8 @@ static void thermostat_run(void)
 static void thermostat_init(void)
 {
   thermostat_heater_init();
-  adc_setup_freerunning_dma(TEMP_SENSOR_GPIO_PORT, TEMP_SENSOR_GPIO_PIN,
-    temp_sensor_array, ARRAY_SIZE(temp_sensor_array));
+  adc_setup_dma(adc_dma_buffer, ARRAY_SIZE(adc_dma_buffer));
+  adc_run();
 }
 
 #define PUMP_BUTTON_IGNORE_TIME 30
@@ -186,13 +248,12 @@ static void pump_button_event(int button_id, int event)
 
 static void flow_meter_init(void)
 {
-  gpio_setup(FLOW_METER_GPIO_PORT, FLOW_METER_GPIO_PIN,
-    GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
 }
 
 static void pump_init(void)
 {
   pump_gpio_init();
+  flow_meter_init();
 
   pushbutton_register_callback(PUSHBUTTON_ID_MAIN, PUSHBUTTON_EVENT_PRESSED,
     pump_button_event);
@@ -226,7 +287,7 @@ static void pump_run(void)
 
 void main_task_fn(void *)
 {
-  ui_set_adcbuf(temp_sensor_array, ARRAY_SIZE(temp_sensor_array));
+  ui_set_temp_history(temp_history, TEMP_HISTORY_DEPTH);
   systick_set(CNF_SCHEDULER_TICK_MS);
   timer_setup();
 
@@ -234,6 +295,7 @@ void main_task_fn(void *)
   pump_init();
 
   while(1) {
+    adc_apply_filtering();
     thermostat_run();
     pump_run();
     svc_wait_ms(10);

@@ -12,11 +12,12 @@
  *   https://cdn-shop.adafruit.com/datasheets/103_3950_lookuptable.pdf
  */
 
-float ntc10k_3950_resistance_to_degree_celsius(uint32_t resistance)
+static float ntcxx_resistance_to_degree_celsius(uint32_t resistance,
+  float beta, float r25)
 {
   const float kelvin_to_celsius_offset = 273.5f;
-  const float beta = 3435;// 3950.0f;
-  const float r25 = 10000.0f;
+  // const float beta = 3435;// 3950.0f;
+  // const float r25 = 10000.0f;
   const float recip_t24_kelvin = 1.0f / 298.15f;
   const float step1 = log(resistance / r25);
   const float step2 = step1 / beta + recip_t24_kelvin;
@@ -24,4 +25,12 @@ float ntc10k_3950_resistance_to_degree_celsius(uint32_t resistance)
   return step3 - kelvin_to_celsius_offset;
 }
 
+float ntc10k_3950_resistance_to_degree_celsius(uint32_t resistance)
+{
+  return ntcxx_resistance_to_degree_celsius(resistance, 3435, 10000.0f);
+}
 
+float ntc100k_3950_resistance_to_degree_celsius(uint32_t resistance)
+{
+  return ntcxx_resistance_to_degree_celsius(resistance, 3435, 100000.0f);
+}
