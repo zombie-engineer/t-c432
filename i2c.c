@@ -2,7 +2,7 @@
 #include "i2c_regs.h"
 #include "reg_access.h"
 #include "scheduler.h"
-#include "stm32f103_pin_config.h"
+#include "pin_config.h"
 #include "gpio.h"
 #include "nvic.h"
 #include "svc.h"

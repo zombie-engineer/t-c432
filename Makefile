@@ -1,4 +1,6 @@
 CROSSDIR := /home/user_user/Downloads/arm-gnu-toolchain-12.2.mpacbti-bet1-x86_64-arm-none-eabi
+GCC := $(CROSSDIR)/bin/arm-none-eabi-gcc
+
 LIBGCC := $(CROSSDIR)/lib/gcc/arm-none-eabi/12.2.0/thumb/v7-m/nofp/libgcc.a
 LIBC := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libc.a
 LIBM := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libm.a
@@ -77,7 +79,7 @@ firmware.elf: $(OBJS) float_math_objs link.ld
 	arm-none-eabi-as $< -o $@
 
 %.o : %.c
-	arm-none-eabi-gcc -c $(INCLUDES) -g $< -o $@ -mthumb -mcpu=cortex-m3
+	$(GCC) -c $(INCLUDES) -g $< -o $@ -mthumb -mcpu=cortex-m3
 
 .PHONY: $(FLOAT_MATH_OBJS) float_math_objs
 float_math_objs: $(FLOAT_MATH_OBJS)

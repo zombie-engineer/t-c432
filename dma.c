@@ -217,7 +217,6 @@ void dma_isr(int dma_idx, int ch_idx)
 
   if (cb)
     cb();
-
 }
 
 void dma_init(void)
