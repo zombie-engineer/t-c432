@@ -114,7 +114,7 @@ void sh1106_flush(void)
 
 void sh1106_init(void)
 {
-  spi_init();
+  spi_init(SPI_GPIO_PIN_MOSI | SPI_GPIO_PIN_SCK);
   sh1106_cs_init();
   sh1106_rst_init();
   sh1106_dc_init();
