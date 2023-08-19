@@ -65,26 +65,31 @@ static float current_temp_0 = 0.0f;
 static float current_temp_1 = 0.0f;
 static float current_temp_int = 0.0f;
 
-#define TEMP_SENSOR_0_R2 5100.0f
-#define TEMP_SENSOR_1_R2 100000.0f
-#define TEMP_SENSOR_VREF 3.3f
+#define TEMP_SENSOR_0_R1 4800.0f // 5100.0f
+#define TEMP_SENSOR_1_R2 95300.0f // 100000.0f
+#define TEMP_SENSOR_VREF 3.25f
 
-static uint32_t temp_sensor_voltage_to_resistance(float voltage, float r2)
+static uint32_t temp_sensor_voltage_to_resistance_2(float voltage, float r1)
 {
-  return r2 * voltage / (TEMP_SENSOR_VREF - voltage);
+  return r1 * voltage / (TEMP_SENSOR_VREF - voltage);
+}
+
+static uint32_t temp_sensor_voltage_to_resistance_1(float voltage, float r2)
+{
+  return r2 * (TEMP_SENSOR_VREF - voltage) / voltage;
 }
 
 static float adc_voltage_to_temp0(float voltage)
 {
-  uint32_t resist = temp_sensor_voltage_to_resistance(voltage,
-    TEMP_SENSOR_0_R2);
+  uint32_t resist = temp_sensor_voltage_to_resistance_2(voltage,
+    TEMP_SENSOR_0_R1);
 
   ntc10k_3950_resistance_to_degree_celsius(resist);
 }
 
 static float adc_voltage_to_temp1(float voltage)
 {
-  uint32_t resist = temp_sensor_voltage_to_resistance(voltage,
+  uint32_t resist = temp_sensor_voltage_to_resistance_1(voltage,
     TEMP_SENSOR_1_R2);
 
   ntc100k_3950_resistance_to_degree_celsius(resist);
@@ -200,8 +205,12 @@ static void thermostat_run(void)
   const int setpoint_temperature_celsius = THERMOSTAT_SETPOINT_CELSIUS;
   int temp_1_celsius_int;
 
+  int min_temp = current_temp_0;
+  if (min_temp > current_temp_1)
+    min_temp = current_temp_1;
+
   if (thermostat_state == THERMOSTAT_STATE_COOLING) {
-    if (current_temp_0 < setpoint_temperature_celsius) {
+    if (min_temp < setpoint_temperature_celsius) {
       thermostat_state = THERMOSTAT_STATE_HEATING_ACTIVE;
       thermostat_heater_enable();
       termo_force_heating_timer = 100;
