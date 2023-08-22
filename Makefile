@@ -94,4 +94,5 @@ hd: firmware.bin
 	hexdump -v -e '1/4 "%08_ax %08X \n"' $? | less
 
 clean:
-	rm -v *.o
+	find -name '*.o'
+	rm -v $$(find -name '*.o') 2>/dev/null || true
