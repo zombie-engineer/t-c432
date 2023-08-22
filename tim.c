@@ -216,6 +216,31 @@ void tim3_pwm_dma_run(int dma_channel, const void *src, int src_size)
   dma_transfer_setup(dma_channel, &dma_settings);
 }
 
+void tim2_setup_pulse_counting(void)
+{
+  uint32_t reg = 0;
+
+  u32_modify_bits(&reg, TIMx_CCMR1_CC2S, TIMx_CCMR1_CC2S_WIDTH,
+    TIMx_CCMR1_CCxS_IN_TI2);
+
+  reg_write(TIM2_CCMR1, reg);
+
+  reg = 0;
+  u32_modify_bits(&reg, TIMx_SMCR_SMS, TIMx_SMCR_SMS_WIDTH,
+    TIMx_SMCR_SMS_EXT_CLK_1);
+
+  u32_modify_bits(&reg, TIMx_SMCR_SMS, TIMx_SMCR_SMS_WIDTH,
+    TIMx_SMCR_TS_TI2FP2);
+
+  reg_write(TIM2_SMCR, reg);
+  reg_write(TIM2_ARR, 0xffff);
+  reg_write(TIM2_PSC, 0);
+
+  reg = 0;
+  u32_set_bit(&reg, TIMx_CR1_CEN);
+  reg_write(TIM2_CR1, reg);
+}
+
 int tim2_setup(bool one_pulse, uint16_t prescaler, uint16_t counter_value,
   bool enable_interrupt, bool enable)
 {

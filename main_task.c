@@ -22,7 +22,7 @@ void timer_setup(void)
 {
   /* SYSCLK = 72MHz */
   rcc_periph_ena(RCC_PERIPH_TIM2);
-  tim2_setup(true, CALC_PSC(0.1, F_CPU, 0xffff), 0xffff, true, true);
+  // tim2_setup(true, CALC_PSC(0.1, F_CPU, 0xffff), 0xffff, true, true);
 }
 
 void usb_set_address_callback(void *arg)
@@ -286,8 +286,13 @@ static void pump_init(void)
   pump_process_counter = PUMP_BUTTON_IGNORE_TIME;
 }
 
+int pulse_counter = 0;
+
 static void pump_run(void)
 {
+  pulse_counter += tim2_read_counter_value();
+  ui_set_pulse_count(pulse_counter);
+
   if (pump_process_counter > 0) {
     pump_process_counter--;
     return;

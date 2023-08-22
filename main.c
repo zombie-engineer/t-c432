@@ -12,6 +12,7 @@
 #include "main_task.h"
 #include "common_util.h"
 #include "dma.h"
+#include "tim.h"
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -91,18 +92,17 @@ static void setup_gpio(void)
   gpio_setup(THERMOSTAT_ENABLE_GPIO_PORT, THERMOSTAT_ENABLE_GPIO_PIN,
     GPIO_MODE_OUT_10_MHZ, GPIO_CNF_OUT_GP_PUSH_PULL);
 
+  gpio_odr_modify(THERMOSTAT_ENABLE_GPIO_PORT, THERMOSTAT_ENABLE_GPIO_PIN, 0);
+
   /* Pump */
   gpio_setup(PUMP_ENABLE_GPIO_PORT, PUMP_ENABLE_GPIO_PIN, GPIO_MODE_OUT_10_MHZ,
     GPIO_CNF_OUT_GP_PUSH_PULL);
 
+  /* Flow meter pulse counting */
   gpio_setup(FLOW_METER_GPIO_PORT, FLOW_METER_GPIO_PIN,
-    GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
+    GPIO_MODE_INPUT, GPIO_CNF_IN_FLOATING);
 
-  gpio_setup(GPIO_PORT_B, 10, GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
-  gpio_setup(GPIO_PORT_B, 11, GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
-  gpio_setup(GPIO_PORT_B, 13, GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
-  gpio_setup(GPIO_PORT_B, 14, GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
-  gpio_setup(GPIO_PORT_B, 15, GPIO_MODE_INPUT, GPIO_CNF_IN_PULLUP_PULLDOWN);
+  tim2_setup_pulse_counting();
 }
 
 static void setup_usb(void)

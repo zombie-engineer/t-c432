@@ -158,9 +158,19 @@ static void draw_thermostat_state(void)
   display_draw_text(10, 30, statebuf, &font_4, 1);
 }
 
+int pulse_count = 0;
+void ui_set_pulse_count(int value)
+{
+  pulse_count = value;
+}
+
 static void draw_pump_state(void)
 {
   char statebuf[3];
+  char cntbuf[8];
+
+  itoa(pulse_count, cntbuf, 10);
+
   if (pump_state == 1)
   {
     statebuf[0] = 'P';
@@ -172,6 +182,7 @@ static void draw_pump_state(void)
     statebuf[1] = 0;
 
   display_draw_text(30, 30, statebuf, &font_4, 1);
+  display_draw_text(50, 30, cntbuf, &font_4, 1);
 }
 
 static void draw_gpio_inputs(void)
