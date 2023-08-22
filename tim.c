@@ -37,6 +37,17 @@
 #define TIMx_CCMRx_OCxM 4
 #define TIMx_CCMRx_OCxM_WIDTH 3
 
+#define TIMx_CCMR1_CC1S 0
+#define TIMx_CCMR1_CC1S_WIDTH 2
+
+#define TIMx_CCMR1_CCxS_OUTPUT 0
+#define TIMx_CCMR1_CCxS_IN_TI2 1
+#define TIMx_CCMR1_CCxS_IN_TI1 2
+#define TIMx_CCMR1_CCxS_IN_TRC 3
+
+#define TIMx_CCMR1_CC2S 8
+#define TIMx_CCMR1_CC2S_WIDTH 2
+
 #define TIMx_CCMR1_OC1M TIMx_CCMRx_OCxM
 #define TIMx_CCMR1_OC1M_WIDTH TIMx_CCMRx_OCxM_WIDTH
 #define TIMx_CCMR1_OC2M (TIMx_CCMR1_OC1M + 8)
@@ -63,6 +74,27 @@
 #define TIMx_CCRMx_OCxPE_PRELOAD 1
 #define TIMx_CCRMx_OCxPE_NO_PRELOAD 0
 
+#define TIMx_SMCR_SMS 0
+#define TIMx_SMCR_SMS_WIDTH 3
+#define TIMx_SMCR_SMS_DISA 0
+#define TIMx_SMCR_SMS_ENCODER_1 1
+#define TIMx_SMCR_SMS_ENCODER_2 2
+#define TIMx_SMCR_SMS_ENCODER_3 3
+#define TIMx_SMCR_SMS_RESET 4
+#define TIMx_SMCR_SMS_GATED 5
+#define TIMx_SMCR_SMS_TRIGGER 6
+#define TIMx_SMCR_SMS_EXT_CLK_1 7
+
+#define TIMx_SMCR_TS 4
+#define TIMx_SMCR_TS_WIDTH 3
+#define TIMx_SMCR_TS_ITR0 0
+#define TIMx_SMCR_TS_ITR1 1
+#define TIMx_SMCR_TS_ITR2 2
+#define TIMx_SMCR_TS_ITR3 3
+#define TIMx_SMCR_TS_TI1 4
+#define TIMx_SMCR_TS_TI1FP1 5
+#define TIMx_SMCR_TS_TI2FP2 6
+#define TIMx_SMCR_TS_ETRF 7
 
 #define TIM3_CCER  (reg16_t)(TIM3_BASE + 0x20)
 #define TIMx_CCER_CC1E 0
@@ -88,14 +120,14 @@
 #define TIM3_DCR   (reg16_t)(TIM3_BASE + 0x48)
 #define TIM3_DMAR  (reg16_t)(TIM3_BASE + 0x4c)
 
-#define TIMx_CEN  (1<<0)
-#define TIMx_UDIS (1<<1)
-#define TIMx_URS  (1<<2)
-#define TIMx_OPM  (1<<3)
-#define TIMx_DIR  (1<<4)
-#define TIMx_CMS  (3<<5)
-#define TIMx_ARPE (1<<7)
-#define TIMx_CKD  (3<<8)
+#define TIMx_CR1_CEN  (1<<0)
+#define TIMx_CR1_UDIS (1<<1)
+#define TIMx_CR1_URS  (1<<2)
+#define TIMx_CR1_OPM  (1<<3)
+#define TIMx_CR1_DIR  (1<<4)
+#define TIMx_CR1_CMS  (3<<5)
+#define TIMx_CR1_ARPE (1<<7)
+#define TIMx_CR1_CKD  (3<<8)
 
 #define TIMx_DIER_UIE 0
 #define TIMx_DIER_CC1IE 1
@@ -149,12 +181,12 @@ void tim3_setup(uint16_t prescaler, uint16_t period)
 
   reg_write16(TIM3_CCER, TIMx_CCER_CCxE_ON << TIMx_CCER_CC3E);
 
-  reg_write16(TIM3_CR1, TIMx_ARPE);
+  reg_write16(TIM3_CR1, TIMx_CR1_ARPE);
 }
 
 void tim3_enable(void)
 {
-  reg16_set_bit(TIM3_CR1, TIMx_CEN);
+  reg16_set_bit(TIM3_CR1, TIMx_CR1_CEN);
 }
 
 void tim3_disable(void)
@@ -166,7 +198,7 @@ void tim3_pwm_dma_run(int dma_channel, const void *src, int src_size)
 {
   reg_write16(TIM3_CNT, 0);
   reg_write16(TIM3_CCR3, 0);
-  reg_write16(TIM3_CR1, TIMx_CEN | TIMx_ARPE);
+  reg_write16(TIM3_CR1, TIMx_CR1_CEN | TIMx_CR1_ARPE);
   struct dma_channel_settings dma_settings = {
     .paddr = TIM3_CCR3,
     .maddr = (void *)src,
@@ -195,34 +227,34 @@ int tim2_setup(bool one_pulse, uint16_t prescaler, uint16_t counter_value,
   v = reg_read16(TIM2_CR1);
 
   /* Auto-reload */
-  v |= TIMx_ARPE;
+  v |= TIMx_CR1_ARPE;
 
   /* center-aligned off */
-  v &= ~TIMx_CMS;
+  v &= ~TIMx_CR1_CMS;
 
   /* count dir = up */
-  v &= ~TIMx_DIR;
+  v &= ~TIMx_CR1_DIR;
 
   if (one_pulse)
-    v |= TIMx_OPM;
+    v |= TIMx_CR1_OPM;
   else
-    v &= ~TIMx_OPM;
+    v &= ~TIMx_CR1_OPM;
 
   /* Update only from overflow */
-  v |= TIMx_URS;
+  v |= TIMx_CR1_URS;
 
   /* Enable interrupt for TIM2 */
   if (enable_interrupt) {
     /* Event on overflow enabled */
     reg_write16(TIM2_SR, 0);
     reg_write(NVIC_ICPR0, 1 << NVIC_INTERRUPT_NUMBER_TIM2);
-    v &= TIMx_UDIS;
+    v &= TIMx_CR1_UDIS;
     reg_write(TIM2_DIER, 1);
     reg_write(NVIC_ISER0, 1 << NVIC_INTERRUPT_NUMBER_TIM2);
   }
 
   if (enable) {
-    v |= TIMx_CEN;;
+    v |= TIMx_CR1_CEN;;
   }
 
   reg_write16(TIM2_CR1, v);
