@@ -42,9 +42,10 @@ void usb_rx_callback(void *arg)
 
 #define THERMOSTAT_STATE_COOLING 0
 #define THERMOSTAT_STATE_HEATING_ACTIVE 1
-#define THERMOSTAT_STATE_HEATING_INERTIAL 2
+#define THERMOSTAT_STATE_HEATING_INACTIVE 2
 
-#define THERMOSTAT_SETPOINT_CELSIUS 35
+#define THERMOSTAT_SETPOINT_CELSIUS 45.0f
+#define THERMOSTAT_HYSTERESIS 1.5f
 
 #define ADC_NUM_CHANNELS 4
 #define ADC_NUM_FILTER_SAMPLES_LOG2 3
@@ -65,7 +66,7 @@ static float current_temp_0 = 0.0f;
 static float current_temp_1 = 0.0f;
 static float current_temp_int = 0.0f;
 
-#define TEMP_SENSOR_0_R1 4800.0f // 5100.0f
+#define TEMP_SENSOR_0_R1 5100.0f // 4800.0f // 5100.0f
 #define TEMP_SENSOR_1_R2 95300.0f // 100000.0f
 #define TEMP_SENSOR_VREF 3.25f
 
@@ -109,7 +110,7 @@ static void temp_history_update(float temp0, float temp1, float temp_int)
     for (i = ARRAY_SIZE(temp_history) - 1; i > 0; i--)
       temp_history[i] = temp_history[i - 1];
 
-    temp_history_counter = 180;
+    temp_history_counter = 400;
     return;
   }
 
@@ -140,6 +141,10 @@ static void adc_apply_filtering(void)
 
     else if (ch_idx == 2)
       current_temp_int = adc_voltage_to_temperature(voltage);
+
+    current_temp_int = current_temp_0;
+    if (current_temp_int < current_temp_1)
+      current_temp_int = current_temp_1;
 
     temp_history_update(current_temp_0, current_temp_1, current_temp_int);
   }
@@ -174,21 +179,21 @@ static void pump_gpio_init(void)
   pump_disable();
 }
 
-static void thermostat_heater_init(void)
-{
-  gpio_odr_modify(THERMOSTAT_ENABLE_GPIO_PORT, THERMOSTAT_ENABLE_GPIO_PIN, 1);
-}
-
 static void thermostat_heater_enable(void)
 {
   debug_pin_off();
   gpio_odr_modify(THERMOSTAT_ENABLE_GPIO_PORT, THERMOSTAT_ENABLE_GPIO_PIN, 1);
 }
 
-static void thermosat_heater_disable(void)
+static void thermostat_heater_disable(void)
 {
   debug_pin_on();
   gpio_odr_modify(THERMOSTAT_ENABLE_GPIO_PORT, THERMOSTAT_ENABLE_GPIO_PIN, 0);
+}
+
+static void thermostat_heater_init(void)
+{
+  thermostat_heater_disable();
 }
 
 static uint16_t temp_sensor_get_filtered(void)
@@ -200,44 +205,52 @@ static uint16_t temp_sensor_get_filtered(void)
   return (uint16_t)(sum / ARRAY_SIZE(adc_dma_buffer));
 }
 
+static void thermostat_enter_state_heating_active(void)
+{
+  thermostat_heater_enable();
+  thermostat_state = THERMOSTAT_STATE_HEATING_ACTIVE;
+  termo_force_heating_timer = 50;
+}
+
+static void thermostat_enter_state_heating_inactive(void)
+{
+  thermostat_heater_disable();
+  thermostat_state = THERMOSTAT_STATE_HEATING_INACTIVE;
+  termo_force_heating_timer = 1000;
+}
+
+static void thermostat_enter_state_cooling(void)
+{
+  thermostat_heater_disable();
+  thermostat_state = THERMOSTAT_STATE_COOLING;
+}
+
 static void thermostat_run(void)
 {
-  const int setpoint_temperature_celsius = THERMOSTAT_SETPOINT_CELSIUS;
-  int temp_1_celsius_int;
-
-  int min_temp = current_temp_0;
-  if (min_temp > current_temp_1)
-    min_temp = current_temp_1;
-
   if (thermostat_state == THERMOSTAT_STATE_COOLING) {
-    if (min_temp < setpoint_temperature_celsius) {
-      thermostat_state = THERMOSTAT_STATE_HEATING_ACTIVE;
-      thermostat_heater_enable();
-      termo_force_heating_timer = 100;
-    }
-    else
-    {
-      thermosat_heater_disable();
-    }
+    if (current_temp_1 < THERMOSTAT_SETPOINT_CELSIUS - THERMOSTAT_HYSTERESIS)
+      thermostat_enter_state_heating_active();
+
   } else if (thermostat_state == THERMOSTAT_STATE_HEATING_ACTIVE) {
     termo_force_heating_timer--;
-    if (termo_force_heating_timer <= 0) {
-      thermosat_heater_disable();
-      thermostat_state = THERMOSTAT_STATE_HEATING_INERTIAL;
-      termo_force_heating_timer = 1200;
-    }
-  } else if (thermostat_state == THERMOSTAT_STATE_HEATING_INERTIAL) {
+    if (termo_force_heating_timer == 0)
+      thermostat_enter_state_heating_inactive();
+    else if (current_temp_1 >= THERMOSTAT_SETPOINT_CELSIUS)
+      thermostat_enter_state_cooling();
+
+  } else if (thermostat_state == THERMOSTAT_STATE_HEATING_INACTIVE) {
     termo_force_heating_timer--;
-    if (termo_force_heating_timer <= 0) {
-      thermostat_state = THERMOSTAT_STATE_COOLING;
-      thermosat_heater_disable();
-    }
+    if (termo_force_heating_timer == 0)
+      thermostat_enter_state_heating_active();
+    else if (current_temp_1 >= THERMOSTAT_SETPOINT_CELSIUS)
+      thermostat_enter_state_cooling();
   }
 }
 
 static void thermostat_init(void)
 {
   thermostat_heater_init();
+  thermostat_state = THERMOSTAT_STATE_COOLING;
   adc_setup_dma(adc_dma_buffer, ARRAY_SIZE(adc_dma_buffer));
   adc_run();
 }
