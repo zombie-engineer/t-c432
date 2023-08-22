@@ -21,7 +21,6 @@ OBJS := main.o \
   ui/bar_widget.o \
   ui/text_widget.o \
   ui/value_widget.o \
-  ui/navi_header_widget.o \
   ui/arrow_button_widget.o \
   display.o \
   fault.o \
@@ -50,6 +49,9 @@ OBJS := main.o \
   usart.o \
   systick.o
 
+ifeq "$(ENABLE_NAVIGATION_MENU)" "1"
+  OBJS += ui/navi_header_widget.o
+endif
 ifeq "$(ENABLE_USB)" "1"
   OBJS += usb_driver.o ui/usb_widget.o
 endif

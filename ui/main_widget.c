@@ -11,7 +11,7 @@
 #include <string.h>
 
 struct main_widget_priv {
-  struct widget navi_header;
+  // struct widget navi_header;
   struct widget value1;
   struct widget value2;
   struct widget value3;
@@ -68,7 +68,7 @@ static void draw_blinker_icon(int x, int y, int sz, int num_frames, int interval
 static void main_on_tick(struct widget *w, int tick_ms)
 {
   struct main_widget_priv *p = &main_widget_priv;
-  p->navi_header.handle_event(&p->navi_header, UI_EVENT_TICK, tick_ms);
+  // p->navi_header.handle_event(&p->navi_header, UI_EVENT_TICK, tick_ms);
 
   struct value_widget_value v = {
     .u.int_value = sched_stats.task_switches
@@ -86,7 +86,7 @@ static void main_widget_draw(struct widget *w)
   struct main_widget_priv *p = w->priv;
 
   /* < title  >*/
-  p->navi_header.draw(&p->navi_header);
+  // p->navi_header.draw(&p->navi_header);
 
   p->value1.draw(&p->value1);
   p->value2.draw(&p->value2);
@@ -100,8 +100,10 @@ static void main_widget_handle_event(struct widget *w, ui_event_type event,
   {
     case UI_EVENT_BUTTON_PRESSED:
     case UI_EVENT_BUTTON_RELEASED:
+#if 0
       main_widget_priv.navi_header.handle_event(
         &main_widget_priv.navi_header, event, param);
+#endif
       break;
     case UI_EVENT_TICK:
       main_on_tick(w, param);
@@ -113,7 +115,7 @@ static void main_widget_handle_event(struct widget *w, ui_event_type event,
 
 int main_widget_init(struct widget *w, nextprev_fn prev, nextprev_fn next)
 {
-  struct widget *navi = &main_widget_priv.navi_header;
+  // struct widget *navi = &main_widget_priv.navi_header;
   struct widget *b = &main_widget_priv.vert_bar;
   struct widget *v1 = &main_widget_priv.value1;
   struct widget *v2 = &main_widget_priv.value2;
@@ -132,8 +134,9 @@ int main_widget_init(struct widget *w, nextprev_fn prev, nextprev_fn next)
   b->pos_x = 110;
   b->pos_y = 0;
   b->size_x = 10;
-  b->size_y = 48,
+  b->size_y = 48;
 
+#if 0
   navi_header_widget_init(navi,
     0,
     w->size_y - 10,
@@ -144,6 +147,7 @@ int main_widget_init(struct widget *w, nextprev_fn prev, nextprev_fn next)
     "scheduler",
     &font_1
   );
+#endif
 
   struct value_widget_value value_initial = {
     .u.int_value = 0
