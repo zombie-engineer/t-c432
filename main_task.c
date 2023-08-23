@@ -18,6 +18,14 @@
 #include "pushbuttons.h"
 #include "temp_info.h"
 
+#define THERMOSTAT_PWM_PERIOD 100
+struct thermostat_pwm {
+  int off_time;
+  int on_time;
+  int counter;
+};
+
+static struct thermostat_pwm current_pwm;
 void timer_setup(void)
 {
   /* SYSCLK = 72MHz */
@@ -45,7 +53,7 @@ void usb_rx_callback(void *arg)
 #define THERMOSTAT_STATE_HEATING_INACTIVE 2
 
 #define THERMOSTAT_SETPOINT_CELSIUS 45.0f
-#define THERMOSTAT_HYSTERESIS 1.5f
+#define THERMOSTAT_HYSTERESIS 1.0f
 
 #define ADC_NUM_CHANNELS 1
 #define ADC_NUM_FILTER_SAMPLES_LOG2 7
@@ -128,28 +136,7 @@ static void adc_apply_filtering(void)
   float avg_voltage = avg_values[0] / (float)ADC_NUM_FILTER_SAMPLES;
   float voltage = avg_voltage / ADC_MAX_VALUE * ADC_VREF;
   current_temp = adc_voltage_to_temp1(voltage);
-
-#if 0
-  for (ch_idx = 0; ch_idx < ADC_NUM_CHANNELS; ++ch_idx) {
-    float avg_value = (float)(avg_values[ch_idx] >> ADC_NUM_FILTER_SAMPLES_LOG2);
-    float voltage = avg_value / ADC_MAX_VALUE * ADC_VREF;
-    if (ch_idx == 0)
-      current_temp_0 = adc_voltage_to_temp0(voltage);
-
-    else if (ch_idx == 1)
-      current_temp_1 = adc_voltage_to_temp1(voltage);
-
-    else if (ch_idx == 2)
-      current_temp_int = adc_voltage_to_temperature(voltage);
-
-    current_temp_int = current_temp_0;
-    if (current_temp_int < current_temp_1)
-      current_temp_int = current_temp_1;
-
-  }
-#endif
-    temp_history_update(current_temp);
-
+  temp_history_update(current_temp);
   ui_set_current_temp(current_temp);
 }
 
@@ -158,8 +145,6 @@ static void adc_apply_filtering(void)
 
 int thermostat_state = THERMOSTAT_STATE_COOLING;
 int pump_state = PUMP_STATE_IDLING;
-
-int termo_force_heating_timer = 0;
 
 int pump_process_counter = 0;
 
@@ -206,18 +191,36 @@ static uint16_t temp_sensor_get_filtered(void)
   return (uint16_t)(sum / ARRAY_SIZE(adc_dma_buffer));
 }
 
+static void thermostat_pwm_setup(struct thermostat_pwm *p)
+{
+  float delta;
+
+  /* Proportional */
+  delta = THERMOSTAT_SETPOINT_CELSIUS - current_temp;
+  if (delta < 0.0f)
+    delta = 0.0f;
+  float on_time_coeff = (delta / 40.0) * 0.7;
+  p->on_time = (int)(on_time_coeff * THERMOSTAT_PWM_PERIOD);
+
+  if (p->on_time > THERMOSTAT_PWM_PERIOD)
+    p->on_time = THERMOSTAT_PWM_PERIOD;
+
+  p->off_time = THERMOSTAT_PWM_PERIOD - p->on_time;
+  p->counter = p->on_time;
+}
+
 static void thermostat_enter_state_heating_active(void)
 {
+  thermostat_pwm_setup(&current_pwm);
   thermostat_heater_enable();
   thermostat_state = THERMOSTAT_STATE_HEATING_ACTIVE;
-  termo_force_heating_timer = 50;
 }
 
 static void thermostat_enter_state_heating_inactive(void)
 {
   thermostat_heater_disable();
   thermostat_state = THERMOSTAT_STATE_HEATING_INACTIVE;
-  termo_force_heating_timer = 1000;
+  current_pwm.counter = current_pwm.off_time;
 }
 
 static void thermostat_enter_state_cooling(void)
@@ -233,15 +236,15 @@ static void thermostat_run(void)
       thermostat_enter_state_heating_active();
 
   } else if (thermostat_state == THERMOSTAT_STATE_HEATING_ACTIVE) {
-    termo_force_heating_timer--;
-    if (termo_force_heating_timer == 0)
+    current_pwm.counter--;
+    if (current_pwm.counter <= 0)
       thermostat_enter_state_heating_inactive();
-    else if (current_temp >= THERMOSTAT_SETPOINT_CELSIUS)
+    else if (current_temp >= THERMOSTAT_SETPOINT_CELSIUS - THERMOSTAT_HYSTERESIS / 2)
       thermostat_enter_state_cooling();
 
   } else if (thermostat_state == THERMOSTAT_STATE_HEATING_INACTIVE) {
-    termo_force_heating_timer--;
-    if (termo_force_heating_timer == 0)
+    current_pwm.counter--;
+    if (current_pwm.counter <= 0)
       thermostat_enter_state_heating_active();
     else if (current_temp >= THERMOSTAT_SETPOINT_CELSIUS)
       thermostat_enter_state_cooling();
@@ -250,6 +253,10 @@ static void thermostat_run(void)
 
 static void thermostat_init(void)
 {
+  current_pwm.off_time = THERMOSTAT_PWM_PERIOD;
+  current_pwm.on_time = THERMOSTAT_PWM_PERIOD;
+  current_pwm.counter = 0;
+
   ui_set_target_temp(THERMOSTAT_SETPOINT_CELSIUS);
   thermostat_heater_init();
   thermostat_state = THERMOSTAT_STATE_COOLING;
