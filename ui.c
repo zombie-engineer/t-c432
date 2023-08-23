@@ -48,9 +48,8 @@ void ui_tick(int ms)
 static const struct temp_info *temp_history = NULL;
 static int temp_history_depth = 0;
 
-static float temp0 = 0.0f;
-static float temp1 = 0.0f;
-static float temp_int = 0.0f;
+static float current_temp = 0.0f;
+static float target_temp = 0.0f;
 
 static int ctr = 0;
 
@@ -60,28 +59,54 @@ void ui_set_temp_history(const struct temp_info *th, int depth)
   temp_history_depth = depth;
 }
 
-void ui_set_temperatures(float t0, float t1, float t_int)
+void ui_set_current_temp(float value)
 {
-  temp0 = t0;
-  temp1 = t1;
-  temp_int = t_int;
+  current_temp = value;
 }
 
-static void draw_temp_history(void)
+void ui_set_target_temp(float value)
+{
+  target_temp = value;
+}
+
+static void draw_temp_graph(void)
 {
   int i;
   float norm_value;
   int pixel_x;
   int pixel_y;
+  const struct temp_info *t;
+  float norm_temp;
+#define GRAPH_SIZE_X 64
+#define GRAPH_SIZE_Y (64 - 12)
 
-  for (int i = 0; i < temp_history_depth; ++i) {
-    const struct temp_info *t = &temp_history[i];
-    pixel_y = (int)((t->temp0 / 50.0f) * 30);
-    display_draw_pixel(i + 0, pixel_y, 1);
-    pixel_y = (int)((t->temp1 / 50.0f) * 30);
-    display_draw_pixel(i + 32, pixel_y, 1);
-    pixel_y = (int)((t->temp_int / 50.0f) * 30);
-    display_draw_pixel(i + 64, pixel_y, 1);
+  for (int x = 0; x < 60; ++x) {
+    t = &temp_history[x];
+    norm_temp = (t->temp - 25.0f) / 50.0f;
+    pixel_y = (int)(norm_temp * GRAPH_SIZE_Y);
+    display_draw_pixel(x, pixel_y, 1);
+  }
+
+  for (int x = 0; x < GRAPH_SIZE_X; ++x) {
+    int pt = x / (float)GRAPH_SIZE_X * temp_history_depth;
+    t = &temp_history[pt];
+    norm_temp = (t->temp - 25.0f) / 50.0f;
+    pixel_y = (int)(norm_temp * GRAPH_SIZE_Y);
+    display_draw_pixel(64 + x, pixel_y, 1);
+  }
+
+  norm_temp = (target_temp - 25.0f) / 50.0f;
+  pixel_y = (int)(norm_temp * GRAPH_SIZE_Y);
+  for (int i = 0; i < 132 / 6; ++i) {
+    int x0 = i * 6;
+    int x1 = x0 + 4;
+
+    display_draw_line(x0, pixel_y, x1, pixel_y, 1);
+  }
+  for (int i = 0; i < (64 - 12) / 4; ++i) {
+    int y0 = i * 4;
+    int y1 = y0 + 1;
+    display_draw_line(60, y0, 60, y1, 1);
   }
 }
 
@@ -155,7 +180,7 @@ static void draw_thermostat_state(void)
     statebuf[2] = 0;
   }
 
-  display_draw_text(10, 30, statebuf, &font_4, 1);
+  display_draw_text(44, 64 - 12, statebuf, &font_4, 1);
 }
 
 int pulse_count = 0;
@@ -172,51 +197,25 @@ static void draw_pump_state(void)
   itoa(pulse_count, cntbuf, 10);
 
   if (pump_state == 1)
-  {
     statebuf[0] = 'P';
-  }
   else
-  {
     statebuf[0] = '-';
-  }
-    statebuf[1] = 0;
+  statebuf[1] = 0;
 
-  display_draw_text(30, 30, statebuf, &font_4, 1);
-  display_draw_text(50, 30, cntbuf, &font_4, 1);
-}
-
-static void draw_gpio_inputs(void)
-{
-  int i;
-  int y;
-
-  int x = 60;
-  int indices[] = { 1, 10, 11, 12, 13, 14, 15 };
-
-  for (i = 0; i < ARRAY_SIZE(indices); ++i) {
-    y = 10;
-
-    if (gpio_pin_is_set(GPIO_PORT_B, indices[i]))
-      y += 3;
-
-    display_draw_line(x, y, x + 3, y, 1);
-    x += 4;
-  }
+  display_draw_text(88, 64 - 12, statebuf, &font_4, 1);
+  display_draw_text(120, 64 - 12, cntbuf, &font_4, 1);
 }
 
 void ui_redraw(void)
 {
   display_clear();
-  draw_temp_history();
+  draw_temp_graph();
 
   display_draw_line(40, 63, 40, 63 - 12, 1);
   display_draw_line(82, 63, 82, 63 - 12, 1);
-  draw_temperature(0, temp0);
-  draw_temperature(1, temp1);
-  draw_temperature(2, temp_int);
+  draw_temperature(0, current_temp);
   draw_thermostat_state();
   draw_pump_state();
-  // draw_gpio_inputs();
 
   ctr++;
   if (ctr > 10)

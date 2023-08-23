@@ -57,10 +57,10 @@ static void setup_adc(void)
     .sampling_time = __sampling_time \
   }
   struct adc_scan_mode_channel_config regular_group[] = {
-    ADC_CH_INIT(ADC_CH_TEMP_SENSOR0, ADC_SAMPTIME_1_5_CYCLES),
+//    ADC_CH_INIT(ADC_CH_TEMP_SENSOR0, ADC_SAMPTIME_1_5_CYCLES),
     ADC_CH_INIT(ADC_CH_TEMP_SENSOR1, ADC_SAMPTIME_1_5_CYCLES),
-    ADC_CH_INIT(ADC_CH_TEMP_SENSOR2, ADC_SAMPTIME_239_5_CYCLES),
-    ADC_CH_INIT(ADC_CH_VREF, ADC_SAMPTIME_1_5_CYCLES),
+//    ADC_CH_INIT(ADC_CH_TEMP_SENSOR2, ADC_SAMPTIME_239_5_CYCLES),
+//    ADC_CH_INIT(ADC_CH_VREF, ADC_SAMPTIME_1_5_CYCLES),
   };
 
   struct adc_scan_mode_config cfg = {

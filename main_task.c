@@ -47,12 +47,12 @@ void usb_rx_callback(void *arg)
 #define THERMOSTAT_SETPOINT_CELSIUS 45.0f
 #define THERMOSTAT_HYSTERESIS 1.5f
 
-#define ADC_NUM_CHANNELS 4
-#define ADC_NUM_FILTER_SAMPLES_LOG2 3
+#define ADC_NUM_CHANNELS 1
+#define ADC_NUM_FILTER_SAMPLES_LOG2 7
 #define ADC_NUM_FILTER_SAMPLES (1 << ADC_NUM_FILTER_SAMPLES_LOG2)
 #define ADC_VREF 3.3f
 #define ADC_MAX_VALUE 4096
-#define TEMP_HISTORY_DEPTH 32
+#define TEMP_HISTORY_DEPTH 256
 
 #define ALL_SENSORS_BUF_LEN (ADC_NUM_CHANNELS * ADC_NUM_FILTER_SAMPLES)
 static int adc_dma_buffer_idx = 0;
@@ -62,9 +62,7 @@ static struct temp_info temp_history[TEMP_HISTORY_DEPTH] = { 0 };
 
 static int adc_voltage_history_idx = 0;
 
-static float current_temp_0 = 0.0f;
-static float current_temp_1 = 0.0f;
-static float current_temp_int = 0.0f;
+static float current_temp = 0.0f;
 
 #define TEMP_SENSOR_0_R1 5100.0f // 4800.0f // 5100.0f
 #define TEMP_SENSOR_1_R2 95300.0f // 100000.0f
@@ -98,19 +96,17 @@ static float adc_voltage_to_temp1(float voltage)
 
 static int temp_history_counter = 0;
 
-static void temp_history_update(float temp0, float temp1, float temp_int)
+static void temp_history_update(float temp)
 {
   int i;
 
-  temp_history[0].temp0 = temp0;
-  temp_history[0].temp1 = temp1;
-  temp_history[0].temp_int = temp_int;
+  temp_history[0].temp = temp;
 
   if (!temp_history_counter) {
     for (i = ARRAY_SIZE(temp_history) - 1; i > 0; i--)
       temp_history[i] = temp_history[i - 1];
 
-    temp_history_counter = 400;
+    temp_history_counter = 40;
     return;
   }
 
@@ -129,7 +125,11 @@ static void adc_apply_filtering(void)
       avg_values[ch_idx] += adc_dma_buffer[src_idx];
     }
   }
+  float avg_voltage = avg_values[0] / (float)ADC_NUM_FILTER_SAMPLES;
+  float voltage = avg_voltage / ADC_MAX_VALUE * ADC_VREF;
+  current_temp = adc_voltage_to_temp1(voltage);
 
+#if 0
   for (ch_idx = 0; ch_idx < ADC_NUM_CHANNELS; ++ch_idx) {
     float avg_value = (float)(avg_values[ch_idx] >> ADC_NUM_FILTER_SAMPLES_LOG2);
     float voltage = avg_value / ADC_MAX_VALUE * ADC_VREF;
@@ -146,10 +146,11 @@ static void adc_apply_filtering(void)
     if (current_temp_int < current_temp_1)
       current_temp_int = current_temp_1;
 
-    temp_history_update(current_temp_0, current_temp_1, current_temp_int);
   }
+#endif
+    temp_history_update(current_temp);
 
-  ui_set_temperatures(current_temp_0, current_temp_1, current_temp_int);
+  ui_set_current_temp(current_temp);
 }
 
 #define PUMP_STATE_IDLING  0
@@ -228,27 +229,28 @@ static void thermostat_enter_state_cooling(void)
 static void thermostat_run(void)
 {
   if (thermostat_state == THERMOSTAT_STATE_COOLING) {
-    if (current_temp_1 < THERMOSTAT_SETPOINT_CELSIUS - THERMOSTAT_HYSTERESIS)
+    if (current_temp < THERMOSTAT_SETPOINT_CELSIUS - THERMOSTAT_HYSTERESIS)
       thermostat_enter_state_heating_active();
 
   } else if (thermostat_state == THERMOSTAT_STATE_HEATING_ACTIVE) {
     termo_force_heating_timer--;
     if (termo_force_heating_timer == 0)
       thermostat_enter_state_heating_inactive();
-    else if (current_temp_1 >= THERMOSTAT_SETPOINT_CELSIUS)
+    else if (current_temp >= THERMOSTAT_SETPOINT_CELSIUS)
       thermostat_enter_state_cooling();
 
   } else if (thermostat_state == THERMOSTAT_STATE_HEATING_INACTIVE) {
     termo_force_heating_timer--;
     if (termo_force_heating_timer == 0)
       thermostat_enter_state_heating_active();
-    else if (current_temp_1 >= THERMOSTAT_SETPOINT_CELSIUS)
+    else if (current_temp >= THERMOSTAT_SETPOINT_CELSIUS)
       thermostat_enter_state_cooling();
   }
 }
 
 static void thermostat_init(void)
 {
+  ui_set_target_temp(THERMOSTAT_SETPOINT_CELSIUS);
   thermostat_heater_init();
   thermostat_state = THERMOSTAT_STATE_COOLING;
   adc_setup_dma(adc_dma_buffer, ARRAY_SIZE(adc_dma_buffer));
