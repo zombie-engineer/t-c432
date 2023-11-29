@@ -30,7 +30,7 @@ void timer_setup(void)
 {
   /* SYSCLK = 72MHz */
   rcc_periph_ena(RCC_PERIPH_TIM2);
-  // tim2_setup(true, CALC_PSC(0.1, F_CPU, 0xffff), 0xffff, true, true);
+  tim2_setup(true, CALC_PSC(1, F_CPU, 0xffff), 0xffff, true, true);
 }
 
 void usb_set_address_callback(void *arg)
@@ -71,6 +71,20 @@ static struct temp_info temp_history[TEMP_HISTORY_DEPTH] = { 0 };
 static int adc_voltage_history_idx = 0;
 
 static float current_temp = 0.0f;
+static float temp_points[3] = { 0 };
+static float temp_speeds[2] = { 0 };
+static float temp_accel = 0.0f;
+
+void tim2_isr_cb(void)
+{
+  temp_points[2] = temp_points[1];
+  temp_points[1] = temp_points[0];
+  temp_points[0] = current_temp;
+
+  temp_speeds[1] = temp_speeds[0];
+  temp_speeds[0] = temp_points[0] - temp_points[1];
+  temp_accel = temp_speeds[0] - temp_speeds[1];
+}
 
 #define TEMP_SENSOR_0_R1 5100.0f // 4800.0f // 5100.0f
 #define TEMP_SENSOR_1_R2 95300.0f // 100000.0f
@@ -229,8 +243,10 @@ static void thermostat_enter_state_cooling(void)
   thermostat_state = THERMOSTAT_STATE_COOLING;
 }
 
+
 static void thermostat_run(void)
 {
+  ui_set_temp_accel(temp_accel * 100);
   if (thermostat_state == THERMOSTAT_STATE_COOLING) {
     if (current_temp < THERMOSTAT_SETPOINT_CELSIUS - THERMOSTAT_HYSTERESIS)
       thermostat_enter_state_heating_active();

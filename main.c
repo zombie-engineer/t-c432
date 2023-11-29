@@ -1,6 +1,5 @@
 #include "rcc.h"
 #include "ui.h"
-#include "debug_pin.h"
 #include "adc.h"
 #include "scheduler.h"
 #include "task.h"
@@ -21,7 +20,11 @@
 /* __errno symbol must be defined to link with log function in libm.a */
 void __errno(void) {}
 
-void tim2_isr_cb() {}
+__attribute__((weak)) void tim2_isr_cb(void)
+{
+  debug_pin_toggle();
+//  asm volatile("bkpt");
+}
 
 extern uint32_t __bss_start;
 extern uint32_t __bss_end;
@@ -102,7 +105,7 @@ static void setup_gpio(void)
   gpio_setup(FLOW_METER_GPIO_PORT, FLOW_METER_GPIO_PIN,
     GPIO_MODE_INPUT, GPIO_CNF_IN_FLOATING);
 
-  tim2_setup_pulse_counting();
+  // tim2_setup_pulse_counting();
 }
 
 static void setup_usb(void)

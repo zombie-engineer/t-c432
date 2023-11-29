@@ -50,8 +50,14 @@ static int temp_history_depth = 0;
 
 static float current_temp = 0.0f;
 static float target_temp = 0.0f;
+static float ui_temp_accel = 0.0f;
 
 static int ctr = 0;
+
+void ui_set_temp_accel(float value)
+{
+  ui_temp_accel = value;
+}
 
 void ui_set_temp_history(const struct temp_info *th, int depth)
 {
@@ -147,6 +153,33 @@ static void update_temperature_text(struct text_slot *ts, float value)
   *p++ = 0;
 }
 
+static void draw_temp_accel(void)
+{
+  char intbuf[8] = { 0 };
+  int t_int;
+  int t_fra;
+  float fractional;
+  char *p = intbuf;
+  bool minus = false;
+  if (ui_temp_accel < 0) {
+    ui_temp_accel *= -1.0f;
+    minus = true;
+  }
+
+  if (minus)
+    *p++ = '-';
+
+  t_int = (float)ui_temp_accel;
+  fractional = ui_temp_accel - (float)t_int;
+  t_fra = (int)(roundf(fractional * 100.0f));
+  itoa(t_int, intbuf, 10);
+  p += strlen(p);
+  *p++ = '.';
+  *p++ = '0' + (t_fra / 10);
+  *p++ = 0;
+  display_draw_text(30, 30, intbuf, &font_4, 1);
+}
+
 static void draw_temperature(int text_slot_idx, float temperature)
 {
   struct text_slot *s = &text_slots[text_slot_idx];
@@ -214,6 +247,7 @@ void ui_redraw(void)
   display_draw_line(40, 63, 40, 63 - 12, 1);
   display_draw_line(82, 63, 82, 63 - 12, 1);
   draw_temperature(0, current_temp);
+  draw_temp_accel();
   draw_thermostat_state();
   draw_pump_state();
 
