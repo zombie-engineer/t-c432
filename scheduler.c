@@ -20,8 +20,7 @@ struct scheduler_stats sched_stats = {
 typedef enum {
   PREV_TASK_TO_TAIL = 0,
   PREV_TASK_TO_SLEEP = 1,
-  PREV_TASK_TO_WAIT = 2,
-  PREV_TASK_TO_WAITING = 3,
+  PREV_TASK_TO_WAITING = 2,
 } task_schedule_action_t;
 
 static bool is_schedulable_action(task_schedule_action_t task_action)
