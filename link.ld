@@ -11,10 +11,6 @@ SECTIONS {
     . += 0x400;
     __main_stack_base = .;
   } > RAM
-#  .data :
-#  {
-#    *.o(.data*)
-#  } > RAM
   .rodata :
   {
     *.o(.rodata*)

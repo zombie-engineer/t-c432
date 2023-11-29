@@ -86,7 +86,6 @@ int isr_vector[] = {
   ISR(16 + NVIC_INTERRUPT_NUMBER_EXTI15_10, exti_15_10_isr, 1),
   ISR(16 + NVIC_INTERRUPT_NUMBER_I2C1_EV, i2c1_ev_isr, 1),
   ISR(16 + NVIC_INTERRUPT_NUMBER_I2C1_ER, i2c1_er_isr, 1),
-
 };
 
 void hardfault_isr(void)

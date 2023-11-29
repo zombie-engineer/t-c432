@@ -25,7 +25,7 @@ struct i2c_rq {
 };
 
 /* first only maintain 1 request */
-struct i2c_rq current_i2c_rq;
+static struct i2c_rq current_i2c_rq;
 
 static bool use_dma_transfer = false;
 static int dma_ch_tx = 0;

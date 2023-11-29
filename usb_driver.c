@@ -788,7 +788,6 @@ void __usb_wakeup_isr(void)
 
 void usb_init(void)
 {
-  svc_wait_ms(20);
   rcc_periph_ena(RCC_PERIPH_USB);
   rcc_periph_ena(RCC_PERIPH_IOPA);
   rcc_periph_ena(RCC_PERIPH_AFIO);
