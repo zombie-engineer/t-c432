@@ -96,4 +96,5 @@ void hardfault_isr(void)
 void bus_fault_isr(void) { }
 void generic_isr(void) { }
 void nmi_isr(void) {}
+void adc_isr(void) {}
 

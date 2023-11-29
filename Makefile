@@ -1,4 +1,4 @@
-CROSSDIR := /home/user_user/Downloads/arm-gnu-toolchain-12.2.mpacbti-bet1-x86_64-arm-none-eabi
+CROSSDIR := /mnt/gooddisk/arm-gnu-toolchain-12.2.mpacbti-bet1-x86_64-arm-none-eabi
 LIBGCC := $(CROSSDIR)/lib/gcc/arm-none-eabi/12.2.0/thumb/v7-m/nofp/libgcc.a
 LIBC := $(CROSSDIR)/arm-none-eabi/lib/thumb/v7-m/nofp/libc.a
 $(info $(LIBC))
